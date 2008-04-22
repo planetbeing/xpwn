@@ -316,7 +316,7 @@ ResourceKey* makePlst();
 ResourceKey* makeSize(HFSPlusVolumeHeader* volumeHeader);
 
 void readDriverDescriptorMap(FILE* file, ResourceKey* resources);
-DriverDescriptorRecord* createDriverDescriptorMap();
+DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors);
 void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources);
 void readApplePartitionMap(FILE* file, ResourceKey* resources);
 Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType);

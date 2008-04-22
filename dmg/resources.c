@@ -475,8 +475,8 @@ ResourceKey* writeNSiz(NSizResource* nSiz) {
   
   curNSiz = nSiz;
   
-  key = malloc(sizeof(ResourceKey));
-  key->key = malloc(sizeof("nsiz") + 1);
+  key = (ResourceKey*) malloc(sizeof(ResourceKey));
+  key->key = (unsigned char*) malloc(sizeof("nsiz") + 1);
   strcpy((char*) key->key, "nsiz");
   key->next = NULL;
   key->flipData = NULL;
@@ -485,16 +485,16 @@ ResourceKey* writeNSiz(NSizResource* nSiz) {
   while(curNSiz != NULL) {
     writeNSizResource(curNSiz, buffer);
     if(key->data == NULL) {
-      key->data = malloc(sizeof(ResourceData));
+      key->data = (ResourceData*) malloc(sizeof(ResourceData));
       curData = key->data;
     } else {
-      curData->next = malloc(sizeof(ResourceData));
+      curData->next = (ResourceData*) malloc(sizeof(ResourceData));
       curData = curData->next;
     }
     
     curData->attributes = 0;
     curData->id = curNSiz->partitionNumber;
-    curData->name = malloc(sizeof(char));
+    curData->name = (unsigned char*) malloc(sizeof(char));
     curData->name[0] = '\0';
     curData->next = NULL;
     curData->dataLength = sizeof(char) * strlen(buffer);
@@ -767,7 +767,7 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
       curResource = lastResource->next;
     }
     
-    curResource->key = malloc(strlen(key) + 1);
+    curResource->key = (unsigned char*) malloc(strlen(key) + 1);
     strcpy((char*) curResource->key, key);
     curResource->next = NULL;
     
@@ -786,7 +786,7 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
   }
   
   if(curResource->data == NULL) {
-    curData = malloc(sizeof(ResourceData));
+    curData = (ResourceData*) malloc(sizeof(ResourceData));
     curResource->data = curData;
     curData->next = NULL;
   } else {
@@ -799,7 +799,7 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
     }
     
     if(curData->id != id) {
-      curData->next = malloc(sizeof(ResourceData));
+      curData->next = (ResourceData*) malloc(sizeof(ResourceData));
       curData = curData->next;
       curData->next = NULL;
     } else {
@@ -811,9 +811,9 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
   curData->attributes = attributes;
   curData->dataLength = dataLength;
   curData->id = id;
-  curData->name = malloc(strlen(name) + 1);
+  curData->name = (unsigned char*) malloc(strlen(name) + 1);
   strcpy((char*) curData->name, name);
-  curData->data = malloc(dataLength);
+  curData->data = (unsigned char*) malloc(dataLength);
   memcpy(curData->data, data, dataLength);
   
   int i = 0;

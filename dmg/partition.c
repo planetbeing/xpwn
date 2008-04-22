@@ -431,7 +431,7 @@ void readDriverDescriptorMap(FILE* file, ResourceKey* resources) {
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), -1)->data);
   info.offset = 0;
   info.bufferSize = 512;
-  info.buffer = malloc(info.bufferSize);
+  info.buffer = (unsigned char*) malloc(info.bufferSize);
   extractBLKX(file, (void*)(&info), blkx, &memWrite, &memSeek, &memTell);
   record = (DriverDescriptorRecord*)info.buffer;
   flipDriverDescriptorRecord(record, FALSE);
@@ -458,7 +458,7 @@ void readDriverDescriptorMap(FILE* file, ResourceKey* resources) {
 DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors) {
   DriverDescriptorRecord* toReturn;
   
-  toReturn = malloc(SECTOR_SIZE);
+  toReturn = (DriverDescriptorRecord*) malloc(SECTOR_SIZE);
   memset(toReturn, 0, SECTOR_SIZE);
   
   toReturn->sbSig = DRIVER_DESCRIPTOR_SIGNATURE;
@@ -481,7 +481,7 @@ void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumF
   ChecksumToken uncompressedToken;
   DriverDescriptorRecord* buffer;
   
-  buffer = malloc(DDM_SIZE * SECTOR_SIZE);
+  buffer = (DriverDescriptorRecord*) malloc(DDM_SIZE * SECTOR_SIZE);
   memcpy(buffer, DDM, DDM_SIZE * SECTOR_SIZE);
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
   
@@ -510,7 +510,7 @@ void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc data
   NSizResource* nsiz;
   CSumResource csum;
   
-  buffer = malloc(PARTITION_SIZE * SECTOR_SIZE);
+  buffer = (Partition*) malloc(PARTITION_SIZE * SECTOR_SIZE);
   memcpy(buffer, partitions, PARTITION_SIZE  * SECTOR_SIZE);
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
   
@@ -532,7 +532,7 @@ void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc data
   *resources = insertData(*resources, "blkx", 0, "Apple (Apple_partition_map : 1)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
   *resources = insertData(*resources, "cSum", 0, "", (const char*) (&csum), sizeof(csum), 0);
   
-  nsiz = malloc(sizeof(NSizResource));
+  nsiz = (NSizResource*) malloc(sizeof(NSizResource));
   memset(nsiz, 0, sizeof(NSizResource));
   nsiz->isVolume = FALSE;
   nsiz->blockChecksum2 = uncompressedToken.block;
@@ -576,7 +576,7 @@ void writeATAPI(FILE* file, ChecksumFunc dataForkChecksum, void* dataForkToken, 
   *resources = insertData(*resources, "blkx", 1, "Macintosh (Apple_Driver_ATAPI : 2)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
   *resources = insertData(*resources, "cSum", 1, "", (const char*) (&csum), sizeof(csum), 0);
   
-  nsiz = malloc(sizeof(NSizResource));
+  nsiz = (NSizResource*) malloc(sizeof(NSizResource));
   memset(nsiz, 0, sizeof(NSizResource));
   nsiz->isVolume = FALSE;
   nsiz->blockChecksum2 = uncompressedToken.block;
@@ -604,7 +604,7 @@ void readApplePartitionMap(FILE* file, ResourceKey* resources) {
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), 0)->data);
   info.offset = 0;
   info.bufferSize = 512;
-  info.buffer = malloc(info.bufferSize);
+  info.buffer = (unsigned char*) malloc(info.bufferSize);
   extractBLKX(file, (void*)(&info), blkx, &memWrite, &memSeek, &memTell);
   partition = (Partition*)info.buffer;
   flipPartition(partition, FALSE);
@@ -685,7 +685,7 @@ HFSPlusVolumeHeader* readVolumeHeader(FILE* file) {
 Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType) {
   Partition* partition;
   
-  partition = malloc(SECTOR_SIZE * PARTITION_SIZE);
+  partition = (Partition*) malloc(SECTOR_SIZE * PARTITION_SIZE);
   memset(partition, 0, SECTOR_SIZE * PARTITION_SIZE);
   
   partition[0].pmSig = APPLE_PARTITION_MAP_SIGNATURE;

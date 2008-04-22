@@ -3,7 +3,7 @@
 
 static int flatFileRead(io_func* io, off_t location, size_t size, void *buffer) {
   FILE* file;
-  file = io->data;
+  file = (FILE*) io->data;
   
   if(size == 0) {
     return TRUE;
@@ -41,7 +41,7 @@ static int flatFileWrite(io_func* io, off_t location, size_t size, void *buffer)
     return TRUE;
   }
   
-  file = io->data;
+  file = (FILE*) io->data;
   
   if(fseeko(file, location, SEEK_SET) != 0) {
     perror("fseek");
@@ -59,7 +59,9 @@ static int flatFileWrite(io_func* io, off_t location, size_t size, void *buffer)
 }
 
 static void closeFlatFile(io_func* io) {
-  FILE* file = io->data;
+  FILE* file;
+  
+  file = (FILE*) io->data;
   
   fclose(file);
   free(io);

@@ -137,7 +137,7 @@ int buildDmg(const char* source, const char* dest) {
 	
 	printf("Inserting nsiz data\n"); fflush(stdout);
 	
-	myNSiz = malloc(sizeof(NSizResource));
+	myNSiz = (NSizResource*) malloc(sizeof(NSizResource));
 	memset(myNSiz, 0, sizeof(NSizResource));
 	myNSiz->isVolume = TRUE;
 	myNSiz->blockChecksum2 = uncompressedToken.block;

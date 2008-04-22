@@ -60,7 +60,7 @@ int allocate(RawFile* rawFile, off_t size) {
     }
     
     if(lastExtent == NULL) {
-      rawFile->extents = malloc(sizeof(Extent));
+      rawFile->extents = (Extent*) malloc(sizeof(Extent));
       lastExtent = rawFile->extents;
       lastExtent->blockCount = 0;
       lastExtent->next = NULL;
@@ -72,7 +72,7 @@ int allocate(RawFile* rawFile, off_t size) {
     while(blocksToAllocate > 0) {
       if(isBlockUsed(volume, curBlock)) {
         if(lastExtent->blockCount > 0) {
-          lastExtent->next = malloc(sizeof(Extent));
+          lastExtent->next = (Extent*) malloc(sizeof(Extent));
           lastExtent = lastExtent->next;
           lastExtent->blockCount = 0;
           lastExtent->next = NULL;
@@ -188,7 +188,7 @@ static int rawFileRead(io_func* io,off_t location, size_t size, void *buffer) {
     if(size > possible) {
       ASSERT(READ(volume->image, extent->startBlock * blockSize + location, possible, buffer), "READ");
       size -= possible;
-      buffer += possible;
+      buffer = (void*)(((size_t)buffer) + possible);
       extent = extent->next;
     } else {
       ASSERT(READ(volume->image, extent->startBlock * blockSize + location, size, buffer), "READ");
@@ -241,7 +241,7 @@ static int rawFileWrite(io_func* io,off_t location, size_t size, void *buffer) {
     if(size > possible) {
       ASSERT(WRITE(volume->image, extent->startBlock * blockSize + location, possible, buffer), "WRITE");
       size -= possible;
-      buffer += possible;
+      buffer = (void*)(((size_t)buffer) + possible);
       extent = extent->next;
     } else {
       ASSERT(WRITE(volume->image, extent->startBlock * blockSize + location, size, buffer), "WRITE");
@@ -307,7 +307,7 @@ int removeExtents(RawFile* rawFile) {
       }
       
       extentKey.startBlock = currentBlock;
-      descriptor = search(rawFile->volume->extentsTree, (BTKey*)(&extentKey), &exact, NULL, NULL);
+      descriptor = (HFSPlusExtentDescriptor*) search(rawFile->volume->extentsTree, (BTKey*)(&extentKey), &exact, NULL, NULL);
       if(descriptor == NULL || exact == FALSE) {
         panic("inconsistent extents information!");
         return FALSE;
@@ -425,7 +425,7 @@ int readExtents(RawFile* rawFile) {
       }
       
       extentKey.startBlock = currentBlock;
-      descriptor = search(rawFile->volume->extentsTree, (BTKey*)(&extentKey), &exact, NULL, NULL);
+      descriptor = (HFSPlusExtentDescriptor*) search(rawFile->volume->extentsTree, (BTKey*)(&extentKey), &exact, NULL, NULL);
       if(descriptor == NULL || exact == FALSE) {
         panic("inconsistent extents information!");
         return FALSE;

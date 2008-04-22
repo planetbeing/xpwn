@@ -466,6 +466,7 @@ int move(const char* source, const char* dest, Volume* volume);
 int removeFile(const char* fileName, Volume* volume);
 HFSCatalogNodeID newFolder(const char* pathName, Volume* volume);
 HFSCatalogNodeID newFile(const char* pathName, Volume* volume);
+int chmodFile(const char* pathName, int mode, Volume* volume);
 
 HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume);
 CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume);
