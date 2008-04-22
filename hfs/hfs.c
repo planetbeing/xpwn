@@ -37,9 +37,14 @@ void displayFolder(HFSCatalogNodeID folderID, Volume* volume) {
 			printf("%12d ", file->dataFork.logicalSize);
 			fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 		}
-		
+			
 		date = localtime(&fileTime);
-		printf("%2d/%2d/%4d %02d:%02d ", date->tm_mon, date->tm_mday, date->tm_year + 1900, date->tm_hour, date->tm_min);
+		if(date != NULL) {
+      printf("%2d/%2d/%4d %02d:%02d ", date->tm_mon, date->tm_mday, date->tm_year + 1900, date->tm_hour, date->tm_min);
+		} else {
+      printf("                 ");
+		}
+
 		printUnicode(&list->name);
 		printf("\n");
 		
@@ -59,7 +64,11 @@ void displayFileLSLine(HFSPlusCatalogFile* file, const char* name) {
 	printf("%12d ", file->dataFork.logicalSize);
 	fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 	date = localtime(&fileTime);
-	printf("%2d/%2d/%4d %2d:%02d ", date->tm_mon, date->tm_mday, date->tm_year + 1900, date->tm_hour, date->tm_min);
+  if(date != NULL) {
+    printf("%2d/%2d/%4d %2d:%02d ", date->tm_mon, date->tm_mday, date->tm_year + 1900, date->tm_hour, date->tm_min);
+  } else {
+    printf("                 ");
+  }
 	printf("%s\n", name);
 }
 
