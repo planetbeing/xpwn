@@ -40,177 +40,178 @@
 #define BOOTCODE_GOON 0x676F6F6E
 
 enum {
-  kUDIFFlagsFlattened = 1
+	kUDIFFlagsFlattened = 1
 };
 
 enum {
-  kUDIFDeviceImageType = 1
+	kUDIFDeviceImageType = 1,
+	kUDIFPartitionImageType = 2
 };
 
 typedef struct {
-  uint32_t type;
-  uint32_t size;
-  uint32_t data[0x20];
+	uint32_t type;
+	uint32_t size;
+	uint32_t data[0x20];
 } __attribute__((__packed__)) UDIFChecksum;
 
 typedef struct {
-  uint32_t data1; /* smallest */
-  uint32_t data2;
-  uint32_t data3;
-  uint32_t data4; /* largest */
+	uint32_t data1; /* smallest */
+	uint32_t data2;
+	uint32_t data3;
+	uint32_t data4; /* largest */
 } __attribute__((__packed__)) UDIFID;
 
 typedef struct {
-  uint32_t fUDIFSignature;
-  uint32_t fUDIFVersion;
-  uint32_t fUDIFHeaderSize;
-  uint32_t fUDIFFlags;
-  
-  uint64_t fUDIFRunningDataForkOffset;
-  uint64_t fUDIFDataForkOffset;
-  uint64_t fUDIFDataForkLength;
-  uint64_t fUDIFRsrcForkOffset;
-  uint64_t fUDIFRsrcForkLength;
-  
-  uint32_t fUDIFSegmentNumber;
-  uint32_t fUDIFSegmentCount;
-  UDIFID fUDIFSegmentID;  /* a 128-bit number like a GUID, but does not seem to be a OSF GUID, since it doesn't have the proper versioning byte */
-  
-  UDIFChecksum fUDIFDataForkChecksum;
-  
-  uint64_t fUDIFXMLOffset;
-  uint64_t fUDIFXMLLength;
-  
-  uint8_t reserved1[0x78]; /* this is actually the perfect amount of space to store every thing in this struct until the checksum */
-  
-  UDIFChecksum fUDIFMasterChecksum;
-  
-  uint32_t fUDIFImageVariant;
-  uint64_t fUDIFSectorCount;
-  
-  uint32_t reserved2;
-  uint32_t reserved3;
-  uint32_t reserved4;
-
+	uint32_t fUDIFSignature;
+	uint32_t fUDIFVersion;
+	uint32_t fUDIFHeaderSize;
+	uint32_t fUDIFFlags;
+	
+	uint64_t fUDIFRunningDataForkOffset;
+	uint64_t fUDIFDataForkOffset;
+	uint64_t fUDIFDataForkLength;
+	uint64_t fUDIFRsrcForkOffset;
+	uint64_t fUDIFRsrcForkLength;
+	
+	uint32_t fUDIFSegmentNumber;
+	uint32_t fUDIFSegmentCount;
+	UDIFID fUDIFSegmentID;  /* a 128-bit number like a GUID, but does not seem to be a OSF GUID, since it doesn't have the proper versioning byte */
+	
+	UDIFChecksum fUDIFDataForkChecksum;
+	
+	uint64_t fUDIFXMLOffset;
+	uint64_t fUDIFXMLLength;
+	
+	uint8_t reserved1[0x78]; /* this is actually the perfect amount of space to store every thing in this struct until the checksum */
+	
+	UDIFChecksum fUDIFMasterChecksum;
+	
+	uint32_t fUDIFImageVariant;
+	uint64_t fUDIFSectorCount;
+	
+	uint32_t reserved2;
+	uint32_t reserved3;
+	uint32_t reserved4;
+	
 } __attribute__((__packed__)) UDIFResourceFile;
 
 typedef struct {
-  uint32_t type;
-  uint32_t reserved;
-  uint64_t sectorStart;
-  uint64_t sectorCount;
-  uint64_t compOffset;
-  uint64_t compLength;
+	uint32_t type;
+	uint32_t reserved;
+	uint64_t sectorStart;
+	uint64_t sectorCount;
+	uint64_t compOffset;
+	uint64_t compLength;
 } __attribute__((__packed__)) BLKXRun;
 
 typedef struct {
-  uint16_t version; /* set to 5 */
-  uint32_t isHFS; /* first dword of v53(ImageInfoRec): Set to 1 if it's a HFS or HFS+ partition -- duh. */
-  uint32_t unknown1; /* second dword of v53: seems to be garbage if it's HFS+, stuff related to HFS embedded if it's that*/
-  uint8_t dataLen; /* length of data that proceeds, comes right before the data in ImageInfoRec. Always set to 0 for HFS, HFS+ */
-  uint8_t data[255]; /* other data from v53, dataLen + 1 bytes, the rest NULL filled... a string? Not set for HFS, HFS+ */
-  uint32_t unknown2; /* 8 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+  */
-  uint32_t unknown3; /* 4 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+ */
-  uint32_t volumeModified; /* offset 272 in v53 */
-  uint32_t unknown4; /* always seems to be 0 for UDIF */
-  uint16_t volumeSignature; /* HX in our case */
-  uint16_t sizePresent; /* always set to 1 */
+	uint16_t version; /* set to 5 */
+	uint32_t isHFS; /* first dword of v53(ImageInfoRec): Set to 1 if it's a HFS or HFS+ partition -- duh. */
+	uint32_t unknown1; /* second dword of v53: seems to be garbage if it's HFS+, stuff related to HFS embedded if it's that*/
+	uint8_t dataLen; /* length of data that proceeds, comes right before the data in ImageInfoRec. Always set to 0 for HFS, HFS+ */
+	uint8_t data[255]; /* other data from v53, dataLen + 1 bytes, the rest NULL filled... a string? Not set for HFS, HFS+ */
+	uint32_t unknown2; /* 8 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+  */
+	uint32_t unknown3; /* 4 bytes before volumeModified in v53, seems to be always set to 0 for HFS, HFS+ */
+	uint32_t volumeModified; /* offset 272 in v53 */
+	uint32_t unknown4; /* always seems to be 0 for UDIF */
+	uint16_t volumeSignature; /* HX in our case */
+	uint16_t sizePresent; /* always set to 1 */
 } __attribute__((__packed__)) SizeResource;
 
 typedef struct {
-  uint16_t version; /* set to 1 */
-  uint32_t type; /* set to 0x2 for MKBlockChecksum */
-  uint32_t checksum;
+	uint16_t version; /* set to 1 */
+	uint32_t type; /* set to 0x2 for MKBlockChecksum */
+	uint32_t checksum;
 } __attribute__((__packed__)) CSumResource;
 
 typedef struct NSizResource {
-  char isVolume;
-  unsigned char* sha1Digest;
-  uint32_t blockChecksum2;
-  uint32_t bytes;
-  uint32_t modifyDate;
-  uint32_t partitionNumber;
-  uint32_t version;
-  uint32_t volumeSignature;
-  struct NSizResource* next;
+	char isVolume;
+	unsigned char* sha1Digest;
+	uint32_t blockChecksum2;
+	uint32_t bytes;
+	uint32_t modifyDate;
+	uint32_t partitionNumber;
+	uint32_t version;
+	uint32_t volumeSignature;
+	struct NSizResource* next;
 } NSizResource;
 
 #define DDM_DESCRIPTOR 0xFFFFFFFF
 #define ENTIRE_DEVICE_DESCRIPTOR 0xFFFFFFFE
 
 typedef struct {
-  uint32_t fUDIFBlocksSignature;
-  uint32_t infoVersion;
-  uint64_t firstSectorNumber;
-  uint64_t sectorCount;
-  
-  uint64_t dataStart;
-  uint32_t decompressBufferRequested;
-  uint32_t blocksDescriptor;
-  
-  uint32_t reserved1;
-  uint32_t reserved2;
-  uint32_t reserved3;
-  uint32_t reserved4;
-  uint32_t reserved5;
-  uint32_t reserved6;
-  
-  UDIFChecksum checksum;
-  
-  uint32_t blocksRunCount;
-  BLKXRun runs[0];
+	uint32_t fUDIFBlocksSignature;
+	uint32_t infoVersion;
+	uint64_t firstSectorNumber;
+	uint64_t sectorCount;
+	
+	uint64_t dataStart;
+	uint32_t decompressBufferRequested;
+	uint32_t blocksDescriptor;
+	
+	uint32_t reserved1;
+	uint32_t reserved2;
+	uint32_t reserved3;
+	uint32_t reserved4;
+	uint32_t reserved5;
+	uint32_t reserved6;
+	
+	UDIFChecksum checksum;
+	
+	uint32_t blocksRunCount;
+	BLKXRun runs[0];
 } __attribute__((__packed__)) BLKXTable;
 
 typedef struct {
-  uint32_t ddBlock;
-  uint16_t ddSize;
-  uint16_t ddType;
+	uint32_t ddBlock;
+	uint16_t ddSize;
+	uint16_t ddType;
 } __attribute__((__packed__)) DriverDescriptor;
 
 typedef struct {
-  uint16_t pmSig;
-  uint16_t pmSigPad;
-  uint32_t pmMapBlkCnt;
-  uint32_t pmPyPartStart;
-  uint32_t pmPartBlkCnt;
-  unsigned char pmPartName[32];
-  unsigned char pmParType[32];
-  uint32_t pmLgDataStart;
-  uint32_t pmDataCnt;
-  uint32_t pmPartStatus;
-  uint32_t pmLgBootStart;
-  uint32_t pmBootSize;
-  uint32_t pmBootAddr;
-  uint32_t pmBootAddr2;
-  uint32_t pmBootEntry;
-  uint32_t pmBootEntry2;
-  uint32_t pmBootCksum;
-  unsigned char pmProcessor[16];
-  uint32_t bootCode;
-  uint16_t pmPad[186];
+	uint16_t pmSig;
+	uint16_t pmSigPad;
+	uint32_t pmMapBlkCnt;
+	uint32_t pmPyPartStart;
+	uint32_t pmPartBlkCnt;
+	unsigned char pmPartName[32];
+	unsigned char pmParType[32];
+	uint32_t pmLgDataStart;
+	uint32_t pmDataCnt;
+	uint32_t pmPartStatus;
+	uint32_t pmLgBootStart;
+	uint32_t pmBootSize;
+	uint32_t pmBootAddr;
+	uint32_t pmBootAddr2;
+	uint32_t pmBootEntry;
+	uint32_t pmBootEntry2;
+	uint32_t pmBootCksum;
+	unsigned char pmProcessor[16];
+	uint32_t bootCode;
+	uint16_t pmPad[186];
 } __attribute__((__packed__)) Partition;
 
 typedef struct {
-  uint16_t sbSig;
-  uint16_t sbBlkSize;
-  uint32_t sbBlkCount;
-  uint16_t sbDevType;
-  uint16_t sbDevId;
-  uint32_t sbData;
-  uint16_t sbDrvrCount;
-  uint32_t ddBlock;
-  uint16_t ddSize;
-  uint16_t ddType;
-  DriverDescriptor ddPad[0];
+	uint16_t sbSig;
+	uint16_t sbBlkSize;
+	uint32_t sbBlkCount;
+	uint16_t sbDevType;
+	uint16_t sbDevId;
+	uint32_t sbData;
+	uint16_t sbDrvrCount;
+	uint32_t ddBlock;
+	uint16_t ddSize;
+	uint16_t ddType;
+	DriverDescriptor ddPad[0];
 } __attribute__((__packed__)) DriverDescriptorRecord;
 
 typedef struct ResourceData {
-  uint32_t attributes;
-  unsigned char* data;
-  size_t dataLength;
-  int id;
-  unsigned char* name;
-  struct ResourceData* next;
+	uint32_t attributes;
+	unsigned char* data;
+	size_t dataLength;
+	int id;
+	unsigned char* name;
+	struct ResourceData* next;
 } ResourceData;
 
 typedef void (*FlipDataFunc)(unsigned char* data, char out);
@@ -222,16 +223,16 @@ typedef int (*SeekFunc)(void* token, off_t offset);
 typedef off_t (*TellFunc)(void* token);
 
 typedef struct ResourceKey {
-  unsigned char* key;
-  ResourceData* data;
-  struct ResourceKey* next;
-  FlipDataFunc flipData;
+	unsigned char* key;
+	ResourceData* data;
+	struct ResourceKey* next;
+	FlipDataFunc flipData;
 } ResourceKey;
 
 typedef struct {
-  size_t offset;
-  unsigned char* buffer;
-  size_t bufferSize;
+	size_t offset;
+	unsigned char* buffer;
+	size_t bufferSize;
 } MemWrapperInfo;
 
 typedef struct {
@@ -241,37 +242,37 @@ typedef struct {
 } SHA1_CTX;
 
 typedef struct {
-  uint32_t block;
-  uint32_t crc;
-  SHA1_CTX sha1;
+	uint32_t block;
+	uint32_t crc;
+	SHA1_CTX sha1;
 } ChecksumToken;
 
 static inline uint32_t readUInt32(FILE* file) {
-  uint32_t data;
-  
-  ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
-  FLIPENDIAN(data);
-  
-  return data;
+	uint32_t data;
+	
+	ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
+	FLIPENDIAN(data);
+	
+	return data;
 }
 
 static inline void writeUInt32(FILE* file, uint32_t data) {
-  FLIPENDIAN(data);
-  ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
+	FLIPENDIAN(data);
+	ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
 }
 
 static inline uint32_t readUInt64(FILE* file) {
-  uint64_t data;
-  
-  ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
-  FLIPENDIAN(data);
-  
-  return data;
+	uint64_t data;
+	
+	ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
+	FLIPENDIAN(data);
+	
+	return data;
 }
 
 static inline void writeUInt64(FILE* file, uint64_t data) {
-  FLIPENDIAN(data);
-  ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
+	FLIPENDIAN(data);
+	ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
 }
 
 unsigned char* decodeBase64(char* toDecode, size_t* dataLength);
@@ -343,8 +344,8 @@ off_t memTell(void* token);
 
 void extractBLKX(FILE* in, void* out, BLKXTable* blkx, WriteFunc mWrite, SeekFunc mSeek, TellFunc mTell);
 BLKXTable* insertBLKX(FILE* out, void* in, uint32_t firstSectorNumber, uint32_t numSectors, uint32_t blocksDescriptor, uint32_t checksumType,
-                    ReadFunc mRead, SeekFunc mSeek, TellFunc mTell,
-                    ChecksumFunc uncompressedChk, void* uncompressedChkToken, ChecksumFunc compressedChk,  void* compressedChkToken, Volume* volume);
+					  ReadFunc mRead, SeekFunc mSeek, TellFunc mTell,
+					  ChecksumFunc uncompressedChk, void* uncompressedChkToken, ChecksumFunc compressedChk,  void* compressedChkToken, Volume* volume);
 
 int extractDmg(const char* source, const char* dest, int partNum);
 int buildDmg(const char* source, const char* dest);

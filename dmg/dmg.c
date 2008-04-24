@@ -262,6 +262,9 @@ int convertToDMG(const char* source, const char* dest) {
 	
 	char partitionName[512];
 	
+	off_t fileLength;
+	
+	
 	numSectors = 0;
 	
 	resources = NULL;
@@ -274,54 +277,95 @@ int convertToDMG(const char* source, const char* dest) {
 	ASSERT(file = fopen(source, "rb"), "fopen");
 	ASSERT(outFile = fopen(dest, "wb"), "fopen");
 	
-	printf("Writing DDM...\n"); fflush(stdout);
+	printf("Processing DDM...\n"); fflush(stdout);
 	DDM = (DriverDescriptorRecord*) malloc(SECTOR_SIZE);
 	fseeko(file, 0, SEEK_SET);
 	ASSERT(fread(DDM, SECTOR_SIZE, 1, file) == 1, "fread");
 	flipDriverDescriptorRecord(DDM, FALSE);
 	
-	writeDriverDescriptorMap(outFile, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
-	free(DDM);
-	
-	printf("Reading partition map...\n"); fflush(stdout);
-	
-	fseeko(file, SECTOR_SIZE, SEEK_SET);
-	ASSERT(fread(partitions, SECTOR_SIZE, 1, file) == 1, "fread");
-	flipPartition(partitions, FALSE);
-	
-	partitions = (Partition*) realloc(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt);
-	
-	fseeko(file, SECTOR_SIZE, SEEK_SET);
-	ASSERT(fread(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt, 1, file) == 1, "fread");
-	flipPartition(partitions, FALSE);
-	
-	printf("Writing blkx...\n"); fflush(stdout);
-	
-	for(i = 0; i < partitions->pmPartBlkCnt; i++) {
-		if(partitions[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
-			break;
+	if(DDM->sbSig == 0x4552) {
+		writeDriverDescriptorMap(outFile, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
+		free(DDM);
+		
+		printf("Processing partition map...\n"); fflush(stdout);
+		
+		fseeko(file, SECTOR_SIZE, SEEK_SET);
+		ASSERT(fread(partitions, SECTOR_SIZE, 1, file) == 1, "fread");
+		flipPartition(partitions, FALSE);
+		
+		partitions = (Partition*) realloc(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt);
+		
+		fseeko(file, SECTOR_SIZE, SEEK_SET);
+		ASSERT(fread(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt, 1, file) == 1, "fread");
+		flipPartition(partitions, FALSE);
+		
+		printf("Writing blkx...\n"); fflush(stdout);
+		
+		for(i = 0; i < partitions->pmPartBlkCnt; i++) {
+			if(partitions[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
+				break;
+			}
+			
+			printf("Processing blkx %d...\n", i); fflush(stdout);
+			
+			sprintf(partitionName, "%s (%s : %d)", partitions[i].pmPartName, partitions[i].pmParType, i + 1);
+			
+			memset(&uncompressedToken, 0, sizeof(uncompressedToken));
+			
+			fseeko(file, partitions[i].pmPyPartStart * SECTOR_SIZE, SEEK_SET);
+			blkx = insertBLKX(outFile, (void*) file, partitions[i].pmPyPartStart, partitions[i].pmPartBlkCnt, i, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
+							  &BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
+			
+			blkx->checksum.data[0] = uncompressedToken.crc;	
+			resources = insertData(resources, "blkx", i, partitionName, (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
+			free(blkx);
+			
+			memset(&csum, 0, sizeof(CSumResource));
+			csum.version = 1;
+			csum.type = CHECKSUM_MKBLOCK;
+			csum.checksum = uncompressedToken.block;
+			resources = insertData(resources, "cSum", i, "", (const char*) (&csum), sizeof(csum), 0);
+			
+			if(nsiz == NULL) {
+				nsiz = myNSiz = (NSizResource*) malloc(sizeof(NSizResource));
+			} else {
+				myNSiz->next = (NSizResource*) malloc(sizeof(NSizResource));
+				myNSiz = myNSiz->next;
+			}
+			
+			memset(myNSiz, 0, sizeof(NSizResource));
+			myNSiz->isVolume = FALSE;
+			myNSiz->blockChecksum2 = uncompressedToken.block;
+			myNSiz->partitionNumber = i;
+			myNSiz->version = 6;
+			myNSiz->next = NULL;
+			
+			if((partitions[i].pmPyPartStart + partitions[i].pmPartBlkCnt) > numSectors) {
+				numSectors = partitions[i].pmPyPartStart + partitions[i].pmPartBlkCnt;
+			}
 		}
 		
-		printf("Processing blkx %d...\n", i); fflush(stdout);
+		koly.fUDIFImageVariant = kUDIFDeviceImageType;
+	} else {
+		printf("No DDM! Just doing one huge blkx then...\n"); fflush(stdout);
 		
-		sprintf(partitionName, "%s (%s : %d)", partitions[i].pmPartName, partitions[i].pmParType, i + 1);
+		fseeko(file, 0, SEEK_END);
+		fileLength = ftello(file);
 		
 		memset(&uncompressedToken, 0, sizeof(uncompressedToken));
 		
-		fseeko(file, partitions[i].pmPyPartStart * SECTOR_SIZE, SEEK_SET);
-		blkx = insertBLKX(outFile, (void*) file, partitions[i].pmPyPartStart * SECTOR_SIZE, partitions[i].pmPartBlkCnt, i, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
-						  &BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
-		
-		blkx->checksum.data[0] = uncompressedToken.crc;	
-		resources = insertData(resources, "blkx", i, partitionName, (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
+		fseeko(file, 0, SEEK_SET);
+		blkx = insertBLKX(outFile, (void*) file, 0, fileLength/SECTOR_SIZE, ENTIRE_DEVICE_DESCRIPTOR, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
+							  &BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
+		resources = insertData(resources, "blkx", 0, "whole disk (unknown partition : 0)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
 		free(blkx);
 		
 		memset(&csum, 0, sizeof(CSumResource));
 		csum.version = 1;
 		csum.type = CHECKSUM_MKBLOCK;
 		csum.checksum = uncompressedToken.block;
-		resources = insertData(resources, "cSum", i, "", (const char*) (&csum), sizeof(csum), 0);
-
+		resources = insertData(resources, "cSum", 0, "", (const char*) (&csum), sizeof(csum), 0);
+		
 		if(nsiz == NULL) {
 			nsiz = myNSiz = (NSizResource*) malloc(sizeof(NSizResource));
 		} else {
@@ -332,13 +376,11 @@ int convertToDMG(const char* source, const char* dest) {
 		memset(myNSiz, 0, sizeof(NSizResource));
 		myNSiz->isVolume = FALSE;
 		myNSiz->blockChecksum2 = uncompressedToken.block;
-		myNSiz->partitionNumber = i;
+		myNSiz->partitionNumber = 0;
 		myNSiz->version = 6;
 		myNSiz->next = NULL;
 		
-		if((partitions[i].pmPyPartStart + partitions[i].pmPartBlkCnt) > numSectors) {
-			numSectors = partitions[i].pmPyPartStart + partitions[i].pmPartBlkCnt;
-		}
+		koly.fUDIFImageVariant = kUDIFPartitionImageType;
 	}
 	
 	dataForkChecksum = dataForkToken.crc;
@@ -389,7 +431,6 @@ int convertToDMG(const char* source, const char* dest) {
 	koly.fUDIFMasterChecksum.data[0] = calculateMasterChecksum(resources);
 	printf("Master checksum: %x\n", koly.fUDIFMasterChecksum.data[0]); fflush(stdout); 
 	
-	koly.fUDIFImageVariant = kUDIFDeviceImageType;
 	koly.fUDIFSectorCount = numSectors;
 	koly.reserved2 = 0;
 	koly.reserved3 = 0;
@@ -402,7 +443,7 @@ int convertToDMG(const char* source, const char* dest) {
 	printf("Cleaning up...\n"); fflush(stdout);
 	
 	releaseResources(resources);
-
+	
 	fclose(file);
 	free(partitions);
 	
