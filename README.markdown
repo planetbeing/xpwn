@@ -1,5 +1,5 @@
 README
-------
+======
 
 This project was first conceived to manipulate Apple's software restore
 packages (IPSWs) and hence much of it is geared specifically toward that
@@ -10,7 +10,7 @@ such changes would be selectively enabling folder counts in HFS+, switching
 between case sensitivity and non-sensitivity, and more fine-grained control
 over the layout of created dmgs.
 
-THE CODE HEREIN SHOULD BE CONSIDERED HIGHLY EXPERIMENTAL
+**THE CODE HEREIN SHOULD BE CONSIDERED HIGHLY EXPERIMENTAL**
 
 Extensive testing have not been done, but comparatively simple tasks like
 adding and removing files from a mostly contiguous filesystem are well
@@ -34,13 +34,11 @@ ought to be moved to catalog.c). To make compilation simpler, a complete,
 unmodified copy of the zlib distribution is included. The dmg portion of the
 code has dependencies on the HFS+ portion of the code
 
-HFS+
-----
+### HFS+
 cd hfs
 make
 
-DMG
----
+### DMG
 cd dmg/zlib-1.2.3
 ./configure
 make
