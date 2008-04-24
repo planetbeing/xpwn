@@ -315,6 +315,9 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
 ResourceKey* makePlst();
 ResourceKey* makeSize(HFSPlusVolumeHeader* volumeHeader);
 
+void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out);
+void flipPartition(Partition* partition, char out);
+
 void readDriverDescriptorMap(FILE* file, ResourceKey* resources);
 DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors);
 void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources);
@@ -346,4 +349,5 @@ BLKXTable* insertBLKX(FILE* out, void* in, uint32_t firstSectorNumber, uint32_t 
 int extractDmg(const char* source, const char* dest, int partNum);
 int buildDmg(const char* source, const char* dest);
 int convertToISO(const char* source, const char* dest);
+int convertToDMG(const char* source, const char* dest);
 

@@ -354,7 +354,7 @@ static void flipDriverDescriptor(DriverDescriptor* descriptor) {
   FLIPENDIAN(descriptor->ddType);
 }
 
-static void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out) {
+void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out) {
   int i;
   
   FLIPENDIAN(record->sbSig);
@@ -380,7 +380,7 @@ static void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out)
   }
 }
 
-static void flipPartition(Partition* partition, char out) {
+void flipPartition(Partition* partition, char out) {
   int i;
   int numPartitions;
   
@@ -564,7 +564,7 @@ void writeATAPI(FILE* file, ChecksumFunc dataForkChecksum, void* dataForkToken, 
   info.bufferSize = PARTITION_SIZE * SECTOR_SIZE;
   info.buffer = (unsigned char*) atapi_data;
    
-  blkx = insertBLKX(file, (void*) (&info), ATAPI_OFFSET, ATAPI_SIZE, 0, CHECKSUM_CRC32, &memRead, &memSeek, &memTell,
+  blkx = insertBLKX(file, (void*) (&info), ATAPI_OFFSET, ATAPI_SIZE, 1, CHECKSUM_CRC32, &memRead, &memSeek, &memTell,
               &BlockCRC, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
               
   blkx->checksum.data[0] = uncompressedToken.crc;
