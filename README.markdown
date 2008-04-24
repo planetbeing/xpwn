@@ -35,12 +35,14 @@ unmodified copy of the zlib distribution is included. The dmg portion of the
 code has dependencies on the HFS+ portion of the code
 
 ### HFS+
-cd hfs
-make
+
+	cd hfs
+	make
 
 ### DMG
-cd dmg/zlib-1.2.3
-./configure
-make
-cd ..
-make
+
+	cd dmg/zlib-1.2.3
+	./configure
+	make
+	cd ..
+	make
