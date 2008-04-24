@@ -235,6 +235,57 @@ int buildDmg(const char* source, const char* dest) {
 	return TRUE;
 }
 
+int convertToISO(const char* source, const char* dest) {
+	FILE* file;
+	FILE* outFile;
+	off_t fileLength;
+	UDIFResourceFile resourceFile;
+	ResourceKey* resources;
+	ResourceData* blkx;
+	BLKXTable* blkxTable;
+	
+	file = fopen(source, "rb");
+	
+	if(!file) {
+		fprintf(stderr, "Cannot open source file\n");
+		return FALSE;
+	}
+	
+	fseeko(file, 0, SEEK_END);
+	fileLength = ftello(file);
+	fseeko(file, fileLength - sizeof(UDIFResourceFile), SEEK_SET);
+	readUDIFResourceFile(file, &resourceFile);
+	resources = readResources(file, &resourceFile);
+	
+	outFile = fopen(dest, "wb");
+	if(!outFile) {
+		fprintf(stderr, "Cannot open target file\n");
+		releaseResources(resources);
+		
+		fclose(file);
+		return FALSE;
+	}
+	
+	blkx = (getResourceByKey(resources, "blkx"))->data;
+
+	printf("Writing out data..\n"); fflush(stdout);
+
+	while(blkx != NULL) {
+		blkxTable = (BLKXTable*)(blkx->data);
+		fseeko(outFile, blkxTable->firstSectorNumber * 512, SEEK_SET);
+		extractBLKX(file, (void*) outFile, blkxTable, &fwriteWrapper, &fseekWrapper, &ftellWrapper);
+		blkx = blkx->next;
+	}
+	
+	fclose(outFile);
+	
+	releaseResources(resources);
+	fclose(file);
+	
+	return TRUE;
+
+}
+
 int extractDmg(const char* source, const char* dest, int partNum) {
 	FILE* file;
 	FILE* outFile;
@@ -295,6 +346,8 @@ int main(int argc, char* argv[]) {
 		extractDmg(argv[2], argv[3], partNum);
 	} else if(strcmp(argv[1], "build") == 0) {
 		buildDmg(argv[2], argv[3]);
+	} else if(strcmp(argv[1], "iso") == 0) {
+		convertToISO(argv[2], argv[3]);
 	}
 	
 	return 0;

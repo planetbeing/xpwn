@@ -18,7 +18,7 @@
 
 CC=gcc
 
-CFLAGS=-O3
+CFLAGS=-O3 -DUSE_MMAP
 #CFLAGS=-O -DMAX_WBITS=14 -DMAX_MEM_LEVEL=7
 #CFLAGS=-g -DDEBUG
 #CFLAGS=-O3 -Wall -Wwrite-strings -Wpointer-arith -Wconversion \
@@ -29,9 +29,9 @@ LDSHARED=gcc
 CPP=gcc -E
 
 LIBS=libz.a
-SHAREDLIB=libz.so
-SHAREDLIBV=libz.so.1.2.3
-SHAREDLIBM=libz.so.1
+SHAREDLIB=libz.dylib
+SHAREDLIBV=libz.1.2.3.dylib
+SHAREDLIBM=libz.1.dylib
 
 AR=ar rc
 RANLIB=ranlib

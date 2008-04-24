@@ -28,9 +28,7 @@ void readUDIFChecksum(FILE* file, UDIFChecksum* o) {
   o->type = readUInt32(file);
   o->size = readUInt32(file);
   
-  ASSERT(o->size == 0x20, "readUDIFChecksum");
-  
-  for(i = 0; i < o->size; i++) {
+  for(i = 0; i < 0x20; i++) {
     o->data[i] = readUInt32(file);
   }
 }
@@ -62,6 +60,9 @@ void writeUDIFID(FILE* file, UDIFID* o) {
 
 void readUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
   o->fUDIFSignature = readUInt32(file);
+  
+  ASSERT(o->fUDIFSignature == 0x6B6F6C79, "readUDIFResourceFile - signature incorrect");
+  
   o->fUDIFVersion = readUInt32(file);
   o->fUDIFHeaderSize = readUInt32(file);
   o->fUDIFFlags = readUInt32(file);

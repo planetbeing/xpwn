@@ -345,4 +345,5 @@ BLKXTable* insertBLKX(FILE* out, void* in, uint32_t firstSectorNumber, uint32_t 
 
 int extractDmg(const char* source, const char* dest, int partNum);
 int buildDmg(const char* source, const char* dest);
+int convertToISO(const char* source, const char* dest);
 
