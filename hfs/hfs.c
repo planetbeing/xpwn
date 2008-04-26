@@ -176,6 +176,8 @@ void writeToHFSFile(HFSPlusCatalogFile* file, FILE* input, Volume* volume) {
 			bytesLeft -= bytesLeft;
 		}
 	}
+
+	CLOSE(io);
 }
 
 void cmd_cat(Volume* volume, int argc, const char *argv[]) {
