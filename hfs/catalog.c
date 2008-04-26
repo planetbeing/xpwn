@@ -636,13 +636,15 @@ int move(const char* source, const char* dest, Volume* volume) {
   srcKey.keyLength = sizeof(srcKey.parentID) + sizeof(srcKey.nodeName.length);
   
   removeFromBTree(volume->catalogTree, (BTKey*)(&srcKey));
-    
+  
+
+  destKey.nodeName.length = strlen(destName);
+
   threadLength = sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + (sizeof(uint16_t) * destKey.nodeName.length);
   thread = (HFSPlusCatalogThread*) malloc(threadLength);
   thread->reserved = 0;
   destKey.parentID = destRec->folderID;
-  thread->parentID = destKey.parentID;
-  destKey.nodeName.length = strlen(destName);
+  thread->parentID = destKey.parentID;  
   thread->nodeName.length = destKey.nodeName.length;
   for(i = 0; i < destKey.nodeName.length; i++) {
     destKey.nodeName.unicode[i] = destName[i];
