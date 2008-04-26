@@ -16,6 +16,11 @@ Extensive testing have not been done, but comparatively simple tasks like
 adding and removing files from a mostly contiguous filesystem are well
 proven.
 
+Please note that these tools and routines are currently only suitable to be
+accessed by other programs that know what they're doing. I.e., doing
+something you "shouldn't" be able to do, like removing non-existent files is
+probably not a very good idea.
+
 LICENSE
 -------
 
