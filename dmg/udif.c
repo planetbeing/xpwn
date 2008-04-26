@@ -22,7 +22,7 @@ void flipUDIFChecksum(UDIFChecksum* o, char out) {
   }
 }
 
-void readUDIFChecksum(FILE* file, UDIFChecksum* o) {
+void readUDIFChecksum(AbstractFile* file, UDIFChecksum* o) {
   int i;
   
   o->type = readUInt32(file);
@@ -33,7 +33,7 @@ void readUDIFChecksum(FILE* file, UDIFChecksum* o) {
   }
 }
 
-void writeUDIFChecksum(FILE* file, UDIFChecksum* o) {
+void writeUDIFChecksum(AbstractFile* file, UDIFChecksum* o) {
   int i;
   
   writeUInt32(file, o->type);
@@ -44,21 +44,21 @@ void writeUDIFChecksum(FILE* file, UDIFChecksum* o) {
   }
 }
 
-void readUDIFID(FILE* file, UDIFID* o) {
+void readUDIFID(AbstractFile* file, UDIFID* o) {
   o->data4 = readUInt32(file); FLIPENDIAN(o->data4);
   o->data3 = readUInt32(file); FLIPENDIAN(o->data3);
   o->data2 = readUInt32(file); FLIPENDIAN(o->data2);
   o->data1 = readUInt32(file); FLIPENDIAN(o->data1);
 }
 
-void writeUDIFID(FILE* file, UDIFID* o) {
+void writeUDIFID(AbstractFile* file, UDIFID* o) {
   FLIPENDIAN(o->data4); writeUInt32(file, o->data4); FLIPENDIAN(o->data4);
   FLIPENDIAN(o->data3); writeUInt32(file, o->data3); FLIPENDIAN(o->data3);
   FLIPENDIAN(o->data2); writeUInt32(file, o->data2); FLIPENDIAN(o->data2);
   FLIPENDIAN(o->data1); writeUInt32(file, o->data1); FLIPENDIAN(o->data1);
 }
 
-void readUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
+void readUDIFResourceFile(AbstractFile* file, UDIFResourceFile* o) {
   o->fUDIFSignature = readUInt32(file);
   
   ASSERT(o->fUDIFSignature == 0x6B6F6C79, "readUDIFResourceFile - signature incorrect");
@@ -82,7 +82,7 @@ void readUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
   o->fUDIFXMLOffset = readUInt64(file);
   o->fUDIFXMLLength = readUInt64(file);
   
-  ASSERT(fread(&(o->reserved1), 0x78, 1, file) == 1, "fread");
+  ASSERT(file->read(file, &(o->reserved1), 0x78) == 0x78, "fread");
   
   readUDIFChecksum(file, &(o->fUDIFMasterChecksum));
   
@@ -94,7 +94,7 @@ void readUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
   o->reserved4 = readUInt32(file);
 }
 
-void writeUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
+void writeUDIFResourceFile(AbstractFile* file, UDIFResourceFile* o) {
   writeUInt32(file, o->fUDIFSignature);
   writeUInt32(file, o->fUDIFVersion);
   writeUInt32(file, o->fUDIFHeaderSize);
@@ -115,7 +115,7 @@ void writeUDIFResourceFile(FILE* file, UDIFResourceFile* o) {
   writeUInt64(file, o->fUDIFXMLOffset);
   writeUInt64(file, o->fUDIFXMLLength);
   
-  ASSERT(fwrite(&(o->reserved1), 0x78, 1, file) == 1, "fwrite");
+  ASSERT(file->write(file, &(o->reserved1), 0x78) == 0x78, "fwrite");
   
   writeUDIFChecksum(file, &(o->fUDIFMasterChecksum));
   

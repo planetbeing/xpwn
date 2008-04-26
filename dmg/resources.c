@@ -523,7 +523,7 @@ void releaseNSiz(NSizResource* nSiz) {
   }
 }
 
-ResourceKey* readResources(FILE* file, UDIFResourceFile* resourceFile) {
+ResourceKey* readResources(AbstractFile* file, UDIFResourceFile* resourceFile) {
   char* xml;
   char* curLoc;
   char* tagEnd;
@@ -533,8 +533,9 @@ ResourceKey* readResources(FILE* file, UDIFResourceFile* resourceFile) {
   ResourceKey* curResource;
   ResourceData* curData;
   
-  xml = (char*) malloc((size_t)resourceFile->fUDIFXMLLength); /* we're not going to handle over 32-bit resource files, that'd be insane */
-  
+  xml = (char*) malloc((size_t)resourceFile->fUDIFXMLLength + 1); /* we're not going to handle over 32-bit resource files, that'd be insane */
+  xml[(size_t)resourceFile->fUDIFXMLLength] = '\0';
+
   if(!xml)
     return NULL;
 
@@ -542,8 +543,8 @@ ResourceKey* readResources(FILE* file, UDIFResourceFile* resourceFile) {
   curResource = NULL;
   curData = NULL;
   
-  fseeko(file, (off_t)(resourceFile->fUDIFXMLOffset), SEEK_SET);
-  ASSERT(fread(xml, (size_t)resourceFile->fUDIFXMLLength, 1, file) == 1, "fread");
+  file->seek(file, (off_t)(resourceFile->fUDIFXMLOffset));
+  ASSERT(file->read(file, xml, (size_t)resourceFile->fUDIFXMLLength) == (size_t)resourceFile->fUDIFXMLLength, "fread");
 
   curLoc = strstr(xml, "<key>resource-fork</key>");
   if(!curLoc)
@@ -625,7 +626,7 @@ ResourceKey* readResources(FILE* file, UDIFResourceFile* resourceFile) {
   return toReturn;
 }
 
-static void writeResourceData(FILE* file, ResourceData* data, FlipDataFunc flipData, int tabLength) {
+static void writeResourceData(AbstractFile* file, ResourceData* data, FlipDataFunc flipData, int tabLength) {
   unsigned char* dataBuf;
   char* tabs;
   int i;
@@ -636,9 +637,9 @@ static void writeResourceData(FILE* file, ResourceData* data, FlipDataFunc flipD
   }
   tabs[tabLength] = '\0';
   
-  fprintf(file, "%s<dict>\n", tabs);
-  fprintf(file, "%s\t<key>Attributes</key>\n%s\t<string>0x%04x</string>\n", tabs, tabs, data->attributes);
-  fprintf(file, "%s\t<key>Data</key>\n%s\t<data>\n", tabs, tabs);
+  abstractFilePrint(file, "%s<dict>\n", tabs);
+  abstractFilePrint(file, "%s\t<key>Attributes</key>\n%s\t<string>0x%04x</string>\n", tabs, tabs, data->attributes);
+  abstractFilePrint(file, "%s\t<key>Data</key>\n%s\t<data>\n", tabs, tabs);
   
   if(flipData) {
     dataBuf = (unsigned char*) malloc(data->dataLength);
@@ -650,35 +651,35 @@ static void writeResourceData(FILE* file, ResourceData* data, FlipDataFunc flipD
     writeBase64(file, data->data, data->dataLength, tabLength + 1, 43);
   }
   
-  fprintf(file, "%s\t</data>\n", tabs);
-  fprintf(file, "%s\t<key>ID</key>\n%s\t<string>%d</string>\n", tabs, tabs, data->id);
-  fprintf(file, "%s\t<key>Name</key>\n%s\t<string>%s</string>\n", tabs, tabs, data->name);
-  fprintf(file, "%s</dict>\n", tabs);
+  abstractFilePrint(file, "%s\t</data>\n", tabs);
+  abstractFilePrint(file, "%s\t<key>ID</key>\n%s\t<string>%d</string>\n", tabs, tabs, data->id);
+  abstractFilePrint(file, "%s\t<key>Name</key>\n%s\t<string>%s</string>\n", tabs, tabs, data->name);
+  abstractFilePrint(file, "%s</dict>\n", tabs);
   
   free(tabs);
 }
 
-void writeResources(FILE* file, ResourceKey* resources) {
+void writeResources(AbstractFile* file, ResourceKey* resources) {
   ResourceKey* curResource;
   ResourceData* curData;
   
-  fprintf(file, plistHeader);
-  fprintf(file, "\t<key>resource-fork</key>\n\t<dict>\n");
+  abstractFilePrint(file, plistHeader);
+  abstractFilePrint(file, "\t<key>resource-fork</key>\n\t<dict>\n");
   
   curResource = resources;
   while(curResource != NULL) {
-    fprintf(file, "\t\t<key>%s</key>\n\t\t<array>\n", curResource->key);
+    abstractFilePrint(file, "\t\t<key>%s</key>\n\t\t<array>\n", curResource->key);
     curData = curResource->data;
     while(curData != NULL) {
       writeResourceData(file, curData, curResource->flipData, 3);
       curData = curData->next;
     }
-    fprintf(file, "\t\t</array>\n", curResource->key);
+    abstractFilePrint(file, "\t\t</array>\n", curResource->key);
     curResource = curResource->next;
   }  
 
-  fprintf(file, "\t</dict>\n");
-  fprintf(file, plistFooter);
+  abstractFilePrint(file, "\t</dict>\n");
+  abstractFilePrint(file, plistFooter);
    
 }
 

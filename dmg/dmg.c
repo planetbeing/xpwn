@@ -56,8 +56,8 @@ uint32_t calculateMasterChecksum(ResourceKey* resources) {
 }
 
 int buildDmg(const char* source, const char* dest) {
-	FILE* file;
-	FILE* outFile;
+	AbstractFile* abstractOut;
+	AbstractFile* abstractIn;
 	
 	io_func* io;
 	Volume* volume;  
@@ -88,11 +88,12 @@ int buildDmg(const char* source, const char* dest) {
 	volume = openVolume(io); 
 	volumeHeader = volume->volumeHeader;
 	
-	file = fopen(source, "rb");
-	outFile = fopen(dest, "wb");
+	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
+	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
 	
-	if(volumeHeader->signature != 0x4858)
-		return -1;
+	if(volumeHeader->signature != HFSX_SIGNATURE) {
+		printf("Warning: ASR data only reverse engineered for case-sensitive HFS+ volumes\n");fflush(stdout);
+	}
     
 	resources = NULL;
 	nsiz = NULL;
@@ -105,20 +106,20 @@ int buildDmg(const char* source, const char* dest) {
 	
 	partitions = createApplePartitionMap((volumeHeader->totalBlocks * volumeHeader->blockSize)/SECTOR_SIZE, HFSX_VOLUME_TYPE);
 	
-	writeDriverDescriptorMap(outFile, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
+	writeDriverDescriptorMap(abstractOut, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
 	free(DDM);
-	writeApplePartitionMap(outFile, partitions, &CRCProxy, (void*) (&dataForkToken), &resources, &nsiz);
+	writeApplePartitionMap(abstractOut, partitions, &CRCProxy, (void*) (&dataForkToken), &resources, &nsiz);
 	free(partitions);
-	writeATAPI(outFile, &CRCProxy, (void*) (&dataForkToken), &resources, &nsiz);
+	writeATAPI(abstractOut, &CRCProxy, (void*) (&dataForkToken), &resources, &nsiz);
 	
 	memset(&uncompressedToken, 0, sizeof(uncompressedToken));
 	SHA1Init(&(uncompressedToken.sha1));
 	
 	printf("Writing main data blkx...\n"); fflush(stdout);
 	
-	fseeko(file, 0, SEEK_SET);
-	blkx = insertBLKX(outFile, (void*) file, USER_OFFSET, (volumeHeader->totalBlocks * volumeHeader->blockSize)/SECTOR_SIZE, 2, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
-					  &BlockSHA1CRC, &uncompressedToken, &CRCProxy, &dataForkToken, volume);
+	abstractIn->seek(abstractIn, 0);
+	blkx = insertBLKX(abstractOut, abstractIn, USER_OFFSET, (volumeHeader->totalBlocks * volumeHeader->blockSize)/SECTOR_SIZE,
+				2, CHECKSUM_CRC32, &BlockSHA1CRC, &uncompressedToken, &CRCProxy, &dataForkToken, volume);
 	
 	blkx->checksum.data[0] = uncompressedToken.crc;
 	printf("Inserting main blkx...\n"); fflush(stdout);
@@ -158,7 +159,7 @@ int buildDmg(const char* source, const char* dest) {
 	
 	printf("Writing free partition...\n"); fflush(stdout);
 	
-	writeFreePartition(outFile, (volumeHeader->totalBlocks * volumeHeader->blockSize)/SECTOR_SIZE, &resources);
+	writeFreePartition(abstractOut, (volumeHeader->totalBlocks * volumeHeader->blockSize)/SECTOR_SIZE, &resources);
 	
 	dataForkChecksum = dataForkToken.crc;
 	
@@ -177,9 +178,9 @@ int buildDmg(const char* source, const char* dest) {
 	curResource->next = makeSize(volumeHeader);
 	curResource = curResource->next;
 	
-	plistOffset = ftello(outFile);
-	writeResources(outFile, resources);
-	plistSize = ftello(outFile) - plistOffset;
+	plistOffset = abstractOut->tell(abstractOut);
+	writeResources(abstractOut, resources);
+	plistSize = abstractOut->tell(abstractOut) - plistOffset;
 	
 	printf("Generating UDIF metadata...\n"); fflush(stdout);
 	
@@ -219,14 +220,14 @@ int buildDmg(const char* source, const char* dest) {
 	
 	printf("Writing out UDIF resource file...\n"); fflush(stdout); 
 	
-	writeUDIFResourceFile(outFile, &koly);
+	writeUDIFResourceFile(abstractOut, &koly);
 	
 	printf("Cleaning up...\n"); fflush(stdout);
 	
 	releaseResources(resources);
 	
-	fclose(outFile);
-	fclose(file);
+	abstractOut->close(abstractOut);
+	abstractIn->close(abstractIn);
 	closeVolume(volume);
 	CLOSE(io);
 	
@@ -236,8 +237,8 @@ int buildDmg(const char* source, const char* dest) {
 }
 
 int convertToDMG(const char* source, const char* dest) {
-	FILE* file;
-	FILE* outFile;
+	AbstractFile* abstractIn;
+	AbstractFile* abstractOut;
 	Partition* partitions;
 	DriverDescriptorRecord* DDM;
 	int i;
@@ -263,6 +264,7 @@ int convertToDMG(const char* source, const char* dest) {
 	char partitionName[512];
 	
 	off_t fileLength;
+	size_t partitionTableSize;
 	
 	
 	numSectors = 0;
@@ -274,47 +276,48 @@ int convertToDMG(const char* source, const char* dest) {
 	
 	partitions = (Partition*) malloc(SECTOR_SIZE);
 	
-	ASSERT(file = fopen(source, "rb"), "fopen");
-	ASSERT(outFile = fopen(dest, "wb"), "fopen");
+	ASSERT(abstractIn = createAbstractFileFromFile(fopen(source, "rb")), "fopen");
+	ASSERT(abstractOut = createAbstractFileFromFile(fopen(dest, "wb")), "fopen");
 	
 	printf("Processing DDM...\n"); fflush(stdout);
 	DDM = (DriverDescriptorRecord*) malloc(SECTOR_SIZE);
-	fseeko(file, 0, SEEK_SET);
-	ASSERT(fread(DDM, SECTOR_SIZE, 1, file) == 1, "fread");
+	abstractIn->seek(abstractIn, 0);
+	ASSERT(abstractIn->read(abstractIn, DDM, SECTOR_SIZE) == SECTOR_SIZE, "fread");
 	flipDriverDescriptorRecord(DDM, FALSE);
 	
-	if(DDM->sbSig == 0x4552) {
-		writeDriverDescriptorMap(outFile, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
+	if(DDM->sbSig == DRIVER_DESCRIPTOR_SIGNATURE) {
+		writeDriverDescriptorMap(abstractOut, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
 		free(DDM);
 		
 		printf("Processing partition map...\n"); fflush(stdout);
 		
-		fseeko(file, SECTOR_SIZE, SEEK_SET);
-		ASSERT(fread(partitions, SECTOR_SIZE, 1, file) == 1, "fread");
+		abstractIn->seek(abstractIn, SECTOR_SIZE);
+		ASSERT(abstractIn->read(abstractIn, partitions, SECTOR_SIZE) == SECTOR_SIZE, "fread");
+		flipPartitionMultiple(partitions, FALSE, FALSE);
+		
+		partitionTableSize = SECTOR_SIZE * partitions->pmMapBlkCnt;
+		partitions = (Partition*) realloc(partitions, partitionTableSize);
+		
+		abstractIn->seek(abstractIn, SECTOR_SIZE);
+		ASSERT(abstractIn->read(abstractIn, partitions, partitionTableSize) == partitionTableSize, "fread");
 		flipPartition(partitions, FALSE);
 		
-		partitions = (Partition*) realloc(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt);
+		printf("Writing blkx (%d)...\n", partitions->pmMapBlkCnt); fflush(stdout);
 		
-		fseeko(file, SECTOR_SIZE, SEEK_SET);
-		ASSERT(fread(partitions, SECTOR_SIZE * partitions->pmMapBlkCnt, 1, file) == 1, "fread");
-		flipPartition(partitions, FALSE);
-		
-		printf("Writing blkx...\n"); fflush(stdout);
-		
-		for(i = 0; i < partitions->pmPartBlkCnt; i++) {
+		for(i = 0; i < partitions->pmMapBlkCnt; i++) {
 			if(partitions[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
 				break;
 			}
 			
-			printf("Processing blkx %d...\n", i); fflush(stdout);
+			printf("Processing blkx %d, total %d...\n", i, partitions->pmMapBlkCnt); fflush(stdout);
 			
 			sprintf(partitionName, "%s (%s : %d)", partitions[i].pmPartName, partitions[i].pmParType, i + 1);
 			
 			memset(&uncompressedToken, 0, sizeof(uncompressedToken));
 			
-			fseeko(file, partitions[i].pmPyPartStart * SECTOR_SIZE, SEEK_SET);
-			blkx = insertBLKX(outFile, (void*) file, partitions[i].pmPyPartStart, partitions[i].pmPartBlkCnt, i, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
-							  &BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
+			abstractIn->seek(abstractIn, partitions[i].pmPyPartStart * SECTOR_SIZE);
+			blkx = insertBLKX(abstractOut, abstractIn, partitions[i].pmPyPartStart, partitions[i].pmPartBlkCnt, i, CHECKSUM_CRC32,
+						&BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
 			
 			blkx->checksum.data[0] = uncompressedToken.crc;	
 			resources = insertData(resources, "blkx", i, partitionName, (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
@@ -349,14 +352,13 @@ int convertToDMG(const char* source, const char* dest) {
 	} else {
 		printf("No DDM! Just doing one huge blkx then...\n"); fflush(stdout);
 		
-		fseeko(file, 0, SEEK_END);
-		fileLength = ftello(file);
+		fileLength = abstractIn->getLength(abstractIn);
 		
 		memset(&uncompressedToken, 0, sizeof(uncompressedToken));
 		
-		fseeko(file, 0, SEEK_SET);
-		blkx = insertBLKX(outFile, (void*) file, 0, fileLength/SECTOR_SIZE, ENTIRE_DEVICE_DESCRIPTOR, CHECKSUM_CRC32, &freadWrapper, &fseekWrapper, &ftellWrapper,
-							  &BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
+		abstractIn->seek(abstractIn, 0);
+		blkx = insertBLKX(abstractOut, abstractIn, 0, fileLength/SECTOR_SIZE, ENTIRE_DEVICE_DESCRIPTOR, CHECKSUM_CRC32,
+					&BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
 		resources = insertData(resources, "blkx", 0, "whole disk (unknown partition : 0)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
 		free(blkx);
 		
@@ -397,9 +399,9 @@ int convertToDMG(const char* source, const char* dest) {
 	curResource->next = makePlst();
 	curResource = curResource->next;
 	
-	plistOffset = ftello(outFile);
-	writeResources(outFile, resources);
-	plistSize = ftello(outFile) - plistOffset;
+	plistOffset = abstractOut->tell(abstractOut);
+	writeResources(abstractOut, resources);
+	plistSize = abstractOut->tell(abstractOut) - plistOffset;
 	
 	printf("Generating UDIF metadata...\n"); fflush(stdout);
 	
@@ -438,48 +440,49 @@ int convertToDMG(const char* source, const char* dest) {
 	
 	printf("Writing out UDIF resource file...\n"); fflush(stdout); 
 	
-	writeUDIFResourceFile(outFile, &koly);
+	writeUDIFResourceFile(abstractOut, &koly);
 	
 	printf("Cleaning up...\n"); fflush(stdout);
 	
 	releaseResources(resources);
 	
-	fclose(file);
+	abstractIn->close(abstractIn);
 	free(partitions);
 	
 	printf("Done\n"); fflush(stdout);
+
+	abstractOut->close(abstractOut);
 	
 	return TRUE;
 }
 
 int convertToISO(const char* source, const char* dest) {
-	FILE* file;
-	FILE* outFile;
+	AbstractFile* abstractIn;
+	AbstractFile* abstractOut;
 	off_t fileLength;
 	UDIFResourceFile resourceFile;
 	ResourceKey* resources;
 	ResourceData* blkx;
 	BLKXTable* blkxTable;
 	
-	file = fopen(source, "rb");
+	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
 	
-	if(!file) {
+	if(!abstractIn) {
 		fprintf(stderr, "Cannot open source file\n");
 		return FALSE;
 	}
 	
-	fseeko(file, 0, SEEK_END);
-	fileLength = ftello(file);
-	fseeko(file, fileLength - sizeof(UDIFResourceFile), SEEK_SET);
-	readUDIFResourceFile(file, &resourceFile);
-	resources = readResources(file, &resourceFile);
+	fileLength = abstractIn->getLength(abstractIn);
+	abstractIn->seek(abstractIn, fileLength - sizeof(UDIFResourceFile));
+	readUDIFResourceFile(abstractIn, &resourceFile);
+	resources = readResources(abstractIn, &resourceFile);
 	
-	outFile = fopen(dest, "wb");
-	if(!outFile) {
+	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
+	if(!abstractOut ) {
 		fprintf(stderr, "Cannot open target file\n");
 		releaseResources(resources);
 		
-		fclose(file);
+		abstractIn->close(abstractIn);
 		return FALSE;
 	}
 	
@@ -489,57 +492,62 @@ int convertToISO(const char* source, const char* dest) {
 	
 	while(blkx != NULL) {
 		blkxTable = (BLKXTable*)(blkx->data);
-		fseeko(outFile, blkxTable->firstSectorNumber * 512, SEEK_SET);
-		extractBLKX(file, (void*) outFile, blkxTable, &fwriteWrapper, &fseekWrapper, &ftellWrapper);
+		abstractOut->seek(abstractOut, blkxTable->firstSectorNumber * 512);
+		extractBLKX(abstractIn, abstractOut, blkxTable);
 		blkx = blkx->next;
 	}
 	
-	fclose(outFile);
+	abstractOut->close(abstractOut);
 	
 	releaseResources(resources);
-	fclose(file);
+	abstractIn->close(abstractIn);
 	
 	return TRUE;
 	
 }
 
 int extractDmg(const char* source, const char* dest, int partNum) {
-	FILE* file;
-	FILE* outFile;
+	AbstractFile* abstractIn;
+	AbstractFile* abstractOut;
 	off_t fileLength;
 	UDIFResourceFile resourceFile;
 	ResourceKey* resources;
+	ResourceData* blkxData;
 	
-	file = fopen(source, "rb");
+	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
 	
-	if(!file) {
+	if(!abstractIn) {
 		fprintf(stderr, "Cannot open source file\n");
 		return FALSE;
 	}
 	
-	fseeko(file, 0, SEEK_END);
-	fileLength = ftello(file);
-	fseeko(file, fileLength - sizeof(UDIFResourceFile), SEEK_SET);
-	readUDIFResourceFile(file, &resourceFile);
-	resources = readResources(file, &resourceFile);
+	fileLength = abstractIn->getLength(abstractIn);
+	abstractIn->seek(abstractIn, fileLength - sizeof(UDIFResourceFile));
+	readUDIFResourceFile(abstractIn, &resourceFile);
+	resources = readResources(abstractIn, &resourceFile);
 	
-	outFile = fopen(dest, "wb");
-	if(!outFile) {
+	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
+	if(!abstractOut) {
 		fprintf(stderr, "Cannot open target file\n");
 		releaseResources(resources);
 		
-		fclose(file);
+		abstractIn->close(abstractIn);
 		return FALSE;
 	}
 	
 	printf("Writing out data..\n"); fflush(stdout);
 	
 	/* reasonable assumption that 2 is the main partition, given that that's usually the case in SPUD layouts */
-	extractBLKX(file, (void*) outFile, (BLKXTable*)(getDataByID(getResourceByKey(resources, "blkx"), partNum)->data), &fwriteWrapper, &fseekWrapper, &ftellWrapper);
-	fclose(outFile);
+	blkxData = getDataByID(getResourceByKey(resources, "blkx"), partNum);
+	if(blkxData) {
+		extractBLKX(abstractIn, abstractOut, (BLKXTable*)(blkxData->data));
+	} else {
+		printf("BLKX not found!\n"); fflush(stdout);
+	}
+	abstractOut->close(abstractOut);
 	
 	releaseResources(resources);
-	fclose(file);
+	abstractIn->close(abstractIn);
 	
 	return TRUE;
 }

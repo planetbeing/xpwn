@@ -29,9 +29,9 @@ LDSHARED=gcc
 CPP=gcc -E
 
 LIBS=libz.a
-SHAREDLIB=libz.dylib
-SHAREDLIBV=libz.1.2.3.dylib
-SHAREDLIBM=libz.1.dylib
+SHAREDLIB=libz.so
+SHAREDLIBV=libz.so.1.2.3
+SHAREDLIBM=libz.so.1
 
 AR=ar rc
 RANLIB=ranlib

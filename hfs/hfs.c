@@ -34,7 +34,7 @@ void displayFolder(HFSCatalogNodeID folderID, Volume* volume) {
 			printf("%06o ", file->permissions.fileMode);
 			printf("%3d ", file->permissions.ownerID);
 			printf("%3d ", file->permissions.groupID);
-			printf("%12d ", file->dataFork.logicalSize);
+			printf("%12lld ", file->dataFork.logicalSize);
 			fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 		}
 			

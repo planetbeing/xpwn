@@ -20,6 +20,7 @@
 #define APPLE_PARTITION_MAP_SIGNATURE 0x504D
 #define UDIF_BLOCK_SIGNATURE 0x6D697368
 #define KOLY_SIGNATURE 0x6B6F6C79
+#define HFSX_SIGNATURE 0x4858
 
 #define ATTRIBUTE_HDIUTIL 0x0050
 
@@ -217,10 +218,25 @@ typedef struct ResourceData {
 typedef void (*FlipDataFunc)(unsigned char* data, char out);
 typedef void (*ChecksumFunc)(void* ckSum, const unsigned char* data, size_t len);
 
-typedef size_t (*WriteFunc)(void* token, const unsigned char* data, size_t len);
-typedef size_t (*ReadFunc)(void* token, unsigned char* data, size_t len);
-typedef int (*SeekFunc)(void* token, off_t offset);
-typedef off_t (*TellFunc)(void* token);
+typedef struct AbstractFile AbstractFile;
+
+typedef size_t (*WriteFunc)(AbstractFile* file, const void* data, size_t len);
+typedef size_t (*ReadFunc)(AbstractFile* file, void* data, size_t len);
+typedef int (*SeekFunc)(AbstractFile* file, off_t offset);
+typedef off_t (*TellFunc)(AbstractFile* file);
+typedef void (*CloseFunc)(AbstractFile* file);
+typedef off_t (*GetLengthFunc)(AbstractFile* file);
+
+struct AbstractFile {
+	void* data;
+	WriteFunc write;
+	ReadFunc read;
+	SeekFunc seek;
+	TellFunc tell;
+	GetLengthFunc getLength;
+	CloseFunc close;
+};
+
 
 typedef struct ResourceKey {
 	unsigned char* key;
@@ -231,7 +247,7 @@ typedef struct ResourceKey {
 
 typedef struct {
 	size_t offset;
-	unsigned char* buffer;
+	void* buffer;
 	size_t bufferSize;
 } MemWrapperInfo;
 
@@ -247,36 +263,36 @@ typedef struct {
 	SHA1_CTX sha1;
 } ChecksumToken;
 
-static inline uint32_t readUInt32(FILE* file) {
+static inline uint32_t readUInt32(AbstractFile* file) {
 	uint32_t data;
 	
-	ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
+	ASSERT(file->read(file, &data, sizeof(data)) == sizeof(data), "fread");
 	FLIPENDIAN(data);
 	
 	return data;
 }
 
-static inline void writeUInt32(FILE* file, uint32_t data) {
+static inline void writeUInt32(AbstractFile* file, uint32_t data) {
 	FLIPENDIAN(data);
-	ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
+	ASSERT(file->write(file, &data, sizeof(data)) == sizeof(data), "fwrite");
 }
 
-static inline uint32_t readUInt64(FILE* file) {
+static inline uint32_t readUInt64(AbstractFile* file) {
 	uint64_t data;
 	
-	ASSERT(fread(&data, sizeof(data), 1, file) == 1, "fread");
+	ASSERT(file->read(file, &data, sizeof(data)) == sizeof(data), "fread");
 	FLIPENDIAN(data);
 	
 	return data;
 }
 
-static inline void writeUInt64(FILE* file, uint64_t data) {
+static inline void writeUInt64(AbstractFile* file, uint64_t data) {
 	FLIPENDIAN(data);
-	ASSERT(fwrite(&data, sizeof(data), 1, file) == 1, "fwrite");
+	ASSERT(file->write(file, &data, sizeof(data)) == sizeof(data), "fwrite");
 }
 
 unsigned char* decodeBase64(char* toDecode, size_t* dataLength);
-void writeBase64(FILE* file, unsigned char* data, size_t dataLength, int tabLength, int width);
+void writeBase64(AbstractFile* file, unsigned char* data, size_t dataLength, int tabLength, int width);
 char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int width);
 
 uint32_t CRC32Checksum(uint32_t* crc, const unsigned char *buf, size_t len);
@@ -292,15 +308,15 @@ void SHA1Update(SHA1_CTX* context, const unsigned char* data, unsigned int len);
 void SHA1Final(unsigned char digest[20], SHA1_CTX* context);
 
 void flipUDIFChecksum(UDIFChecksum* o, char out);
-void readUDIFChecksum(FILE* file, UDIFChecksum* o);
-void writeUDIFChecksum(FILE* file, UDIFChecksum* o);
-void readUDIFID(FILE* file, UDIFID* o);
-void writeUDIFID(FILE* file, UDIFID* o);
-void readUDIFResourceFile(FILE* file, UDIFResourceFile* o);
-void writeUDIFResourceFile(FILE* file, UDIFResourceFile* o);
+void readUDIFChecksum(AbstractFile* file, UDIFChecksum* o);
+void writeUDIFChecksum(AbstractFile* file, UDIFChecksum* o);
+void readUDIFID(AbstractFile* file, UDIFID* o);
+void writeUDIFID(AbstractFile* file, UDIFID* o);
+void readUDIFResourceFile(AbstractFile* file, UDIFResourceFile* o);
+void writeUDIFResourceFile(AbstractFile* file, UDIFResourceFile* o);
 
-ResourceKey* readResources(FILE* file, UDIFResourceFile* resourceFile);
-void writeResources(FILE* file, ResourceKey* resources);
+ResourceKey* readResources(AbstractFile* file, UDIFResourceFile* resourceFile);
+void writeResources(AbstractFile* file, ResourceKey* resources);
 void releaseResources(ResourceKey* resources);
 
 NSizResource* readNSiz(ResourceKey* resources);
@@ -318,34 +334,27 @@ ResourceKey* makeSize(HFSPlusVolumeHeader* volumeHeader);
 
 void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out);
 void flipPartition(Partition* partition, char out);
+void flipPartitionMultiple(Partition* partition, char multiple, char out);
 
-void readDriverDescriptorMap(FILE* file, ResourceKey* resources);
+void readDriverDescriptorMap(AbstractFile* file, ResourceKey* resources);
 DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors);
-void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources);
-void readApplePartitionMap(FILE* file, ResourceKey* resources);
+void writeDriverDescriptorMap(AbstractFile* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources);
+void readApplePartitionMap(AbstractFile* file, ResourceKey* resources);
 Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType);
-void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
-void writeATAPI(FILE* file,  ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
-void writeFreePartition(FILE* outFile, uint32_t numSectors, ResourceKey** resources);
+void writeApplePartitionMap(AbstractFile* file, Partition* partitions, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
+void writeATAPI(AbstractFile* file,  ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
+void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey** resources);
 
-size_t freadWrapper(void* token, unsigned char* data, size_t len);
-size_t fwriteWrapper(void* token, const unsigned char* data, size_t len);
-int fseekWrapper(void* token, off_t offset);
-off_t ftellWrapper(void* token);
+AbstractFile* createAbstractFileFromFile(FILE* file);
+AbstractFile* createAbstractFileFromDummy();
+AbstractFile* createAbstractFileFromMemory(void* buffer, size_t size);
+void abstractFilePrint(AbstractFile* file, const char* format, ...);
 
-size_t dummyWrite(void* token, const unsigned char* data, size_t len);
-int dummySeek(void* token, off_t offset);
-off_t dummyTell(void* token);
+void extractBLKX(AbstractFile* in, AbstractFile* out, BLKXTable* blkx);
+BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorNumber, uint32_t numSectors, uint32_t blocksDescriptor,
+			uint32_t checksumType, ChecksumFunc uncompressedChk, void* uncompressedChkToken, ChecksumFunc compressedChk,
+			void* compressedChkToken, Volume* volume);
 
-size_t memWrite(void* token, const unsigned char* data, size_t len);
-size_t memRead(void* token, unsigned char* data, size_t len);
-int memSeek(void* token, off_t offset);
-off_t memTell(void* token);
-
-void extractBLKX(FILE* in, void* out, BLKXTable* blkx, WriteFunc mWrite, SeekFunc mSeek, TellFunc mTell);
-BLKXTable* insertBLKX(FILE* out, void* in, uint32_t firstSectorNumber, uint32_t numSectors, uint32_t blocksDescriptor, uint32_t checksumType,
-					  ReadFunc mRead, SeekFunc mSeek, TellFunc mTell,
-					  ChecksumFunc uncompressedChk, void* uncompressedChkToken, ChecksumFunc compressedChk,  void* compressedChkToken, Volume* volume);
 
 int extractDmg(const char* source, const char* dest, int partNum);
 int buildDmg(const char* source, const char* dest);

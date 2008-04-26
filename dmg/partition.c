@@ -373,6 +373,10 @@ void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out) {
     }
     FLIPENDIAN(record->sbDrvrCount);
   } else {
+    if(record->sbSig != DRIVER_DESCRIPTOR_SIGNATURE) {
+      return;
+    }
+
     FLIPENDIAN(record->sbDrvrCount);
     for(i = 0; i < record->sbDrvrCount; i++) {
       flipDriverDescriptor(&(record->ddPad[i]));
@@ -380,60 +384,71 @@ void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out) {
   }
 }
 
+void flipPartitionMultiple(Partition* partition, char multiple, char out) {
+	int i;
+	int numPartitions;
+	
+	if(out) {
+		numPartitions = partition->pmMapBlkCnt;
+	} else {
+		numPartitions = partition->pmMapBlkCnt;
+		FLIPENDIAN(numPartitions);
+	}
+	
+	for(i = 0; i < numPartitions; i++) {
+		if(out) {
+			if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
+				break;
+			}
+			FLIPENDIAN(partition[i].pmSig);
+		} else {
+			FLIPENDIAN(partition[i].pmSig);
+			if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
+				break;
+			}
+		}
+		
+		FLIPENDIAN(partition[i].pmMapBlkCnt);
+		FLIPENDIAN(partition[i].pmPyPartStart);
+		FLIPENDIAN(partition[i].pmPartBlkCnt);
+		FLIPENDIAN(partition[i].pmLgDataStart);
+		FLIPENDIAN(partition[i].pmDataCnt);
+		FLIPENDIAN(partition[i].pmPartStatus);
+		FLIPENDIAN(partition[i].pmLgBootStart);
+		FLIPENDIAN(partition[i].pmBootSize);
+		FLIPENDIAN(partition[i].pmBootAddr);
+		FLIPENDIAN(partition[i].pmBootAddr2);
+		FLIPENDIAN(partition[i].pmBootEntry);
+		FLIPENDIAN(partition[i].pmBootEntry2);
+		FLIPENDIAN(partition[i].pmBootCksum);
+		FLIPENDIAN(partition[i].bootCode);
+		
+		if(!multiple) {
+			break;
+		}
+	}
+}
+
 void flipPartition(Partition* partition, char out) {
-  int i;
-  int numPartitions;
-  
-  if(out) {
-    numPartitions = partition->pmMapBlkCnt;
-  } else {
-    numPartitions = partition->pmMapBlkCnt;
-    FLIPENDIAN(numPartitions);
-  }
-  
-  for(i = 0; i < numPartitions; i++) {
-    if(out) {
-      if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
-        break;
-      }
-      FLIPENDIAN(partition[i].pmSig);
-    } else {
-      FLIPENDIAN(partition[i].pmSig);
-      if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
-        break;
-      }
-    }
-    
-    FLIPENDIAN(partition[i].pmMapBlkCnt);
-    FLIPENDIAN(partition[i].pmPyPartStart);
-    FLIPENDIAN(partition[i].pmPartBlkCnt);
-    FLIPENDIAN(partition[i].pmLgDataStart);
-    FLIPENDIAN(partition[i].pmDataCnt);
-    FLIPENDIAN(partition[i].pmPartStatus);
-    FLIPENDIAN(partition[i].pmLgBootStart);
-    FLIPENDIAN(partition[i].pmBootSize);
-    FLIPENDIAN(partition[i].pmBootAddr);
-    FLIPENDIAN(partition[i].pmBootAddr2);
-    FLIPENDIAN(partition[i].pmBootEntry);
-    FLIPENDIAN(partition[i].pmBootEntry2);
-    FLIPENDIAN(partition[i].pmBootCksum);
-    FLIPENDIAN(partition[i].bootCode);
-  }
+  flipPartitionMultiple(partition, TRUE, out);
 }
 
 
-void readDriverDescriptorMap(FILE* file, ResourceKey* resources) {
+void readDriverDescriptorMap(AbstractFile* file, ResourceKey* resources) {
   BLKXTable* blkx;
-  MemWrapperInfo info;
+  unsigned char* buffer;
+  AbstractFile* bufferFile;
   DriverDescriptorRecord* record;
   int i;
   
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), -1)->data);
-  info.offset = 0;
-  info.bufferSize = 512;
-  info.buffer = (unsigned char*) malloc(info.bufferSize);
-  extractBLKX(file, (void*)(&info), blkx, &memWrite, &memSeek, &memTell);
-  record = (DriverDescriptorRecord*)info.buffer;
+
+  buffer = (unsigned char*) malloc(512);
+  bufferFile = createAbstractFileFromMemory(buffer, 512);
+  extractBLKX(file, bufferFile, blkx);
+  bufferFile->close(bufferFile);
+
+  record = (DriverDescriptorRecord*)buffer;
   flipDriverDescriptorRecord(record, FALSE);
   printf("sbSig:\t\t0x%x\n", record->sbSig);
   printf("sbBlkSize:\t0x%x\n", record->sbBlkSize);
@@ -452,7 +467,7 @@ void readDriverDescriptorMap(FILE* file, ResourceKey* resources) {
     printf("\tddType:\t\t0x%x\n", record->ddPad[i].ddType);
   }
   
-  free(info.buffer);
+  free(buffer);
 }
 
 DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors) {
@@ -475,8 +490,9 @@ DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors) {
   return toReturn;
 }
 
-void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources) {
-  MemWrapperInfo info;
+void writeDriverDescriptorMap(AbstractFile* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken,
+				ResourceKey **resources) {
+  AbstractFile* bufferFile;
   BLKXTable* blkx;
   ChecksumToken uncompressedToken;
   DriverDescriptorRecord* buffer;
@@ -485,25 +501,24 @@ void writeDriverDescriptorMap(FILE* file, DriverDescriptorRecord* DDM, ChecksumF
   memcpy(buffer, DDM, DDM_SIZE * SECTOR_SIZE);
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
   
-  info.offset = 0;
-  info.bufferSize = DDM_SIZE * SECTOR_SIZE;
-  info.buffer = (unsigned char*) buffer;
-  
   flipDriverDescriptorRecord(buffer, TRUE);
+
+  bufferFile = createAbstractFileFromMemory(buffer, DDM_SIZE * SECTOR_SIZE);
   
-  blkx = insertBLKX(file, (void*) (&info), DDM_OFFSET, DDM_SIZE, DDM_DESCRIPTOR, CHECKSUM_CRC32, &memRead, &memSeek, &memTell,
-              &CRCProxy, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
+  blkx = insertBLKX(file, bufferFile, DDM_OFFSET, DDM_SIZE, DDM_DESCRIPTOR, CHECKSUM_CRC32, &CRCProxy, &uncompressedToken,
+			dataForkChecksum, dataForkToken, NULL);
               
   blkx->checksum.data[0] = uncompressedToken.crc;
   
   *resources = insertData(*resources, "blkx", -1, "Driver Descriptor Map (DDM : 0)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
   
   free(buffer);
+  bufferFile->close(bufferFile);
   free(blkx);
 }
 
-void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn) {
-  MemWrapperInfo info;
+void writeApplePartitionMap(AbstractFile* file, Partition* partitions, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn) {
+  AbstractFile* bufferFile;
   BLKXTable* blkx;
   ChecksumToken uncompressedToken;
   Partition* buffer;
@@ -513,16 +528,16 @@ void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc data
   buffer = (Partition*) malloc(PARTITION_SIZE * SECTOR_SIZE);
   memcpy(buffer, partitions, PARTITION_SIZE  * SECTOR_SIZE);
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
-  
-  info.offset = 0;
-  info.bufferSize = PARTITION_SIZE * SECTOR_SIZE;
-  info.buffer = (unsigned char*) buffer;
-  
-  flipPartition(buffer, TRUE);
    
-  blkx = insertBLKX(file, (void*) (&info), PARTITION_OFFSET, PARTITION_SIZE, 0, CHECKSUM_CRC32, &memRead, &memSeek, &memTell,
+  flipPartition(buffer, TRUE);
+
+  bufferFile = createAbstractFileFromMemory(buffer, PARTITION_SIZE * SECTOR_SIZE);
+   
+  blkx = insertBLKX(file, bufferFile, PARTITION_OFFSET, PARTITION_SIZE, 0, CHECKSUM_CRC32,
               &BlockCRC, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
-              
+  
+  bufferFile->close(bufferFile);
+
   *((uint32_t*)blkx->checksum.data) = uncompressedToken.crc;
   
   csum.version = 1;
@@ -551,8 +566,8 @@ void writeApplePartitionMap(FILE* file, Partition* partitions, ChecksumFunc data
   free(blkx);
 }
 
-void writeATAPI(FILE* file, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn) {
-  MemWrapperInfo info;
+void writeATAPI(AbstractFile* file, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn) {
+  AbstractFile* bufferFile;
   BLKXTable* blkx;
   ChecksumToken uncompressedToken;
   NSizResource* nsiz;
@@ -560,13 +575,13 @@ void writeATAPI(FILE* file, ChecksumFunc dataForkChecksum, void* dataForkToken, 
   
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
   
-  info.offset = 0;
-  info.bufferSize = PARTITION_SIZE * SECTOR_SIZE;
-  info.buffer = (unsigned char*) atapi_data;
-   
-  blkx = insertBLKX(file, (void*) (&info), ATAPI_OFFSET, ATAPI_SIZE, 1, CHECKSUM_CRC32, &memRead, &memSeek, &memTell,
+  bufferFile = createAbstractFileFromMemory(atapi_data, PARTITION_SIZE * SECTOR_SIZE);
+
+  blkx = insertBLKX(file, bufferFile, ATAPI_OFFSET, ATAPI_SIZE, 1, CHECKSUM_CRC32,
               &BlockCRC, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
-              
+
+  bufferFile->close(bufferFile);
+
   blkx->checksum.data[0] = uncompressedToken.crc;
   
   csum.version = 1;
@@ -595,21 +610,22 @@ void writeATAPI(FILE* file, ChecksumFunc dataForkChecksum, void* dataForkToken, 
 }
 
 
-void readApplePartitionMap(FILE* file, ResourceKey* resources) {
+void readApplePartitionMap(AbstractFile* file, ResourceKey* resources) {
+  AbstractFile* bufferFile;
   BLKXTable* blkx;
-  MemWrapperInfo info;
   Partition* partition;
   int i;
   
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), 0)->data);
-  info.offset = 0;
-  info.bufferSize = 512;
-  info.buffer = (unsigned char*) malloc(info.bufferSize);
-  extractBLKX(file, (void*)(&info), blkx, &memWrite, &memSeek, &memTell);
-  partition = (Partition*)info.buffer;
+
+  partition = (Partition*) malloc(512);
+  bufferFile = createAbstractFileFromMemory(partition, 512);
+  extractBLKX(file, bufferFile, blkx);
+  bufferFile->close(bufferFile);
+
   flipPartition(partition, FALSE);
   
-  for(i = 0; i < partition->pmPartBlkCnt; i++) {
+  for(i = 0; i < partition->pmMapBlkCnt; i++) {
     if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
       break;
     }
@@ -634,54 +650,9 @@ void readApplePartitionMap(FILE* file, ResourceKey* resources) {
     printf("pmProcessor:\t\t\t%s\n\n", partition[i].pmProcessor);
   }
 
-  free(info.buffer);
+  free(partition);
 }
 
-/*static inline void flipExtentDescriptor(HFSPlusExtentDescriptor* extentDescriptor) {
-  FLIPENDIAN(extentDescriptor->startBlock);
-  FLIPENDIAN(extentDescriptor->blockCount);
-}
-
-HFSPlusVolumeHeader* readVolumeHeader(FILE* file) {
-  HFSPlusVolumeHeader* volumeHeader;
-  
-  volumeHeader = (HFSPlusVolumeHeader*) malloc(sizeof(HFSPlusVolumeHeader));
-  
-  ASSERT(fseeko(file, 1024, SEEK_SET) == 0, "fseeko");
-  ASSERT(fread(volumeHeader, sizeof(HFSPlusVolumeHeader), 1, file) == 1, "fread");
-    
-  FLIPENDIAN(volumeHeader->signature);
-  FLIPENDIAN(volumeHeader->version);
-  FLIPENDIAN(volumeHeader->attributes);
-  FLIPENDIAN(volumeHeader->lastMountedVersion);
-  FLIPENDIAN(volumeHeader->journalInfoBlock);
-  FLIPENDIAN(volumeHeader->createDate);
-  FLIPENDIAN(volumeHeader->modifyDate);
-  FLIPENDIAN(volumeHeader->backupDate);
-  FLIPENDIAN(volumeHeader->checkedDate);
-  FLIPENDIAN(volumeHeader->fileCount);
-  FLIPENDIAN(volumeHeader->folderCount);
-  FLIPENDIAN(volumeHeader->blockSize);
-  FLIPENDIAN(volumeHeader->totalBlocks);
-  FLIPENDIAN(volumeHeader->freeBlocks);
-  FLIPENDIAN(volumeHeader->nextAllocation);
-  FLIPENDIAN(volumeHeader->rsrcClumpSize);
-  FLIPENDIAN(volumeHeader->dataClumpSize);
-  FLIPENDIAN(volumeHeader->nextCatalogID);
-  FLIPENDIAN(volumeHeader->writeCount);
-  FLIPENDIAN(volumeHeader->encodingsBitmap);
-  
-  
-  flipForkData(&volumeHeader->allocationFile);
-  flipForkData(&volumeHeader->extentsFile);
-  flipForkData(&volumeHeader->catalogFile);
-  flipForkData(&volumeHeader->attributesFile);
-  flipForkData(&volumeHeader->startupFile);
- 
-  return volumeHeader;
-}
-
-*/
 Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType) {
   Partition* partition;
   
@@ -771,7 +742,7 @@ Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType) 
   return partition;
 }
 
-void writeFreePartition(FILE* outFile, uint32_t numSectors, ResourceKey** resources) {
+void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey** resources) {
   BLKXTable* blkx;
   
   blkx = (BLKXTable*) malloc(sizeof(BLKXTable) + (2 * sizeof(BLKXRun)));
@@ -797,7 +768,7 @@ void writeFreePartition(FILE* outFile, uint32_t numSectors, ResourceKey** resour
   blkx->runs[0].reserved = 0;
   blkx->runs[0].sectorStart = 0;
   blkx->runs[0].sectorCount = FREE_SIZE;
-  blkx->runs[0].compOffset = ftello(outFile);
+  blkx->runs[0].compOffset = outFile->tell(outFile);
   blkx->runs[0].compLength = 0;
   blkx->runs[1].type = BLOCK_TERMINATOR;
   blkx->runs[1].reserved = 0;

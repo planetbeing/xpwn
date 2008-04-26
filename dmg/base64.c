@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "dmg.h"
 
@@ -95,107 +96,11 @@ unsigned char* decodeBase64(char* toDecode, size_t* dataLength) {
   return decodeBuffer;
 }
 
-void writeBase64(FILE* file, unsigned char* data, size_t dataLength, int tabLength, int width) {
-  const char* dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  
-  char* tabs;
-  int i;
-  int lineLength;
-  
-  tabs = (char*) malloc(sizeof(char) * (tabLength + 1));
-  for(i = 0; i < tabLength; i++) {
-    tabs[i] = '\t';
-  }
-  tabs[tabLength] = '\0';
-  
-  fprintf(file, "%s", tabs);
-  
-  i = 0;
-  lineLength = 0;
-  while(dataLength >= 3) {
-    dataLength -= 3;
-    fprintf(file, "%c", dictionary[(data[i] >> 2) & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[(((data[i] << 4) & 0x30) | ((data[i+1] >> 4) & 0x0F)) & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[(((data[i+1] << 2) & 0x3C) | ((data[i+2] >> 6) & 0x03)) & 0x03F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[data[i+2] & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    i += 3;
-  }
-   
-  if(dataLength == 2) {
-    fprintf(file, "%c", dictionary[(data[i] >> 2) & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[(((data[i] << 4) & 0x30) | ((data[i+1] >> 4) & 0x0F)) & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[(data[i+1] << 2) & 0x3C]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "=");
-  } else if(dataLength == 1) {
-    fprintf(file, "%c", dictionary[(data[i] >> 2) & 0x3F]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "%c", dictionary[(data[i] << 4) & 0x30]);
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "=");
-    if(width == lineLength) {
-      fprintf(file, "\n%s", tabs);
-      lineLength = 0;
-    } else {
-      lineLength++;
-    }
-    fprintf(file, "=");
-  }
-  
-  fprintf(file, "\n");
-  
-  free(tabs);
+void writeBase64(AbstractFile* file, unsigned char* data, size_t dataLength, int tabLength, int width) {
+  char* buffer;
+  buffer = convertBase64(data, dataLength, tabLength, width);
+  file->write(file, buffer, strlen(buffer));
+  free(buffer);
 }
 
 #define CHECK_BUFFER_SIZE() \
