@@ -39,6 +39,8 @@ ought to be moved to catalog.c). To make compilation simpler, a complete,
 unmodified copy of the zlib distribution is included. The dmg portion of the
 code has dependencies on the HFS+ portion of the code
 
+The makefile in the root folder will make both utilities.
+
 ### HFS+
 
 	cd hfs
@@ -51,3 +53,4 @@ code has dependencies on the HFS+ portion of the code
 	make
 	cd ..
 	make
+
