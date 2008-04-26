@@ -11,8 +11,6 @@
 #define WRITE_KEY(a, b, c, d) ((*((a)->keyWrite))(b, c, d))
 #define READ_DATA(a, b, c) ((*((a)->dataRead))(b, c))
 
-struct io_func_struct;
-
 struct BTKey {
   uint16_t keyLength;
   unsigned char data[0];
@@ -20,9 +18,6 @@ struct BTKey {
 
 typedef struct BTKey BTKey;
 
-typedef int (*readFunc)(struct io_func_struct* io, off_t location, size_t size, void *buffer);
-typedef int (*writeFunc)(struct io_func_struct* io, off_t location, size_t size, void *buffer);
-typedef void (*closeFunc)(struct io_func_struct* io);
 typedef BTKey* (*dataReadFunc)(off_t offset, struct io_func_struct* io);
 typedef void (*keyPrintFunc)(BTKey* toPrint);
 typedef int (*keyWriteFunc)(off_t offset, BTKey* toWrite, struct io_func_struct* io);
@@ -382,13 +377,6 @@ struct CatalogRecordList {
   struct CatalogRecordList* next;
 };
 typedef struct CatalogRecordList CatalogRecordList;
-
-typedef struct io_func_struct {
-  void* data;
-  readFunc read;
-  writeFunc write;
-  closeFunc close;
-} io_func;
 
 struct Extent {
   uint32_t startBlock;

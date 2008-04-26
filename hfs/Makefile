@@ -10,6 +10,6 @@ hfsplus: $(HFSPLUSOBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm *.o
-	rm hfsplus
+	-rm *.o
+	-rm hfsplus
 

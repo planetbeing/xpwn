@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "dmg.h"
+#include "filevault.h"
 
 char endianness;
 
@@ -55,10 +56,7 @@ uint32_t calculateMasterChecksum(ResourceKey* resources) {
 	return result;  
 }
 
-int buildDmg(const char* source, const char* dest) {
-	AbstractFile* abstractOut;
-	AbstractFile* abstractIn;
-	
+int buildDmg(AbstractFile* abstractIn, AbstractFile* abstractOut) {	
 	io_func* io;
 	Volume* volume;  
 	
@@ -84,13 +82,11 @@ int buildDmg(const char* source, const char* dest) {
 	uint32_t plistSize;
 	uint32_t dataForkChecksum;
 	
-	io = openFlatFileRO(source);
+	io = IOFuncFromAbstractFile(abstractIn);
 	volume = openVolume(io); 
 	volumeHeader = volume->volumeHeader;
 	
-	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
-	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
-	
+
 	if(volumeHeader->signature != HFSX_SIGNATURE) {
 		printf("Warning: ASR data only reverse engineered for case-sensitive HFS+ volumes\n");fflush(stdout);
 	}
@@ -227,7 +223,6 @@ int buildDmg(const char* source, const char* dest) {
 	releaseResources(resources);
 	
 	abstractOut->close(abstractOut);
-	abstractIn->close(abstractIn);
 	closeVolume(volume);
 	CLOSE(io);
 	
@@ -236,9 +231,7 @@ int buildDmg(const char* source, const char* dest) {
 	return TRUE;
 }
 
-int convertToDMG(const char* source, const char* dest) {
-	AbstractFile* abstractIn;
-	AbstractFile* abstractOut;
+int convertToDMG(AbstractFile* abstractIn, AbstractFile* abstractOut) {
 	Partition* partitions;
 	DriverDescriptorRecord* DDM;
 	int i;
@@ -275,9 +268,6 @@ int convertToDMG(const char* source, const char* dest) {
 	memset(&dataForkToken, 0, sizeof(ChecksumToken));
 	
 	partitions = (Partition*) malloc(SECTOR_SIZE);
-	
-	ASSERT(abstractIn = createAbstractFileFromFile(fopen(source, "rb")), "fopen");
-	ASSERT(abstractOut = createAbstractFileFromFile(fopen(dest, "wb")), "fopen");
 	
 	printf("Processing DDM...\n"); fflush(stdout);
 	DDM = (DriverDescriptorRecord*) malloc(SECTOR_SIZE);
@@ -456,36 +446,18 @@ int convertToDMG(const char* source, const char* dest) {
 	return TRUE;
 }
 
-int convertToISO(const char* source, const char* dest) {
-	AbstractFile* abstractIn;
-	AbstractFile* abstractOut;
+int convertToISO(AbstractFile* abstractIn, AbstractFile* abstractOut) {
 	off_t fileLength;
 	UDIFResourceFile resourceFile;
 	ResourceKey* resources;
 	ResourceData* blkx;
 	BLKXTable* blkxTable;
 	
-	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
-	
-	if(!abstractIn) {
-		fprintf(stderr, "Cannot open source file\n");
-		return FALSE;
-	}
-	
 	fileLength = abstractIn->getLength(abstractIn);
 	abstractIn->seek(abstractIn, fileLength - sizeof(UDIFResourceFile));
 	readUDIFResourceFile(abstractIn, &resourceFile);
 	resources = readResources(abstractIn, &resourceFile);
-	
-	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
-	if(!abstractOut ) {
-		fprintf(stderr, "Cannot open target file\n");
-		releaseResources(resources);
-		
-		abstractIn->close(abstractIn);
-		return FALSE;
-	}
-	
+
 	blkx = (getResourceByKey(resources, "blkx"))->data;
 	
 	printf("Writing out data..\n"); fflush(stdout);
@@ -506,34 +478,16 @@ int convertToISO(const char* source, const char* dest) {
 	
 }
 
-int extractDmg(const char* source, const char* dest, int partNum) {
-	AbstractFile* abstractIn;
-	AbstractFile* abstractOut;
+int extractDmg(AbstractFile* abstractIn, AbstractFile* abstractOut, int partNum) {
 	off_t fileLength;
 	UDIFResourceFile resourceFile;
 	ResourceKey* resources;
 	ResourceData* blkxData;
-	
-	abstractIn = createAbstractFileFromFile(fopen(source, "rb"));
-	
-	if(!abstractIn) {
-		fprintf(stderr, "Cannot open source file\n");
-		return FALSE;
-	}
-	
+		
 	fileLength = abstractIn->getLength(abstractIn);
 	abstractIn->seek(abstractIn, fileLength - sizeof(UDIFResourceFile));
 	readUDIFResourceFile(abstractIn, &resourceFile);
 	resources = readResources(abstractIn, &resourceFile);
-	
-	abstractOut = createAbstractFileFromFile(fopen(dest, "wb"));
-	if(!abstractOut) {
-		fprintf(stderr, "Cannot open target file\n");
-		releaseResources(resources);
-		
-		abstractIn->close(abstractIn);
-		return FALSE;
-	}
 	
 	printf("Writing out data..\n"); fflush(stdout);
 	
@@ -552,29 +506,69 @@ int extractDmg(const char* source, const char* dest, int partNum) {
 	return TRUE;
 }
 
+int buildInOut(const char* source, const char* dest, AbstractFile** in, AbstractFile** out) {
+	*in = createAbstractFileFromFile(fopen(source, "rb"));
+	if(!(*in)) {
+		printf("cannot open source: %s\n", source);
+		return FALSE;
+	}
+
+	*out = createAbstractFileFromFile(fopen(dest, "wb"));
+	if(!(*out)) {
+		(*in)->close(*in);
+		printf("cannot open destination: %s\n", dest);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 int main(int argc, char* argv[]) {
 	int partNum;
+	AbstractFile* in;
+	AbstractFile* out;
+	int index;
+	int hasKey;
 	
 	TestByteOrder();
 	
 	if(argc < 4) {
-		printf("usage: %s [extract <dmg> <img> (partition)|build <img> <dmg>]\n", argv[0]);
+		printf("usage: %s [extract|build|iso|dmg] <in> <out> (-k <key>) (partition)\n", argv[0]);
 		return 0;
 	}
+
+	if(!buildInOut(argv[2], argv[3], &in, &out)) {
+		return FALSE;
+	}
+
+	hasKey = FALSE;
+	if(argc > 5) {
+		if(strcmp(argv[4], "-k") == 0) {
+			in = createAbstractFileFromFileVault(in, argv[5]);
+			hasKey = TRUE;
+		}
+	}
 	
+
 	if(strcmp(argv[1], "extract") == 0) {
 		partNum = 2;
 		
-		if(argc > 4) {
-			sscanf(argv[4], "%d", &partNum);
+		if(hasKey) {
+			if(argc > 6) {
+				sscanf(argv[6], "%d", &partNum);
+			}
+		} else {
+			if(argc > 4) {
+				sscanf(argv[4], "%d", &partNum);
+			}
 		}
-		extractDmg(argv[2], argv[3], partNum);
+		extractDmg(in, out, partNum);
 	} else if(strcmp(argv[1], "build") == 0) {
-		buildDmg(argv[2], argv[3]);
+		buildDmg(in, out);
 	} else if(strcmp(argv[1], "iso") == 0) {
-		convertToISO(argv[2], argv[3]);
+		convertToISO(in, out);
 	} else if(strcmp(argv[1], "dmg") == 0) {
-		convertToDMG(argv[2], argv[3]);
+		convertToDMG(in, out);
 	}
 	
 	return 0;

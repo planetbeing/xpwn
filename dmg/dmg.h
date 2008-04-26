@@ -1,3 +1,6 @@
+#ifndef DMG_H
+#define DMG_H
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -349,6 +352,7 @@ AbstractFile* createAbstractFileFromFile(FILE* file);
 AbstractFile* createAbstractFileFromDummy();
 AbstractFile* createAbstractFileFromMemory(void* buffer, size_t size);
 void abstractFilePrint(AbstractFile* file, const char* format, ...);
+io_func* IOFuncFromAbstractFile(AbstractFile* file);
 
 void extractBLKX(AbstractFile* in, AbstractFile* out, BLKXTable* blkx);
 BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorNumber, uint32_t numSectors, uint32_t blocksDescriptor,
@@ -356,8 +360,9 @@ BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorN
 			void* compressedChkToken, Volume* volume);
 
 
-int extractDmg(const char* source, const char* dest, int partNum);
-int buildDmg(const char* source, const char* dest);
-int convertToISO(const char* source, const char* dest);
-int convertToDMG(const char* source, const char* dest);
+int extractDmg(AbstractFile* abstractIn, AbstractFile* abstractOut, int partNum);
+int buildDmg(AbstractFile* abstractIn, AbstractFile* abstractOut);
+int convertToISO(AbstractFile* abstractIn, AbstractFile* abstractOut);
+int convertToDMG(AbstractFile* abstractIn, AbstractFile* abstractOut);
 
+#endif

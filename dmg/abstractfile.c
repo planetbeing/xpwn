@@ -165,3 +165,45 @@ void abstractFilePrint(AbstractFile* file, const char* format, ...) {
 	va_end(args);
 	ASSERT(file->write(file, buffer, length) == length, "fwrite");
 }
+
+int absFileRead(io_func* io, off_t location, size_t size, void *buffer) {
+	AbstractFile* file;
+	file = (AbstractFile*) io->data;
+	file->seek(file, location);
+	if(file->read(file, buffer, size) == size) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+int absFileWrite(io_func* io, off_t location, size_t size, void *buffer) {
+	AbstractFile* file;
+	file = (AbstractFile*) io->data;
+	file->seek(file, location);
+	if(file->write(file, buffer, size) == size) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
+void closeAbsFile(io_func* io) {
+	AbstractFile* file;
+	file = (AbstractFile*) io->data;
+	file->close(file);
+	free(io);
+}
+
+
+io_func* IOFuncFromAbstractFile(AbstractFile* file) {
+	io_func* io;
+
+	io = (io_func*) malloc(sizeof(io_func));
+	io->data = file;
+	io->read = &absFileRead;
+	io->write = &absFileWrite;
+	io->close = &closeAbsFile;
+
+	return io;
+}
