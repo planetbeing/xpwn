@@ -571,7 +571,7 @@ void cmd_addall(Volume* volume, int argc, const char *argv[]) {
 		record = getRecordFromPath(argv[2], volume, &name, NULL);
 		strcpy(initPath, argv[2]);
 		lastCharOfPath = strlen(argv[2]) - 1;
-		if(argv[1][lastCharOfPath] != '/') {
+		if(argv[2][lastCharOfPath] != '/') {
 			initPath[lastCharOfPath + 1] = '/';
 			initPath[lastCharOfPath + 2] = '\0';
 		}
