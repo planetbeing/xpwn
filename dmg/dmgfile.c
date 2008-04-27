@@ -40,11 +40,11 @@ static void cacheRun(DMG* dmg, BLKXTable* blkx, int run) {
 			ASSERT(inflateInit(&strm) == Z_OK, "inflateInit");
 			
 			ASSERT((strm.avail_in = dmg->dmg->read(dmg->dmg, inBuffer, blkx->runs[run].compLength)) == blkx->runs[run].compLength, "fread");
-			strm.next_in = inBuffer;
+			strm.next_in = (unsigned char*) inBuffer;
 			
 			do {
 				strm.avail_out = bufferSize;
-				strm.next_out = dmg->runData;
+				strm.next_out = (unsigned char*) dmg->runData;
 				ASSERT((ret = inflate(&strm, Z_NO_FLUSH)) != Z_STREAM_ERROR, "inflate/Z_STREAM_ERROR");
 				if(ret != Z_OK && ret != Z_BUF_ERROR && ret != Z_STREAM_END) {
 					ASSERT(FALSE, "inflate");
