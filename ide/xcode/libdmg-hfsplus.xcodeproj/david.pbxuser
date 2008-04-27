@@ -71,11 +71,13 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 230987379;
-			PBXWorkspaceStateSaveDate = 230987379;
+			PBXPerProjectTemplateStateSaveDate = 230988791;
+			PBXWorkspaceStateSaveDate = 230988791;
 		};
 		perUserProjectItems = {
-			637FAC760DC495B900D1D35F /* PBXTextBookmark */ = 637FAC760DC495B900D1D35F /* PBXTextBookmark */;
+			63DCCB0C0DC49C00005D833C /* PBXBookmark */ = 63DCCB0C0DC49C00005D833C /* PBXBookmark */;
+			63DCCB0F0DC49C84005D833C /* PBXTextBookmark */ = 63DCCB0F0DC49C84005D833C /* PBXTextBookmark */;
+			63DCCB100DC49C84005D833C /* PBXTextBookmark */ = 63DCCB100DC49C84005D833C /* PBXTextBookmark */;
 			63EFCCEB0DC49BA00031F8B4 /* PBXTextBookmark */ = 63EFCCEB0DC49BA00031F8B4 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 63F91F960DC48F810056EA77 /* Source Control */;
@@ -85,7 +87,21 @@
 	637FAC690DC4958E00D1D35F /* all */ = {
 		activeExec = 0;
 	};
-	637FAC760DC495B900D1D35F /* PBXTextBookmark */ = {
+	63DCCB0C0DC49C00005D833C /* PBXBookmark */ = {
+		isa = PBXBookmark;
+		fRef = 63F920CB0DC48FFC0056EA77 /* filevault.c */;
+	};
+	63DCCB0F0DC49C84005D833C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 63F920CB0DC48FFC0056EA77 /* filevault.c */;
+		name = "filevault.c: 57";
+		rLen = 0;
+		rLoc = 1569;
+		rType = 0;
+		vrLen = 1579;
+		vrLoc = 2111;
+	};
+	63DCCB100DC49C84005D833C /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = 63F920D20DC48FFC0056EA77 /* zconf.h */;
 		name = "zconf.h: 293";
@@ -93,7 +109,7 @@
 		rLoc = 8494;
 		rType = 0;
 		vrLen = 1270;
-		vrLoc = 7655;
+		vrLoc = 7662;
 	};
 	63EFCCEB0DC49BA00031F8B4 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
@@ -132,9 +148,9 @@
 	};
 	63F920CB0DC48FFC0056EA77 /* filevault.c */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {987, 3626}}";
-			sepNavSelRange = "{195, 0}";
-			sepNavVisRange = "{938, 475}";
+			sepNavIntBoundsRect = "{{0, 0}, {1091, 3570}}";
+			sepNavSelRange = "{1569, 0}";
+			sepNavVisRange = "{2111, 1579}";
 			sepNavWindowFrame = "{{15, 164}, {1150, 833}}";
 		};
 	};
@@ -148,9 +164,9 @@
 	};
 	63F920D20DC48FFC0056EA77 /* zconf.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1091, 4872}}";
+			sepNavIntBoundsRect = "{{0, 0}, {1091, 4648}}";
 			sepNavSelRange = "{8494, 0}";
-			sepNavVisRange = "{7655, 1277}";
+			sepNavVisRange = "{7662, 1270}";
 			sepNavWindowFrame = "{{15, 164}, {1150, 833}}";
 		};
 	};

@@ -54,7 +54,7 @@ static void writeChunk(FileVaultInfo* info) {
 
 	FLIPENDIAN(myChunk);
 	HMAC_Init_ex(&(info->hmacCTX), NULL, 0, NULL, NULL);
-	HMAC_Update(&(info->hmacCTX), (void *) &myChunk, sizeof(uint32_t));
+	HMAC_Update(&(info->hmacCTX), (unsigned char *) &myChunk, sizeof(uint32_t));
 	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
 
 	AES_cbc_encrypt(info->chunk, buffer, FILEVAULT_CHUNK_SIZE, &(info->aesEncKey), msgDigest, AES_ENCRYPT);
@@ -88,7 +88,7 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 
 	FLIPENDIAN(chunk);
 	HMAC_Init_ex(&(info->hmacCTX), NULL, 0, NULL, NULL);
-	HMAC_Update(&(info->hmacCTX), (void *) &chunk, sizeof(uint32_t));
+	HMAC_Update(&(info->hmacCTX), (unsigned char *) &chunk, sizeof(uint32_t));
 	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
 
 	AES_cbc_encrypt(buffer, info->chunk, FILEVAULT_CHUNK_SIZE, &(info->aesKey), msgDigest, AES_DECRYPT);
