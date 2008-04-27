@@ -17,3 +17,4 @@ clean:
 dist-clean:	clean
 	-cd dmg/zlib-1.2.3; make clean
 	-rm dmg/zlib-1.2.3/Makefile
+	-rm -rf ide/xcode/build
