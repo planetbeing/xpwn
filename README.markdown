@@ -30,6 +30,17 @@ can only be used with explicit permission (which I probably have given anyone
 who is reading this right now) and is made available only for educational
 purposes.
 
+DEPENDENCIES
+------------
+
+The HFS portion will work on any platform that supports GNU C and POSIX
+conventions. The dmg portion has dependencies on zlib (which is included) and
+libcrypto from openssl (which is not). If libcrypto is not available, remove
+the -DHAVE_CRYPT flags from the CFLAGS of the makefiles. All FileVault
+related actions will fail, but everything else should still work. I imagine
+most places have libcrypto, and probably statically compiled zlib was a dumb
+idea too.
+
 USING
 -----
 
