@@ -9,6 +9,7 @@
 
 #include <openssl/hmac.h>
 #include <openssl/aes.h>
+#include <openssl/evp.h>
 
 #define CHUNKNO(oft) ((uint32_t)((oft)/FILEVAULT_CHUNK_SIZE))
 #define CHUNKOFFSET(oft) ((size_t)((oft) - ((off_t)(CHUNKNO(oft)) * (off_t)FILEVAULT_CHUNK_SIZE)))
@@ -69,9 +70,7 @@ static void writeChunk(FileVaultInfo* info) {
 
 static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 	unsigned char buffer[FILEVAULT_CHUNK_SIZE];
-	unsigned char buffer2[FILEVAULT_CHUNK_SIZE];
 	unsigned char msgDigest[FILEVAULT_MSGDGST_LENGTH];
-	unsigned char msgDigest2[FILEVAULT_MSGDGST_LENGTH];
 	uint32_t msgDigestLen;
 
 	if(chunk == info->curChunk) {
@@ -96,7 +95,6 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 }
 
 size_t fvRead(AbstractFile* file, void* data, size_t len) {
-	size_t lengthInCurrentChunk;
 	FileVaultInfo* info;
 	size_t toRead;
 
@@ -104,13 +102,13 @@ size_t fvRead(AbstractFile* file, void* data, size_t len) {
 
 	if((CHUNKOFFSET(info->offset) + len) > FILEVAULT_CHUNK_SIZE) {
 		toRead = FILEVAULT_CHUNK_SIZE - CHUNKOFFSET(info->offset);
-		memcpy(data, (void *)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset)), toRead);
+		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), toRead);
 		info->offset += toRead;
 		cacheChunk(info, CHUNKNO(info->offset));
-		return toRead + fvRead(file, (void *)((uint64_t)data + (uint64_t)toRead), len - toRead);
+		return toRead + fvRead(file, (void *)((uint8_t*)data + toRead), len - toRead);
 	} else {
 		toRead = len;
-		memcpy(data, (void *)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset)), toRead);
+		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), toRead);
 		info->offset += toRead;
 		cacheChunk(info, CHUNKNO(info->offset));
 		return toRead;
@@ -118,7 +116,6 @@ size_t fvRead(AbstractFile* file, void* data, size_t len) {
 }
 
 size_t fvWrite(AbstractFile* file, const void* data, size_t len) {
-	size_t lengthInCurrentChunk;
 	FileVaultInfo* info;
 	size_t toRead;
 	int i;
@@ -135,19 +132,19 @@ size_t fvWrite(AbstractFile* file, const void* data, size_t len) {
 	if((CHUNKOFFSET(info->offset) + len) > FILEVAULT_CHUNK_SIZE) {
 		toRead = FILEVAULT_CHUNK_SIZE - CHUNKOFFSET(info->offset);
 		for(i = 0; i < toRead; i++) {
-			ASSERT(*((char*)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
+			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
 		}
-		memcpy((void *)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset)), data, toRead);
+		memcpy((void *)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset)), data, toRead);
 		info->dirty = TRUE;
 		info->offset += toRead;
 		cacheChunk(info, CHUNKNO(info->offset));
-		return toRead + fvWrite(file, (void *)((uint64_t)data + (uint64_t)toRead), len - toRead);
+		return toRead + fvWrite(file, (void *)((uint8_t*)data + toRead), len - toRead);
 	} else {
 		toRead = len;
 		for(i = 0; i < toRead; i++) {
-			ASSERT(*((char*)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
+			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
 		}
-		memcpy((void *)((uint64_t)(&(info->chunk)) + (uint64_t)CHUNKOFFSET(info->offset)), data, toRead);
+		memcpy((void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), data, toRead);
 		info->dirty = TRUE;
 		info->offset += toRead;
 		cacheChunk(info, CHUNKNO(info->offset));

@@ -527,7 +527,6 @@ int main(int argc, char* argv[]) {
 	int partNum;
 	AbstractFile* in;
 	AbstractFile* out;
-	int index;
 	int hasKey;
 	
 	TestByteOrder();

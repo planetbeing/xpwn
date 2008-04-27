@@ -68,14 +68,14 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 63F9226D0DC493710056EA77 /* hfsplus */;
+			remoteGlobalIDString = 63F9226D0DC493710056EA77;
 			remoteInfo = hfsplus;
 		};
 		637FAC6E0DC4959700D1D35F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 63F921E20DC4909A0056EA77 /* dmg */;
+			remoteGlobalIDString = 63F921E20DC4909A0056EA77;
 			remoteInfo = dmg;
 		};
 		63F9222F0DC4923A0056EA77 /* PBXContainerItemProxy */ = {
@@ -503,6 +503,8 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/build/Release\"",
 				);
+				OTHER_CFLAGS = "-DHAVE_CRYPT";
+				OTHER_LDFLAGS = "-lcrypto";
 				PREBINDING = NO;
 				PRODUCT_NAME = dmg;
 				ZERO_LINK = YES;
@@ -521,6 +523,8 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/build/Release\"",
 				);
+				OTHER_CFLAGS = "-DHAVE_CRYPT";
+				OTHER_LDFLAGS = "-lcrypto";
 				PREBINDING = NO;
 				PRODUCT_NAME = dmg;
 				ZERO_LINK = NO;

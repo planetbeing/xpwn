@@ -20,7 +20,7 @@
  * Jacob Appelbaum <jacob@appelbaum.net>, and Christian Fromme <kaner@strace.org>
  */
 
-#define FILEVAULT_V2_SIGNATURE 0x656e637263647361
+#define FILEVAULT_V2_SIGNATURE 0x656e637263647361ULL
 
 typedef struct FileVaultV1Header {
 	uint8_t		padding1[48];

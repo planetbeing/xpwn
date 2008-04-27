@@ -95,7 +95,7 @@ AbstractFile* createAbstractFileFromDummy() {
 
 size_t memRead(AbstractFile* file, void* data, size_t len) {
   MemWrapperInfo* info = (MemWrapperInfo*) (file->data); 
-  memcpy(data, (void*)((uint64_t)info->buffer + (uint64_t)info->offset), len);
+  memcpy(data, (void*)((uint8_t*)info->buffer + (uint32_t)info->offset), len);
   info->offset += (size_t)len;
   return len;
 }
@@ -108,7 +108,7 @@ size_t memWrite(AbstractFile* file, const void* data, size_t len) {
     info->buffer = realloc(info->buffer, info->bufferSize);
   }
   
-  memcpy((void*)((uint64_t)info->buffer + (uint64_t)info->offset), data, len);
+  memcpy((void*)((uint8_t*)info->buffer + (uint32_t)info->offset), data, len);
   info->offset += (size_t)len;
   return len;
 }
