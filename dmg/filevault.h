@@ -50,14 +50,14 @@ typedef struct FileVaultV2Header {
 	uint32_t	blockSize;
 	uint64_t	dataSize;
 	uint64_t	dataOffset;
-	uint8_t	padding[0x260];
+	uint8_t		padding[0x260];
 	uint32_t	kdfAlgorithm;
 	uint32_t	kdfPRNGAlgorithm;
 	uint32_t	kdfIterationCount;
 	uint32_t	kdfSaltLen;
 	uint8_t 	kdfSalt[0x20];
 	uint32_t	blobEncIVSize;
-	uint8_t	blobEncIV[0x20];
+	uint8_t		blobEncIV[0x20];
 	uint32_t	blobEncKeyBits;
 	uint32_t	blobEncAlgorithm;
 	uint32_t	blobEncPadding;
@@ -72,6 +72,10 @@ typedef struct FileVaultInfo {
 		FileVaultV2Header v2;
 	} header;
 
+	uint8_t		version;
+	uint64_t	dataOffset;
+	uint64_t	dataSize;
+
 	AbstractFile*	file;
 
 	HMAC_CTX	hmacCTX;
@@ -84,6 +88,7 @@ typedef struct FileVaultInfo {
 	unsigned char	chunk[FILEVAULT_CHUNK_SIZE];
 
 	char		dirty;
+	char		headerDirty;
 } FileVaultInfo;
 #endif
 

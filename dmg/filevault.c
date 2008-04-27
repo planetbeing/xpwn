@@ -58,10 +58,10 @@ static void writeChunk(FileVaultInfo* info) {
 
 	AES_cbc_encrypt(info->chunk, buffer, FILEVAULT_CHUNK_SIZE, &(info->aesEncKey), msgDigest, AES_ENCRYPT);
 
-	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->header.v2.dataOffset);
+	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->dataOffset);
 	info->file->read(info->file, buffer2, FILEVAULT_CHUNK_SIZE);
 
-	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->header.v2.dataOffset);
+	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->dataOffset);
 	info->file->write(info->file, buffer, FILEVAULT_CHUNK_SIZE);
 
 	info->dirty = FALSE;
@@ -82,7 +82,7 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 		writeChunk(info);
 	}
 
-	info->file->seek(info->file, chunk * FILEVAULT_CHUNK_SIZE + info->header.v2.dataOffset);
+	info->file->seek(info->file, chunk * FILEVAULT_CHUNK_SIZE + info->dataOffset);
 	info->file->read(info->file, buffer, FILEVAULT_CHUNK_SIZE);
 
 	info->curChunk = chunk;
@@ -125,6 +125,13 @@ size_t fvWrite(AbstractFile* file, const void* data, size_t len) {
 
 	info = (FileVaultInfo*) (file->data);
 
+	if(info->dataSize < (info->offset + len)) {
+		if(info->version == 2) {
+			info->header.v2.dataSize = info->offset + len;
+		}
+		info->headerDirty = TRUE;
+	}
+
 	if((CHUNKOFFSET(info->offset) + len) > FILEVAULT_CHUNK_SIZE) {
 		toRead = FILEVAULT_CHUNK_SIZE - CHUNKOFFSET(info->offset);
 		for(i = 0; i < toRead; i++) {
@@ -162,7 +169,7 @@ off_t fvTell(AbstractFile* file) {
 
 off_t fvGetLength(AbstractFile* file) {
 	FileVaultInfo* info = (FileVaultInfo*) (file->data);
-	return info->header.v2.dataSize;
+	return info->dataSize;
 }
 
 void fvClose(AbstractFile* file) {
@@ -176,6 +183,14 @@ void fvClose(AbstractFile* file) {
 	}
 
 	HMAC_CTX_cleanup(&(info->hmacCTX));
+
+	if(info->headerDirty) {
+		if(info->version == 2) {
+			file->seek(file, 0);
+			flipFileVaultV2Header(&(info->header.v2));
+			file->write(file, &(info->header.v2), sizeof(FileVaultV2Header));
+		}
+	}
 
 	info->file->close(info->file);
 	free(info);
@@ -202,6 +217,8 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile));	
 	info = (FileVaultInfo*) malloc(sizeof(FileVaultInfo));
 
+	info->version = 2;
+
 	file->seek(file, 0);
 	file->read(file, &(info->header.v2), sizeof(FileVaultV2Header));
 	flipFileVaultV2Header(&(info->header.v2));
@@ -219,9 +236,12 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	AES_set_decrypt_key(aesKey, FILEVAULT_CIPHER_KEY_LENGTH * 8, &(info->aesKey));
 	AES_set_encrypt_key(aesKey, FILEVAULT_CIPHER_KEY_LENGTH * 8, &(info->aesEncKey));
 
+	info->dataOffset = info->header.v2.dataOffset;
+	info->dataSize = info->header.v2.dataSize;
 	info->offset = 0;
 	info->file = file;
 
+	info->headerDirty = FALSE;
 	info->dirty = FALSE;
 	info->curChunk = 1; /* just to set it to a value not 0 */
 	cacheChunk(info, 0);
