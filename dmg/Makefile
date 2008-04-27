@@ -1,5 +1,5 @@
 DMGOBJS=dmg.o base64.o resources.o checksum.o udif.o partition.o io.o abstractfile.o filevault.o dmgfile.o zlib-1.2.3/libz.a
-HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o
+HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o
 CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT
 LIBRARIES=-lcrypto
 

@@ -181,6 +181,26 @@ static int catalogCompare(BTKey* vLeft, BTKey* vRight) {
   }
 }
 
+static int catalogCompareCS(BTKey* vLeft, BTKey* vRight) {
+  HFSPlusCatalogKey* left;
+  HFSPlusCatalogKey* right;
+  uint16_t i;
+
+  uint16_t cLeft;
+  uint16_t cRight;
+  
+  left = (HFSPlusCatalogKey*) vLeft;
+  right =(HFSPlusCatalogKey*) vRight;
+   
+  if(left->parentID < right->parentID) {
+    return -1;
+  } else if(left->parentID > right->parentID) {
+    return 1;
+  } else {
+    return FastUnicodeCompare(left->nodeName.unicode, left->nodeName.length, right->nodeName.unicode, right->nodeName.length);
+  }
+}
+
 static BTKey* catalogKeyRead(off_t offset, io_func* io) {
   HFSPlusCatalogKey* key;
   uint16_t i;
@@ -999,5 +1019,13 @@ int chmodFile(const char* pathName, int mode, Volume* volume) {
 }
 
 BTree* openCatalogTree(io_func* file) {
-  return openBTree(file, &catalogCompare, &catalogKeyRead, &catalogKeyWrite, &catalogKeyPrint, &catalogDataRead);
+  BTree* btree;
+
+  btree = openBTree(file, &catalogCompare, &catalogKeyRead, &catalogKeyWrite, &catalogKeyPrint, &catalogDataRead);
+
+  if(btree->headerRec->keyCompareType == kHFSCaseFolding) {
+    btree->compare = &catalogCompareCS;
+  }
+
+  return btree;
 }

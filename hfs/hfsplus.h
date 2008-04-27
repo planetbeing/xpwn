@@ -121,6 +121,9 @@ struct BTNodeDescriptor {
 } __attribute__((__packed__));
 typedef struct BTNodeDescriptor BTNodeDescriptor;
 
+#define kHFSCaseFolding 0xCF
+#define kHFSBinaryCompare 0xBC
+
 struct BTHeaderRec {
     uint16_t    treeDepth;
     uint32_t    rootNode;
@@ -479,6 +482,9 @@ int debugBTree(BTree* tree, int displayTree);
 int addToBTree(BTree* tree, BTKey* searchKey, size_t length, unsigned char* content);
 
 int removeFromBTree(BTree* tree, BTKey* searchKey);
+
+int32_t FastUnicodeCompare ( register uint16_t str1[], register uint16_t length1,
+                            register uint16_t str2[], register uint16_t length2);
 
 #endif
 
