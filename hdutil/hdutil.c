@@ -4,7 +4,9 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
-#include "hfsplus.h"
+#include "../hfs/hfsplus.h"
+#include "../dmg/dmgfile.h"
+#include "../dmg/filevault.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -659,15 +661,31 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 int main(int argc, const char *argv[]) {
 	io_func* io;
 	Volume* volume;
+	AbstractFile* image;
+	int argOff;
 	
 	TestByteOrder();
 	
 	if(argc < 3) {
-		printf("usage: %s <image-file> <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall> <arguments>\n", argv[0]);
+		printf("usage: %s <image-file> (-k <key>) <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall> <arguments>\n", argv[0]);
 		return 0;
 	}
+
+	argOff = 2;
 	
-	io = openFlatFile(argv[1]);
+	if(strstr(argv[1], ".dmg")) {
+		image = createAbstractFileFromFile(fopen(argv[1], "rb"));
+		if(argc > 3) {
+			if(strcmp(argv[2], "-k") == 0) {
+				image = createAbstractFileFromFileVault(image, argv[3]);
+				argOff = 4;
+			}
+		}
+		io = openDmgFilePartition(image, -1);
+	} else {
+		io = openFlatFile(argv[1]);
+	}
+
 	if(io == NULL) {
 		fprintf(stderr, "error: Cannot open image-file.\n");
 		return 1;
@@ -680,31 +698,31 @@ int main(int argc, const char *argv[]) {
 		return 1;
 	}
 	
-	if(argc > 1) {
-		if(strcmp(argv[2], "ls") == 0) {
-			cmd_ls(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "cat") == 0) {
-			cmd_cat(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "mv") == 0) {
-			cmd_mv(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "mkdir") == 0) {
-			cmd_mkdir(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "add") == 0) {
-			cmd_add(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "rm") == 0) {
-			cmd_rm(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "chmod") == 0) {
-			cmd_chmod(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "extract") == 0) {
-			cmd_extract(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "extractall") == 0) {
-			cmd_extractall(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "rmall") == 0) {
-			cmd_rmall(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "addall") == 0) {
-			cmd_addall(volume, argc - 2, argv + 2);
-		} else if(strcmp(argv[2], "grow") == 0) {
-			cmd_grow(volume, argc - 2, argv + 2);
+	if(argc > argOff) {
+		if(strcmp(argv[argOff], "ls") == 0) {
+			cmd_ls(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "cat") == 0) {
+			cmd_cat(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "mv") == 0) {
+			cmd_mv(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "mkdir") == 0) {
+			cmd_mkdir(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "add") == 0) {
+			cmd_add(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "rm") == 0) {
+			cmd_rm(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "chmod") == 0) {
+			cmd_chmod(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "extract") == 0) {
+			cmd_extract(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "extractall") == 0) {
+			cmd_extractall(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "rmall") == 0) {
+			cmd_rmall(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "addall") == 0) {
+			cmd_addall(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "grow") == 0) {
+			cmd_grow(volume, argc - argOff, argv + argOff);
 		}
 	}
 	

@@ -33,13 +33,16 @@ purposes.
 USING
 -----
 
-The targets of the current repository are two command-line utilities that
+The targets of the current repository are three command-line utilities that
 demonstrate the usage of the library functions (except cmd_grow, which really
 ought to be moved to catalog.c). To make compilation simpler, a complete,
 unmodified copy of the zlib distribution is included. The dmg portion of the
-code has dependencies on the HFS+ portion of the code
+code has dependencies on the HFS+ portion of the code. The "hdutil" section
+contains a version of the HFS+ utility that supports directly reading from
+dmgs. It is separate from the HFS+ utility in order that the hfs directory
+does not have dependencies on the dmg directory.
 
-The makefile in the root folder will make both utilities.
+The makefile in the root folder will make all utilities.
 
 ### HFS+
 
@@ -52,5 +55,9 @@ The makefile in the root folder will make both utilities.
 	./configure
 	make
 	cd ..
+	make
+
+### hdutil
+	cd hdiutil
 	make
 

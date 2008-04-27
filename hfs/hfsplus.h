@@ -1,3 +1,6 @@
+#ifndef HFSPLUS_H
+#define HFSPLUS_H
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -476,4 +479,6 @@ int debugBTree(BTree* tree, int displayTree);
 int addToBTree(BTree* tree, BTKey* searchKey, size_t length, unsigned char* content);
 
 int removeFromBTree(BTree* tree, BTKey* searchKey);
+
+#endif
 

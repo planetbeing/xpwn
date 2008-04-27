@@ -101,8 +101,6 @@ const char* plistFooter = "</dict>\n</plist>\n";
 static void flipSizeResource(unsigned char* data, char out) {
   SizeResource* size;
   
-  printf("flipping size\n");
-  
   size = (SizeResource*) data;
   
   FLIPENDIAN(size->version);

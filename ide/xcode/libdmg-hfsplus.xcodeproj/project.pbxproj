@@ -22,6 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		63E264B70DC4A546004B29C4 /* dmgfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 63E264B60DC4A546004B29C4 /* dmgfile.c */; };
 		63F921EA0DC490C20056EA77 /* abstractfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 63F920C60DC48FFC0056EA77 /* abstractfile.c */; };
 		63F921EB0DC490C20056EA77 /* base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 63F920C70DC48FFC0056EA77 /* base64.c */; };
 		63F921EC0DC490C20056EA77 /* checksum.c in Sources */ = {isa = PBXBuildFile; fileRef = 63F920C80DC48FFC0056EA77 /* checksum.c */; };
@@ -88,6 +89,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		63E264B50DC4A546004B29C4 /* dmgfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dmgfile.h; sourceTree = "<group>"; };
+		63E264B60DC4A546004B29C4 /* dmgfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dmgfile.c; sourceTree = "<group>"; };
 		63F920C60DC48FFC0056EA77 /* abstractfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = abstractfile.c; sourceTree = "<group>"; };
 		63F920C70DC48FFC0056EA77 /* base64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = base64.c; sourceTree = "<group>"; };
 		63F920C80DC48FFC0056EA77 /* checksum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = checksum.c; sourceTree = "<group>"; };
@@ -217,6 +220,8 @@
 				63F920D20DC48FFC0056EA77 /* zconf.h */,
 				63F920D30DC48FFC0056EA77 /* zlib-1.2.3 */,
 				63F921C00DC48FFC0056EA77 /* zlib.h */,
+				63E264B50DC4A546004B29C4 /* dmgfile.h */,
+				63E264B60DC4A546004B29C4 /* dmgfile.c */,
 			);
 			name = dmg;
 			path = ../../dmg;
@@ -385,6 +390,7 @@
 				63F921EE0DC490CA0056EA77 /* io.c in Sources */,
 				63F921EC0DC490C20056EA77 /* checksum.c in Sources */,
 				63F921ED0DC490C20056EA77 /* dmg.c in Sources */,
+				63E264B70DC4A546004B29C4 /* dmgfile.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

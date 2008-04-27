@@ -202,6 +202,9 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	uint8_t hmacKey[20];
 	
 	int i;
+
+	if(file == NULL)
+		return NULL;
 	
 	file->seek(file, 0);
 	file->read(file, &signature, sizeof(uint64_t));
