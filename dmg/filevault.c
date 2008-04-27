@@ -11,11 +11,8 @@
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 
-#define CHUNKNO(oft) ((uint32_t)((oft)/FILEVAULT_CHUNK_SIZE))
-#define CHUNKOFFSET(oft) ((size_t)((oft) - ((off_t)(CHUNKNO(oft)) * (off_t)FILEVAULT_CHUNK_SIZE)))
-#define CHUNKBEGIN(oft) C_OFFSET(CHUNKNO(oft))
-
-
+#define CHUNKNO(oft, info) ((uint32_t)((oft)/info->blockSize))
+#define CHUNKOFFSET(oft, info) ((size_t)((oft) - ((off_t)(CHUNKNO(oft, info)) * (off_t)info->blockSize)))
 
 static void flipFileVaultV2Header(FileVaultV2Header* header) {
 	FLIPENDIAN(header->signature);
@@ -44,8 +41,8 @@ static void flipFileVaultV2Header(FileVaultV2Header* header) {
 }
 
 static void writeChunk(FileVaultInfo* info) {
-	unsigned char buffer[FILEVAULT_CHUNK_SIZE];
-	unsigned char buffer2[FILEVAULT_CHUNK_SIZE];
+	unsigned char buffer[info->blockSize];
+	unsigned char buffer2[info->blockSize];
 	unsigned char msgDigest[FILEVAULT_MSGDGST_LENGTH];
 	uint32_t msgDigestLen;
 	uint32_t myChunk;
@@ -57,19 +54,19 @@ static void writeChunk(FileVaultInfo* info) {
 	HMAC_Update(&(info->hmacCTX), (unsigned char *) &myChunk, sizeof(uint32_t));
 	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
 
-	AES_cbc_encrypt(info->chunk, buffer, FILEVAULT_CHUNK_SIZE, &(info->aesEncKey), msgDigest, AES_ENCRYPT);
+	AES_cbc_encrypt(info->chunk, buffer, info->blockSize, &(info->aesEncKey), msgDigest, AES_ENCRYPT);
 
-	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->dataOffset);
-	info->file->read(info->file, buffer2, FILEVAULT_CHUNK_SIZE);
+	info->file->seek(info->file, (info->curChunk * info->blockSize) + info->dataOffset);
+	info->file->read(info->file, buffer2, info->blockSize);
 
-	info->file->seek(info->file, (info->curChunk * FILEVAULT_CHUNK_SIZE) + info->dataOffset);
-	info->file->write(info->file, buffer, FILEVAULT_CHUNK_SIZE);
+	info->file->seek(info->file, (info->curChunk * info->blockSize) + info->dataOffset);
+	info->file->write(info->file, buffer, info->blockSize);
 
 	info->dirty = FALSE;
 }
 
 static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
-	unsigned char buffer[FILEVAULT_CHUNK_SIZE];
+	unsigned char buffer[info->blockSize];
 	unsigned char msgDigest[FILEVAULT_MSGDGST_LENGTH];
 	uint32_t msgDigestLen;
 
@@ -81,8 +78,8 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 		writeChunk(info);
 	}
 
-	info->file->seek(info->file, chunk * FILEVAULT_CHUNK_SIZE + info->dataOffset);
-	info->file->read(info->file, buffer, FILEVAULT_CHUNK_SIZE);
+	info->file->seek(info->file, chunk * info->blockSize + info->dataOffset);
+	info->file->read(info->file, buffer, info->blockSize);
 
 	info->curChunk = chunk;
 
@@ -91,7 +88,7 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 	HMAC_Update(&(info->hmacCTX), (unsigned char *) &chunk, sizeof(uint32_t));
 	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
 
-	AES_cbc_encrypt(buffer, info->chunk, FILEVAULT_CHUNK_SIZE, &(info->aesKey), msgDigest, AES_DECRYPT);
+	AES_cbc_encrypt(buffer, info->chunk, info->blockSize, &(info->aesKey), msgDigest, AES_DECRYPT);
 }
 
 size_t fvRead(AbstractFile* file, void* data, size_t len) {
@@ -100,17 +97,17 @@ size_t fvRead(AbstractFile* file, void* data, size_t len) {
 
 	info = (FileVaultInfo*) (file->data);
 
-	if((CHUNKOFFSET(info->offset) + len) > FILEVAULT_CHUNK_SIZE) {
-		toRead = FILEVAULT_CHUNK_SIZE - CHUNKOFFSET(info->offset);
-		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), toRead);
+	if((CHUNKOFFSET(info->offset, info) + len) > info->blockSize) {
+		toRead = info->blockSize - CHUNKOFFSET(info->offset, info);
+		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset, info)), toRead);
 		info->offset += toRead;
-		cacheChunk(info, CHUNKNO(info->offset));
+		cacheChunk(info, CHUNKNO(info->offset, info));
 		return toRead + fvRead(file, (void *)((uint8_t*)data + toRead), len - toRead);
 	} else {
 		toRead = len;
-		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), toRead);
+		memcpy(data, (void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset, info)), toRead);
 		info->offset += toRead;
-		cacheChunk(info, CHUNKNO(info->offset));
+		cacheChunk(info, CHUNKNO(info->offset, info));
 		return toRead;
 	}
 }
@@ -129,25 +126,25 @@ size_t fvWrite(AbstractFile* file, const void* data, size_t len) {
 		info->headerDirty = TRUE;
 	}
 
-	if((CHUNKOFFSET(info->offset) + len) > FILEVAULT_CHUNK_SIZE) {
-		toRead = FILEVAULT_CHUNK_SIZE - CHUNKOFFSET(info->offset);
+	if((CHUNKOFFSET(info->offset, info) + len) > info->blockSize) {
+		toRead = info->blockSize - CHUNKOFFSET(info->offset, info);
 		for(i = 0; i < toRead; i++) {
-			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
+			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset, info) + i)) == ((char*)data)[i], "blah");
 		}
-		memcpy((void *)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset)), data, toRead);
+		memcpy((void *)((uint8_t*)(&(info->chunk)) + (uint32_t)CHUNKOFFSET(info->offset, info)), data, toRead);
 		info->dirty = TRUE;
 		info->offset += toRead;
-		cacheChunk(info, CHUNKNO(info->offset));
+		cacheChunk(info, CHUNKNO(info->offset, info));
 		return toRead + fvWrite(file, (void *)((uint8_t*)data + toRead), len - toRead);
 	} else {
 		toRead = len;
 		for(i = 0; i < toRead; i++) {
-			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset) + i)) == ((char*)data)[i], "blah");
+			ASSERT(*((char*)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset, info) + i)) == ((char*)data)[i], "blah");
 		}
-		memcpy((void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset)), data, toRead);
+		memcpy((void *)((uint8_t*)(&(info->chunk)) + CHUNKOFFSET(info->offset, info)), data, toRead);
 		info->dirty = TRUE;
 		info->offset += toRead;
-		cacheChunk(info, CHUNKNO(info->offset));
+		cacheChunk(info, CHUNKNO(info->offset, info));
 		return toRead;
 	}
 }
@@ -155,7 +152,7 @@ size_t fvWrite(AbstractFile* file, const void* data, size_t len) {
 int fvSeek(AbstractFile* file, off_t offset) {
 	FileVaultInfo* info = (FileVaultInfo*) (file->data);
 	info->offset = offset;
-	cacheChunk(info, CHUNKNO(offset));
+	cacheChunk(info, CHUNKNO(offset, info));
 	return 0;
 }
 
@@ -238,6 +235,7 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 
 	info->dataOffset = info->header.v2.dataOffset;
 	info->dataSize = info->header.v2.dataSize;
+	info->blockSize = info->header.v2.blockSize;
 	info->offset = 0;
 	info->file = file;
 

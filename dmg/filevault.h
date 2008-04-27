@@ -75,6 +75,7 @@ typedef struct FileVaultInfo {
 	uint8_t		version;
 	uint64_t	dataOffset;
 	uint64_t	dataSize;
+	uint32_t	blockSize;
 
 	AbstractFile*	file;
 
