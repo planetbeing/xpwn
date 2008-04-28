@@ -7,6 +7,7 @@
 #ifdef WIN32
 #define fseeko fseeko64
 #define ftello ftello64
+#define off_t off64_t
 #define mkdir(x, y) mkdir(x)
 #endif
 
