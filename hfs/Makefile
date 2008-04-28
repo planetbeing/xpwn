@@ -12,4 +12,5 @@ hfsplus: $(HFSPLUSOBJS)
 clean:
 	-rm *.o
 	-rm hfsplus
+	-rm hfsplus.exe
 
