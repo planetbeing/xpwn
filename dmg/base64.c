@@ -114,7 +114,7 @@ void writeBase64(AbstractFile* file, unsigned char* data, size_t dataLength, int
     if(width == lineLength) { \
       buffer[pos++] = '\n'; \
       CHECK_BUFFER_SIZE() \
-      for(i = 0; i < tabLength; i++) { \
+      for(j = 0; j < tabLength; j++) { \
         buffer[pos++] = '\t'; \
         CHECK_BUFFER_SIZE() \
       } \
@@ -129,7 +129,7 @@ char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int w
   unsigned char* buffer;
   size_t pos;
   size_t bufferSize;
-  int i;
+  int i, j;
   int lineLength;
   
   bufferSize = 100;
@@ -143,7 +143,6 @@ char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int w
   }
   
   i = 0;
-  
   while(dataLength >= 3) {
     dataLength -= 3;
     buffer[pos++] = dictionary[(data[i] >> 2) & 0x3F];
@@ -156,7 +155,7 @@ char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int w
     CHECK_LINE_END_STRING();
     i += 3;
   }
-  
+
   if(dataLength == 2) {
     buffer[pos++] = dictionary[(data[i] >> 2) & 0x3F];
     CHECK_LINE_END_STRING();
