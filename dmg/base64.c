@@ -141,7 +141,6 @@ char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int w
     CHECK_BUFFER_SIZE()
     buffer[pos++] = '\t';
   }
-  
   i = 0;
   while(dataLength >= 3) {
     dataLength -= 3;

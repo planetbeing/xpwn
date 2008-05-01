@@ -95,7 +95,7 @@ AbstractFile* createAbstractFileFromDummy() {
 
 size_t memRead(AbstractFile* file, void* data, size_t len) {
   MemWrapperInfo* info = (MemWrapperInfo*) (file->data); 
-  memcpy(data, (void*)((uint8_t*)info->buffer + (uint32_t)info->offset), len);
+  memcpy(data, (void*)((uint8_t*)(*(info->buffer)) + (uint32_t)info->offset), len);
   info->offset += (size_t)len;
   return len;
 }
@@ -105,10 +105,10 @@ size_t memWrite(AbstractFile* file, const void* data, size_t len) {
   
   while((info->offset + (size_t)len) > info->bufferSize) {
     info->bufferSize <<= 1;
-    info->buffer = realloc(info->buffer, info->bufferSize);
+    *(info->buffer) = realloc(*(info->buffer), info->bufferSize);
   }
   
-  memcpy((void*)((uint8_t*)info->buffer + (uint32_t)info->offset), data, len);
+  memcpy((void*)((uint8_t*)(*(info->buffer)) + (uint32_t)info->offset), data, len);
   info->offset += (size_t)len;
   return len;
 }
@@ -134,7 +134,7 @@ void memClose(AbstractFile* file) {
   free(file);
 }
 
-AbstractFile* createAbstractFileFromMemory(void* buffer, size_t size) {
+AbstractFile* createAbstractFileFromMemory(void** buffer, size_t size) {
 	MemWrapperInfo* info;
 	AbstractFile* toReturn;
 	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile));
@@ -207,3 +207,92 @@ io_func* IOFuncFromAbstractFile(AbstractFile* file) {
 
 	return io;
 }
+
+size_t memFileRead(AbstractFile* file, void* data, size_t len) {
+  MemFileWrapperInfo* info = (MemFileWrapperInfo*) (file->data); 
+  memcpy(data, (void*)((uint8_t*)(*(info->buffer)) + (uint32_t)info->offset), len);
+  info->offset += (size_t)len;
+  return len;
+}
+
+size_t memFileWrite(AbstractFile* file, const void* data, size_t len) {
+  MemFileWrapperInfo* info = (MemFileWrapperInfo*) (file->data);
+  
+  while((info->offset + (size_t)len) > info->actualBufferSize) {
+		info->actualBufferSize <<= 1;
+    *(info->buffer) = realloc(*(info->buffer), info->actualBufferSize);
+  }
+  
+  if((info->offset + (size_t)len) > (*(info->bufferSize))) {
+		*(info->bufferSize) = info->offset + (size_t)len;
+	}
+      
+  memcpy((void*)((uint8_t*)(*(info->buffer)) + (uint32_t)info->offset), data, len);
+  info->offset += (size_t)len;
+  return len;
+}
+
+int memFileSeek(AbstractFile* file, off_t offset) {
+  MemFileWrapperInfo* info = (MemFileWrapperInfo*) (file->data);
+  info->offset = (size_t)offset;
+  return 0;
+}
+
+off_t memFileTell(AbstractFile* file) {
+  MemFileWrapperInfo* info = (MemFileWrapperInfo*) (file->data);
+  return (off_t)info->offset;
+}
+
+off_t memFileGetLength(AbstractFile* file) {
+  MemFileWrapperInfo* info = (MemFileWrapperInfo*) (file->data);
+  return *(info->bufferSize);
+}
+
+void memFileClose(AbstractFile* file) {
+  free(file->data);
+  free(file);
+}
+
+AbstractFile* createAbstractFileFromMemoryFile(void** buffer, size_t* size) {
+	MemFileWrapperInfo* info;
+	AbstractFile* toReturn;
+	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile));
+	
+	info = (MemFileWrapperInfo*) malloc(sizeof(MemFileWrapperInfo));
+	info->offset = 0;
+	info->buffer = buffer;
+	info->bufferSize = size;
+	info->actualBufferSize = (1024 < (*size)) ? (*size) : 1024;
+	*(info->buffer) = realloc(*(info->buffer), info->actualBufferSize);
+
+	toReturn->data = info;
+	toReturn->read = memFileRead;
+	toReturn->write = memFileWrite;
+	toReturn->seek = memFileSeek;
+	toReturn->tell = memFileTell;
+	toReturn->getLength = memFileGetLength;
+	toReturn->close = memFileClose;
+	return toReturn;
+}
+
+AbstractFile* createAbstractFileFromMemoryFileBuffer(void** buffer, size_t* size, size_t actualBufferSize) {
+	MemFileWrapperInfo* info;
+	AbstractFile* toReturn;
+	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile));
+	
+	info = (MemFileWrapperInfo*) malloc(sizeof(MemFileWrapperInfo));
+	info->offset = 0;
+	info->buffer = buffer;
+	info->bufferSize = size;
+	info->actualBufferSize = actualBufferSize;
+
+	toReturn->data = info;
+	toReturn->read = memFileRead;
+	toReturn->write = memFileWrite;
+	toReturn->seek = memFileSeek;
+	toReturn->tell = memFileTell;
+	toReturn->getLength = memFileGetLength;
+	toReturn->close = memFileClose;
+	return toReturn;
+}
+

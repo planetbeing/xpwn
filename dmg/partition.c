@@ -444,7 +444,7 @@ void readDriverDescriptorMap(AbstractFile* file, ResourceKey* resources) {
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), -1)->data);
 
   buffer = (unsigned char*) malloc(512);
-  bufferFile = createAbstractFileFromMemory(buffer, 512);
+  bufferFile = createAbstractFileFromMemory((void**)&(buffer), 512);
   extractBLKX(file, bufferFile, blkx);
   bufferFile->close(bufferFile);
 
@@ -503,7 +503,7 @@ void writeDriverDescriptorMap(AbstractFile* file, DriverDescriptorRecord* DDM, C
   
   flipDriverDescriptorRecord(buffer, TRUE);
 
-  bufferFile = createAbstractFileFromMemory(buffer, DDM_SIZE * SECTOR_SIZE);
+  bufferFile = createAbstractFileFromMemory((void**)&buffer, DDM_SIZE * SECTOR_SIZE);
   
   blkx = insertBLKX(file, bufferFile, DDM_OFFSET, DDM_SIZE, DDM_DESCRIPTOR, CHECKSUM_CRC32, &CRCProxy, &uncompressedToken,
 			dataForkChecksum, dataForkToken, NULL);
@@ -531,7 +531,7 @@ void writeApplePartitionMap(AbstractFile* file, Partition* partitions, ChecksumF
    
   flipPartition(buffer, TRUE);
 
-  bufferFile = createAbstractFileFromMemory(buffer, PARTITION_SIZE * SECTOR_SIZE);
+  bufferFile = createAbstractFileFromMemory((void**)&buffer, PARTITION_SIZE * SECTOR_SIZE);
    
   blkx = insertBLKX(file, bufferFile, PARTITION_OFFSET, PARTITION_SIZE, 0, CHECKSUM_CRC32,
               &BlockCRC, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
@@ -572,15 +572,20 @@ void writeATAPI(AbstractFile* file, ChecksumFunc dataForkChecksum, void* dataFor
   ChecksumToken uncompressedToken;
   NSizResource* nsiz;
   CSumResource csum;
+  char* atapi;
   
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
   
-  bufferFile = createAbstractFileFromMemory(atapi_data, PARTITION_SIZE * SECTOR_SIZE);
+  atapi = (char*) malloc(ATAPI_SIZE * SECTOR_SIZE);
+  printf("malloc: %x %d\n", atapi, ATAPI_SIZE * SECTOR_SIZE); fflush(stdout);
+  memcpy(atapi, atapi_data, ATAPI_SIZE * SECTOR_SIZE);
+  bufferFile = createAbstractFileFromMemory((void**)&atapi, ATAPI_SIZE * SECTOR_SIZE);
 
   blkx = insertBLKX(file, bufferFile, ATAPI_OFFSET, ATAPI_SIZE, 1, CHECKSUM_CRC32,
               &BlockCRC, &uncompressedToken, dataForkChecksum, dataForkToken, NULL);
 
   bufferFile->close(bufferFile);
+  free(atapi);
 
   blkx->checksum.data[0] = uncompressedToken.crc;
   
@@ -619,7 +624,7 @@ void readApplePartitionMap(AbstractFile* file, ResourceKey* resources) {
   blkx = (BLKXTable*) (getDataByID(getResourceByKey(resources, "blkx"), 0)->data);
 
   partition = (Partition*) malloc(512);
-  bufferFile = createAbstractFileFromMemory(partition, 512);
+  bufferFile = createAbstractFileFromMemory((void**)&partition, 512);
   extractBLKX(file, bufferFile, blkx);
   bufferFile->close(bufferFile);
 
@@ -760,9 +765,9 @@ void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey*
   blkx->reserved4 = 0;
   blkx->reserved5 = 0;
   blkx->reserved6 = 0;
+  memset(&(blkx->checksum), 0, sizeof(blkx->checksum));
   blkx->checksum.type = CHECKSUM_CRC32;
   blkx->checksum.size = 0x20;
-  blkx->checksum.data[0] = 0;
   blkx->blocksRunCount = 2;
   blkx->runs[0].type = BLOCK_IGNORE;
   blkx->runs[0].reserved = 0;
@@ -776,7 +781,6 @@ void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey*
   blkx->runs[1].sectorCount = 0;
   blkx->runs[1].compOffset = blkx->runs[0].compOffset;
   blkx->runs[1].compLength = 0;
-  
   
   *resources = insertData(*resources, "blkx", 3, " (Apple_Free : 4)", (const char*) blkx, sizeof(BLKXTable) + (blkx->blocksRunCount * sizeof(BLKXRun)), ATTRIBUTE_HDIUTIL);
 

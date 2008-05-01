@@ -42,6 +42,7 @@ BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorN
   blkx->reserved4 = 0;
   blkx->reserved5 = 0;
   blkx->reserved6 = 0;
+  memset(&(blkx->checksum), 0, sizeof(blkx->checksum));
   blkx->checksum.type = checksumType;
   blkx->checksum.size = 0x20;
   blkx->blocksRunCount = 0;
@@ -94,15 +95,20 @@ BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorN
     
     if((have / SECTOR_SIZE) > blkx->runs[curRun].sectorCount) {
       blkx->runs[curRun].type = BLOCK_RAW;
-      ASSERT(out->write(out, outBuffer, blkx->runs[curRun].sectorCount * SECTOR_SIZE) == (blkx->runs[curRun].sectorCount * SECTOR_SIZE), "fwrite");
+      ASSERT(out->write(out, inBuffer, blkx->runs[curRun].sectorCount * SECTOR_SIZE) == (blkx->runs[curRun].sectorCount * SECTOR_SIZE), "fwrite");
       blkx->runs[curRun].compLength += blkx->runs[curRun].sectorCount * SECTOR_SIZE;
+
+      if(compressedChk)
+        (*compressedChk)(compressedChkToken, inBuffer, blkx->runs[curRun].sectorCount * SECTOR_SIZE);
+
     } else {
       ASSERT(out->write(out, outBuffer, have) == have, "fwrite");
+
+      if(compressedChk)
+        (*compressedChk)(compressedChkToken, outBuffer, have);
+
       blkx->runs[curRun].compLength += have;
     }
-        
-    if(compressedChk)
-      (*compressedChk)(compressedChkToken, outBuffer, have);
               
     deflateEnd(&strm);
 

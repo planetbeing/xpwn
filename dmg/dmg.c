@@ -492,7 +492,18 @@ int extractDmg(AbstractFile* abstractIn, AbstractFile* abstractOut, int partNum)
 	printf("Writing out data..\n"); fflush(stdout);
 	
 	/* reasonable assumption that 2 is the main partition, given that that's usually the case in SPUD layouts */
-	blkxData = getDataByID(getResourceByKey(resources, "blkx"), partNum);
+	if(partNum < 0) {
+		blkxData = getResourceByKey(resources, "blkx")->data;
+		while(blkxData != NULL) {
+			if(strstr(blkxData->name, "APPLE_HFS") != 0) {
+				break;
+			}
+			blkxData = blkxData->next;
+		}
+	} else {
+		blkxData = getDataByID(getResourceByKey(resources, "blkx"), partNum);
+	}
+	
 	if(blkxData) {
 		extractBLKX(abstractIn, abstractOut, (BLKXTable*)(blkxData->data));
 	} else {

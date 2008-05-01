@@ -437,8 +437,12 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
   char* origPath;
   char* myPath;
   char* word;
+  char* pathLimit;
   
   uint32_t realParent;
+  
+  io_func* io;
+  char pathBuffer[1024];
   
   int exact;
   
@@ -454,7 +458,7 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
     key.parentID = ((HFSPlusCatalogThread*)record)->parentID;
     key.nodeName = ((HFSPlusCatalogThread*)record)->nodeName;
     
-	free(record);
+		free(record);
 	
     record = (HFSPlusCatalogRecord*) search(volume->catalogTree, (BTKey*)(&key), &exact, NULL, NULL);
     return record;
@@ -466,18 +470,21 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
   record = NULL;
    
   key.parentID = kHFSRootFolderID;
+  pathLimit = myPath + strlen(myPath);
   
-  for(word = (char*)strtok(myPath, "/"); word; word = (char*)strtok(NULL, "/")) {
+  for(word = (char*)strtok(myPath, "/"); word && (word < pathLimit);
+	word = ((word + strlen(word) + 1) < pathLimit) ? (char*)strtok(word + strlen(word) + 1, "/") : NULL) {	
     if(name != NULL)
       *name = (char*)(path + (word - origPath));
     
     if(record != NULL) {
       free(record);
-	  record = NULL;
+			record = NULL;
     }
       
-    if(word[0] == '\0')
+    if(word[0] == '\0') {
       continue;
+    }
     
     ASCIIToUnicode(word, &key.nodeName);
     
@@ -489,7 +496,16 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
       return NULL;
     }
       
-    if(record->recordType == kHFSPlusFileRecord) {
+    if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) == S_IFLNK) {
+			io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &(((HFSPlusCatalogFile*)record)->dataFork), record, volume);
+			READ(io, 0, (((HFSPlusCatalogFile*)record)->dataFork).logicalSize, pathBuffer);
+			CLOSE(io);
+			pathBuffer[(((HFSPlusCatalogFile*)record)->dataFork).logicalSize] = '\0';
+			free(record);
+			record = getRecordFromPath(pathBuffer, volume, NULL, &key);		
+		}
+		
+		if(record->recordType == kHFSPlusFileRecord) {	
       free(origPath);
       
       if(retKey != NULL) {

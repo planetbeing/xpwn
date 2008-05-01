@@ -250,9 +250,16 @@ typedef struct ResourceKey {
 
 typedef struct {
 	size_t offset;
-	void* buffer;
+	void** buffer;
 	size_t bufferSize;
 } MemWrapperInfo;
+
+typedef struct {
+	size_t offset;
+	void** buffer;
+	size_t* bufferSize;
+	size_t actualBufferSize;
+} MemFileWrapperInfo;
 
 typedef struct {
     unsigned long state[5];
@@ -350,7 +357,9 @@ void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey*
 
 AbstractFile* createAbstractFileFromFile(FILE* file);
 AbstractFile* createAbstractFileFromDummy();
-AbstractFile* createAbstractFileFromMemory(void* buffer, size_t size);
+AbstractFile* createAbstractFileFromMemory(void** buffer, size_t size);
+AbstractFile* createAbstractFileFromMemoryFile(void** buffer, size_t* size);
+AbstractFile* createAbstractFileFromMemoryFileBuffer(void** buffer, size_t* size, size_t actualBufferSize);
 void abstractFilePrint(AbstractFile* file, const char* format, ...);
 io_func* IOFuncFromAbstractFile(AbstractFile* file);
 
