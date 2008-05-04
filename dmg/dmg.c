@@ -561,7 +561,7 @@ int main(int argc, char* argv[]) {
 	
 
 	if(strcmp(argv[1], "extract") == 0) {
-		partNum = 2;
+		partNum = -1;
 		
 		if(hasKey) {
 			if(argc > 6) {

@@ -2830,8 +2830,8 @@ static ASN1_OBJECT *ln_objs[NUM_LN]={
 &(nid_objs[648]),/* "Microsoft Smartcardlogin" */
 &(nid_objs[136]),/* "Microsoft Trust List Signing" */
 &(nid_objs[649]),/* "Microsoft Universal Principal Name" */
-&(nid_objs[404]),/* "NULL" */
 &(nid_objs[393]),/* "NULL" */
+&(nid_objs[404]),/* "NULL" */
 &(nid_objs[72]),/* "Netscape Base Url" */
 &(nid_objs[76]),/* "Netscape CA Policy Url" */
 &(nid_objs[74]),/* "Netscape CA Revocation Url" */
@@ -3565,14 +3565,14 @@ static ASN1_OBJECT *ln_objs[NUM_LN]={
 
 static ASN1_OBJECT *obj_objs[NUM_OBJ]={
 &(nid_objs[ 0]),/* OBJ_undef                        0 */
-&(nid_objs[645]),/* OBJ_itu_t                        0 */
-&(nid_objs[404]),/* OBJ_ccitt                        OBJ_itu_t */
 &(nid_objs[393]),/* OBJ_joint_iso_ccitt              OBJ_joint_iso_itu_t */
+&(nid_objs[404]),/* OBJ_ccitt                        OBJ_itu_t */
+&(nid_objs[645]),/* OBJ_itu_t                        0 */
 &(nid_objs[434]),/* OBJ_data                         0 9 */
 &(nid_objs[181]),/* OBJ_iso                          1 */
 &(nid_objs[182]),/* OBJ_member_body                  1 2 */
-&(nid_objs[676]),/* OBJ_identified_organization      1 3 */
 &(nid_objs[379]),/* OBJ_org                          1 3 */
+&(nid_objs[676]),/* OBJ_identified_organization      1 3 */
 &(nid_objs[646]),/* OBJ_joint_iso_itu_t              2 */
 &(nid_objs[11]),/* OBJ_X500                         2 5 */
 &(nid_objs[647]),/* OBJ_international_organizations  2 23 */
