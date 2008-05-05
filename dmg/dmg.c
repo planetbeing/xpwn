@@ -495,7 +495,7 @@ int extractDmg(AbstractFile* abstractIn, AbstractFile* abstractOut, int partNum)
 	if(partNum < 0) {
 		blkxData = getResourceByKey(resources, "blkx")->data;
 		while(blkxData != NULL) {
-			if(strcasestr(blkxData->name, "APPLE_HFS") != 0) {
+			if(strstr(blkxData->name, "Apple_HFS") != 0) {
 				break;
 			}
 			blkxData = blkxData->next;
