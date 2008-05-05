@@ -54,7 +54,7 @@ static int flatFileWrite(io_func* io, off_t location, size_t size, void *buffer)
   } else {
     return TRUE;
   }
-  
+ 
   return TRUE;
 }
 

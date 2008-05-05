@@ -263,7 +263,9 @@ AbstractFile* createAbstractFileFromMemoryFile(void** buffer, size_t* size) {
 	info->buffer = buffer;
 	info->bufferSize = size;
 	info->actualBufferSize = (1024 < (*size)) ? (*size) : 1024;
-	*(info->buffer) = realloc(*(info->buffer), info->actualBufferSize);
+	if(info->actualBufferSize != *(info->bufferSize)) {
+		*(info->buffer) = realloc(*(info->buffer), info->actualBufferSize);
+	}
 
 	toReturn->data = info;
 	toReturn->read = memFileRead;

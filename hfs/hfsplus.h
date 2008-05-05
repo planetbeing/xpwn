@@ -216,6 +216,11 @@ enum {
                                         /* info resource */
 };
 
+enum {
+    kSymLinkFileType  = 0x736C6E6B, /* 'slnk' */
+    kSymLinkCreator   = 0x72686170  /* 'rhap' */
+};
+
 struct FileInfo {
   OSType    fileType;           /* The type of the file */
   OSType    fileCreator;        /* The file's creator */
@@ -422,71 +427,81 @@ typedef struct {
   Extent* extents;
 } RawFile;
 
-void panic(const char* panicString);
+#ifdef __cplusplus
+extern "C" {
+#endif
+	void panic(const char* panicString);
 
-void printUnicode(HFSUniStr255* str);
-char* unicodeToAscii(HFSUniStr255* str);
+	void printUnicode(HFSUniStr255* str);
+	char* unicodeToAscii(HFSUniStr255* str);
 
-BTNodeDescriptor* readBTNodeDescriptor(uint32_t num, BTree* tree);
+	BTNodeDescriptor* readBTNodeDescriptor(uint32_t num, BTree* tree);
 
-BTHeaderRec* readBTHeaderRec(io_func* io);
+	BTHeaderRec* readBTHeaderRec(io_func* io);
 
-BTree* openBTree(io_func* io, compareFunc compare, dataReadFunc keyRead, keyWriteFunc keyWrite, keyPrintFunc keyPrint, dataReadFunc dataRead);
+	BTree* openBTree(io_func* io, compareFunc compare, dataReadFunc keyRead, keyWriteFunc keyWrite, keyPrintFunc keyPrint, dataReadFunc dataRead);
 
-void closeBTree(BTree* tree);
+	void closeBTree(BTree* tree);
 
-off_t getRecordOffset(int num, uint32_t nodeNum, BTree* tree);
+	off_t getRecordOffset(int num, uint32_t nodeNum, BTree* tree);
 
-off_t getNodeNumberFromPointerRecord(off_t offset, io_func* io);
+	off_t getNodeNumberFromPointerRecord(off_t offset, io_func* io);
 
-void* search(BTree* tree, BTKey* searchKey, int *exact, uint32_t *nodeNumber, int *recordNumber);
+	void* search(BTree* tree, BTKey* searchKey, int *exact, uint32_t *nodeNumber, int *recordNumber);
 
-io_func* openFlatFile(const char* fileName);
-io_func* openFlatFileRO(const char* fileName);
+	io_func* openFlatFile(const char* fileName);
+	io_func* openFlatFileRO(const char* fileName);
 
-io_func* openRawFile(HFSCatalogNodeID id, HFSPlusForkData* forkData, HFSPlusCatalogRecord* catalogRecord, Volume* volume);
+	io_func* openRawFile(HFSCatalogNodeID id, HFSPlusForkData* forkData, HFSPlusCatalogRecord* catalogRecord, Volume* volume);
 
-void flipExtentRecord(HFSPlusExtentRecord* extentRecord);
+	void flipExtentRecord(HFSPlusExtentRecord* extentRecord);
 
-BTree* openExtentsTree(io_func* file);
+	BTree* openExtentsTree(io_func* file);
 
-void ASCIIToUnicode(const char* ascii, HFSUniStr255* unistr);
+	void ASCIIToUnicode(const char* ascii, HFSUniStr255* unistr);
 
-void flipCatalogFolder(HFSPlusCatalogFolder* record);
-void flipCatalogFile(HFSPlusCatalogFile* record);
-void flipCatalogThread(HFSPlusCatalogThread* record, int out);
+	void flipCatalogFolder(HFSPlusCatalogFolder* record);
+	void flipCatalogFile(HFSPlusCatalogFile* record);
+	void flipCatalogThread(HFSPlusCatalogThread* record, int out);
 
-BTree* openCatalogTree(io_func* file);
-int updateCatalog(Volume* volume, HFSPlusCatalogRecord* catalogRecord);
-int move(const char* source, const char* dest, Volume* volume);
-int removeFile(const char* fileName, Volume* volume);
-HFSCatalogNodeID newFolder(const char* pathName, Volume* volume);
-HFSCatalogNodeID newFile(const char* pathName, Volume* volume);
-int chmodFile(const char* pathName, int mode, Volume* volume);
+	BTree* openCatalogTree(io_func* file);
+	int updateCatalog(Volume* volume, HFSPlusCatalogRecord* catalogRecord);
+	int move(const char* source, const char* dest, Volume* volume);
+	int removeFile(const char* fileName, Volume* volume);
+	HFSCatalogNodeID newFolder(const char* pathName, Volume* volume);
+	HFSCatalogNodeID newFile(const char* pathName, Volume* volume);
+	int chmodFile(const char* pathName, int mode, Volume* volume);
+	int chownFile(const char* pathName, uint32_t owner, uint32_t group, Volume* volume);
+	int makeSymlink(const char* pathName, const char* target, Volume* volume);
 
-HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume);
-CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume);
-HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey);
-void releaseCatalogRecordList(CatalogRecordList* list);
+	HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume);
+	HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSPlusCatalogKey *key, Volume* volume);
+	CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume);
+	HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey);
+	HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse);
+	void releaseCatalogRecordList(CatalogRecordList* list);
 
-int isBlockUsed(Volume* volume, uint32_t block);
-int setBlockUsed(Volume* volume, uint32_t block, int used);
-int allocate(RawFile* rawFile, off_t size);
+	int isBlockUsed(Volume* volume, uint32_t block);
+	int setBlockUsed(Volume* volume, uint32_t block, int used);
+	int allocate(RawFile* rawFile, off_t size);
 
-void flipForkData(HFSPlusForkData* forkData);
+	void flipForkData(HFSPlusForkData* forkData);
 
-Volume* openVolume(io_func* io);
-void closeVolume(Volume *volume);
-int updateVolume(Volume* volume);
+	Volume* openVolume(io_func* io);
+	void closeVolume(Volume *volume);
+	int updateVolume(Volume* volume);
 
-int debugBTree(BTree* tree, int displayTree);
+	int debugBTree(BTree* tree, int displayTree);
 
-int addToBTree(BTree* tree, BTKey* searchKey, size_t length, unsigned char* content);
+	int addToBTree(BTree* tree, BTKey* searchKey, size_t length, unsigned char* content);
 
-int removeFromBTree(BTree* tree, BTKey* searchKey);
+	int removeFromBTree(BTree* tree, BTKey* searchKey);
 
-int32_t FastUnicodeCompare ( register uint16_t str1[], register uint16_t length1,
-                            register uint16_t str2[], register uint16_t length2);
+	int32_t FastUnicodeCompare ( register uint16_t str1[], register uint16_t length1,
+		                    register uint16_t str2[], register uint16_t length2);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

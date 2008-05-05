@@ -430,7 +430,33 @@ void releaseCatalogRecordList(CatalogRecordList* list) {
 	}
 }
 
+HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSPlusCatalogKey *key, Volume* volume) {
+	io_func* io;
+	char pathBuffer[1024];
+
+	HFSPlusCatalogRecord* toReturn;
+	if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) == S_IFLNK) {
+		io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &(((HFSPlusCatalogFile*)record)->dataFork), record, volume);
+		READ(io, 0, (((HFSPlusCatalogFile*)record)->dataFork).logicalSize, pathBuffer);
+		CLOSE(io);
+		pathBuffer[(((HFSPlusCatalogFile*)record)->dataFork).logicalSize] = '\0';
+		toReturn = getRecordFromPath(pathBuffer, volume, NULL, key);
+		if(toReturn) {
+			free(record);
+			return toReturn;
+		} else {
+			return record;
+		}
+	} else {
+		return record;
+	}
+}
+
 HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey) {
+	return getRecordFromPath2(path, volume, name, retKey, TRUE);
+}
+
+HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse) {
   HFSPlusCatalogKey key;
   HFSPlusCatalogRecord* record;
   
@@ -440,10 +466,7 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
   char* pathLimit;
   
   uint32_t realParent;
-  
-  io_func* io;
-  char pathBuffer[1024];
-  
+   
   int exact;
   
   if(path[0] == '\0' || (path[0] == '/' && path[1] == '\0')) {
@@ -495,15 +518,9 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
       free(origPath);
       return NULL;
     }
-      
-    if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) == S_IFLNK) {
-			io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &(((HFSPlusCatalogFile*)record)->dataFork), record, volume);
-			READ(io, 0, (((HFSPlusCatalogFile*)record)->dataFork).logicalSize, pathBuffer);
-			CLOSE(io);
-			pathBuffer[(((HFSPlusCatalogFile*)record)->dataFork).logicalSize] = '\0';
-			free(record);
-			record = getRecordFromPath(pathBuffer, volume, NULL, &key);		
-		}
+      if(traverse) {
+	record = getLinkTarget(record, &key, volume);
+      }
 		
 		if(record->recordType == kHFSPlusFileRecord) {	
       free(origPath);
@@ -821,6 +838,36 @@ int removeFile(const char* fileName, Volume* volume) {
   }
 }
 
+int makeSymlink(const char* pathName, const char* target, Volume* volume) {
+	io_func* io;
+	HFSPlusCatalogFile* record;
+
+	record = (HFSPlusCatalogFile*) getRecordFromPath2(pathName, volume, NULL, NULL, FALSE);
+
+	if(!record) {
+		newFile(pathName, volume);
+		record = (HFSPlusCatalogFile*) getRecordFromPath(pathName, volume, NULL, NULL);
+		if(!record) {
+			return FALSE;
+		}
+		record->permissions.fileMode |= S_IFLNK;
+		record->userInfo.fileType = kSymLinkFileType;
+		record->userInfo.fileCreator = kSymLinkCreator;
+		updateCatalog(volume, (HFSPlusCatalogRecord*) record);
+	} else {
+		if(record->recordType != kHFSPlusFileRecord || (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) != S_IFLNK) {
+			free(record);
+			return FALSE;
+		}
+	}
+
+	io = openRawFile(record->fileID, &record->dataFork, (HFSPlusCatalogRecord*) record, volume);
+	WRITE(io, 0, strlen(target), (void*) target);
+	CLOSE(io);
+
+	return TRUE;
+}
+
 HFSCatalogNodeID newFolder(const char* pathName, Volume* volume) {
   HFSPlusCatalogFolder* parentFolder;
   HFSPlusCatalogFolder folder;
@@ -1034,6 +1081,33 @@ int chmodFile(const char* pathName, int mode, Volume* volume) {
   return TRUE;
 }
 
+int chownFile(const char* pathName, uint32_t owner, uint32_t group, Volume* volume) {
+  HFSPlusCatalogRecord* record;
+   
+  record = getRecordFromPath(pathName, volume, NULL, NULL);
+  
+  if(record == NULL) {
+    return FALSE;
+  }
+  
+  if(record->recordType == kHFSPlusFolderRecord) {
+    ((HFSPlusCatalogFolder*)record)->permissions.ownerID = owner;
+    ((HFSPlusCatalogFolder*)record)->permissions.groupID = group;
+  } else if(record->recordType == kHFSPlusFileRecord) {
+    ((HFSPlusCatalogFile*)record)->permissions.ownerID = owner;
+    ((HFSPlusCatalogFile*)record)->permissions.groupID = group;
+  } else {
+    return FALSE;
+  }
+  
+  updateCatalog(volume, record);
+  
+  free(record);
+  
+  return TRUE;
+}
+
+
 BTree* openCatalogTree(io_func* file) {
   BTree* btree;
 
@@ -1045,3 +1119,4 @@ BTree* openCatalogTree(io_func* file) {
 
   return btree;
 }
+

@@ -91,6 +91,8 @@ void cmd_ls(Volume* volume, int argc, const char *argv[]) {
 	} else {
 		printf("No such file or directory\n");
 	}
+
+	printf("Total filesystem size: %d, free: %d\n", (volume->volumeHeader->totalBlocks - volume->volumeHeader->freeBlocks) * volume->volumeHeader->blockSize, volume->volumeHeader->freeBlocks * volume->volumeHeader->blockSize);
 	
 	free(record);
 }
@@ -509,6 +511,7 @@ void addAllInFolder(HFSCatalogNodeID folderID, Volume* volume, const char* paren
 		while(list != NULL) {
 			name = unicodeToAscii(&list->name);
 			if(strcmp(name, ent->d_name) == 0) {
+				list->record = getLinkTarget(list->record, NULL, volume);
 				cnid = (list->record->recordType == kHFSPlusFolderRecord) ? (((HFSPlusCatalogFolder*)list->record)->folderID)
 				: (((HFSPlusCatalogFile*)list->record)->fileID);
 				free(name);
@@ -520,8 +523,9 @@ void addAllInFolder(HFSCatalogNodeID folderID, Volume* volume, const char* paren
 		
 		if((tmp = opendir(ent->d_name)) != NULL) {
 			closedir(tmp);
+
 			printf("folder: %s\n", fullName);
-			
+		
 			if(cnid == 0) {
 				cnid = newFolder(fullName, volume);
 			}
@@ -533,6 +537,7 @@ void addAllInFolder(HFSCatalogNodeID folderID, Volume* volume, const char* paren
 			ASSERT(chdir(cwd) == 0, "chdir");
 		} else {
 			printf("file: %s\n", fullName);	
+
 			if(cnid == 0) {
 				cnid = newFile(fullName, volume);
 			}
@@ -658,6 +663,14 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 	printf("grew volume: %lld -> %lld (%d)\n", newSize - (blocksToGrow * volume->volumeHeader->blockSize), newSize, blocksToGrow);
 }
 
+void cmd_symlink(Volume* volume, int argc, const char *argv[]) {
+	if(argc > 2) {
+		makeSymlink(argv[1], argv[2], volume);
+	} else {
+		printf("Not enough arguments");
+	}
+}
+
 int main(int argc, const char *argv[]) {
 	io_func* io;
 	Volume* volume;
@@ -705,6 +718,8 @@ int main(int argc, const char *argv[]) {
 			cmd_cat(volume, argc - argOff, argv + argOff);
 		} else if(strcmp(argv[argOff], "mv") == 0) {
 			cmd_mv(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[2], "symlink") == 0) {
+			cmd_symlink(volume, argc - 2, argv + 2);
 		} else if(strcmp(argv[argOff], "mkdir") == 0) {
 			cmd_mkdir(volume, argc - argOff, argv + argOff);
 		} else if(strcmp(argv[argOff], "add") == 0) {
