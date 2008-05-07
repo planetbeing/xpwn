@@ -676,7 +676,7 @@ int main(int argc, const char *argv[]) {
 	TestByteOrder();
 	
 	if(argc < 3) {
-		printf("usage: %s <image-file> <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall> <arguments>\n", argv[0]);
+		printf("usage: %s <image-file> <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall|debug> <arguments>\n", argv[0]);
 		return 0;
 	}
 	
@@ -720,6 +720,12 @@ int main(int argc, const char *argv[]) {
 			cmd_addall(volume, argc - 2, argv + 2);
 		} else if(strcmp(argv[2], "grow") == 0) {
 			cmd_grow(volume, argc - 2, argv + 2);
+		} else if(strcmp(argv[2], "debug") == 0) {
+			if(argc > 3 && argv[3] == "verbose") {
+				debugBTree(volume->catalogTree, TRUE);
+			} else {
+				debugBTree(volume->catalogTree, FALSE);
+			}
 		}
 	}
 	

@@ -40,7 +40,7 @@ int allocate(RawFile* rawFile, off_t size) {
   volume = rawFile->volume;
   forkData = rawFile->forkData;
   extent = rawFile->extents;
-  
+ 
   blocksNeeded = ((uint64_t)size / (uint64_t)volume->volumeHeader->blockSize) + (((size % volume->volumeHeader->blockSize) == 0) ? 0 : 1);
   
   if(blocksNeeded > forkData->totalBlocks) {
@@ -86,10 +86,10 @@ int allocate(RawFile* rawFile, off_t size) {
         if(lastExtent->blockCount == 0) {
           lastExtent->startBlock = curBlock;
         }
-        
+
         /* zero out allocated block */
         ASSERT(WRITE(volume->image, curBlock * volume->volumeHeader->blockSize, volume->volumeHeader->blockSize, zeros), "WRITE");
-        
+
         setBlockUsed(volume, curBlock, TRUE);
         volume->volumeHeader->freeBlocks--;
         blocksToAllocate--;
@@ -142,7 +142,7 @@ int allocate(RawFile* rawFile, off_t size) {
   
   forkData->logicalSize = size;
   forkData->totalBlocks = blocksNeeded;
-  
+
   updateVolume(rawFile->volume);
   
   if(rawFile->catalogRecord != NULL) {
@@ -159,6 +159,7 @@ static int rawFileRead(io_func* io,off_t location, size_t size, void *buffer) {
   
   size_t blockSize;
   off_t fileLoc;
+  off_t locationInBlock;
   size_t possible;
   
   rawFile = (RawFile*) io->data;
@@ -168,9 +169,11 @@ static int rawFileRead(io_func* io,off_t location, size_t size, void *buffer) {
   extent = rawFile->extents;
   fileLoc = 0;
   
+  locationInBlock = location;
   while(TRUE) {
     fileLoc += extent->blockCount * blockSize;
     if(fileLoc <= location) {
+      locationInBlock -= extent->blockCount * blockSize;
       extent = extent->next;
       if(extent == NULL)
         break;
@@ -183,19 +186,19 @@ static int rawFileRead(io_func* io,off_t location, size_t size, void *buffer) {
     if(extent == NULL)
       return FALSE;
       
-    possible = extent->blockCount * blockSize - location;
+    possible = extent->blockCount * blockSize - locationInBlock;
         
     if(size > possible) {
-      ASSERT(READ(volume->image, extent->startBlock * blockSize + location, possible, buffer), "READ");
+      ASSERT(READ(volume->image, extent->startBlock * blockSize + locationInBlock, possible, buffer), "READ");
       size -= possible;
       buffer = (void*)(((size_t)buffer) + possible);
       extent = extent->next;
     } else {
-      ASSERT(READ(volume->image, extent->startBlock * blockSize + location, size, buffer), "READ");
+      ASSERT(READ(volume->image, extent->startBlock * blockSize + locationInBlock, size, buffer), "READ");
       break;
     }
     
-    location = 0;
+    locationInBlock = 0;
   }
    
   return TRUE;
@@ -208,6 +211,7 @@ static int rawFileWrite(io_func* io,off_t location, size_t size, void *buffer) {
   
   size_t blockSize;
   off_t fileLoc;
+  off_t locationInBlock;
   size_t possible;
   
   rawFile = (RawFile*) io->data;
@@ -221,9 +225,11 @@ static int rawFileWrite(io_func* io,off_t location, size_t size, void *buffer) {
   extent = rawFile->extents;
   fileLoc = 0;
   
+  locationInBlock = location;
   while(TRUE) {
     fileLoc += extent->blockCount * blockSize;
     if(fileLoc <= location) {
+      locationInBlock -= extent->blockCount * blockSize;
       extent = extent->next;
       if(extent == NULL)
         break;
@@ -236,19 +242,19 @@ static int rawFileWrite(io_func* io,off_t location, size_t size, void *buffer) {
     if(extent == NULL)
       return FALSE;
       
-    possible = extent->blockCount * blockSize - location;
+    possible = extent->blockCount * blockSize - locationInBlock;
         
     if(size > possible) {
-      ASSERT(WRITE(volume->image, extent->startBlock * blockSize + location, possible, buffer), "WRITE");
+      ASSERT(WRITE(volume->image, extent->startBlock * blockSize + locationInBlock, possible, buffer), "WRITE");
       size -= possible;
       buffer = (void*)(((size_t)buffer) + possible);
       extent = extent->next;
     } else {
-      ASSERT(WRITE(volume->image, extent->startBlock * blockSize + location, size, buffer), "WRITE");
+      ASSERT(WRITE(volume->image, extent->startBlock * blockSize + locationInBlock, size, buffer), "WRITE");
       break;
     }
     
-    location = 0;
+    locationInBlock = 0;
   }
    
   return TRUE;
