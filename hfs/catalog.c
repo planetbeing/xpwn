@@ -430,23 +430,19 @@ void releaseCatalogRecordList(CatalogRecordList* list) {
 	}
 }
 
-HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSPlusCatalogKey *key, Volume* volume) {
+HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSCatalogNodeID parentID, HFSPlusCatalogKey *key, Volume* volume) {
 	io_func* io;
 	char pathBuffer[1024];
-
 	HFSPlusCatalogRecord* toReturn;
+
 	if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) == S_IFLNK) {
 		io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &(((HFSPlusCatalogFile*)record)->dataFork), record, volume);
 		READ(io, 0, (((HFSPlusCatalogFile*)record)->dataFork).logicalSize, pathBuffer);
 		CLOSE(io);
 		pathBuffer[(((HFSPlusCatalogFile*)record)->dataFork).logicalSize] = '\0';
-		toReturn = getRecordFromPath(pathBuffer, volume, NULL, key);
-		if(toReturn) {
-			free(record);
-			return toReturn;
-		} else {
-			return record;
-		}
+		toReturn = getRecordFromPath3(pathBuffer, volume, NULL, key, TRUE, TRUE, parentID);
+		free(record);
+		return toReturn;
 	} else {
 		return record;
 	}
@@ -457,6 +453,10 @@ HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char *
 }
 
 HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse) {
+	return getRecordFromPath3(path, volume, name, retKey, TRUE, TRUE, kHFSRootFolderID);
+}
+
+HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse, char returnLink, HFSCatalogNodeID parentID) {
   HFSPlusCatalogKey key;
   HFSPlusCatalogRecord* record;
   
@@ -466,7 +466,7 @@ HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char 
   char* pathLimit;
   
   uint32_t realParent;
-   
+  char* lastWordDetectSlash; 
   int exact;
   
   if(path[0] == '\0' || (path[0] == '/' && path[1] == '\0')) {
@@ -481,7 +481,7 @@ HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char 
     key.parentID = ((HFSPlusCatalogThread*)record)->parentID;
     key.nodeName = ((HFSPlusCatalogThread*)record)->nodeName;
     
-		free(record);
+    free(record);
 	
     record = (HFSPlusCatalogRecord*) search(volume->catalogTree, (BTKey*)(&key), &exact, NULL, NULL);
     return record;
@@ -491,24 +491,30 @@ HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char 
   origPath = myPath;
   
   record = NULL;
-   
-  key.parentID = kHFSRootFolderID;
+
+  if(path[0] == '/') {
+    key.parentID = kHFSRootFolderID;
+  } else {
+    key.parentID = parentID;
+  }
+
   pathLimit = myPath + strlen(myPath);
   
   for(word = (char*)strtok(myPath, "/"); word && (word < pathLimit);
-	word = ((word + strlen(word) + 1) < pathLimit) ? (char*)strtok(word + strlen(word) + 1, "/") : NULL) {	
+      word = ((word + strlen(word) + 1) < pathLimit) ? (char*)strtok(word + strlen(word) + 1, "/") : NULL) {
+
     if(name != NULL)
       *name = (char*)(path + (word - origPath));
     
     if(record != NULL) {
       free(record);
-			record = NULL;
+      record = NULL;
     }
       
     if(word[0] == '\0') {
       continue;
     }
-    
+
     ASCIIToUnicode(word, &key.nodeName);
     
     key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length) + (sizeof(uint16_t) * key.nodeName.length);
@@ -518,11 +524,19 @@ HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char 
       free(origPath);
       return NULL;
     }
-      if(traverse) {
-	record = getLinkTarget(record, &key, volume);
+
+    if(traverse) {
+      lastWordDetectSlash = strchr(word, '/');
+      if((lastWordDetectSlash && *(lastWordDetectSlash + 1) != '\0') || returnLink) {
+        record = getLinkTarget(record, key.parentID, &key, volume);
+        if(record == NULL || exact == FALSE) {
+          free(origPath);
+          return NULL;
+        }
       }
-		
-		if(record->recordType == kHFSPlusFileRecord) {	
+    }
+	
+    if(record->recordType == kHFSPlusFileRecord) {	
       free(origPath);
       
       if(retKey != NULL) {
@@ -601,7 +615,6 @@ int move(const char* source, const char* dest, Volume* volume) {
   HFSPlusCatalogRecord* srcRec;
   HFSPlusCatalogFolder* srcFolderRec;
   HFSPlusCatalogFolder* destRec;
-  char* srcFolderName;
   char* destPath;
   char* destName;
   char* curChar;
@@ -614,36 +627,18 @@ int move(const char* source, const char* dest, Volume* volume) {
   HFSPlusCatalogKey destKey;
   HFSPlusCatalogThread* thread;
   
-  srcRec = getRecordFromPath(source, volume, NULL, &srcKey);
-  
+  srcRec = getRecordFromPath3(source, volume, NULL, &srcKey, TRUE, FALSE, kHFSRootFolderID);
   if(srcRec == NULL) {
     free(srcRec);
     return FALSE;
   }
   
-  srcFolderName = strdup(source);
-  
-  curChar = srcFolderName;
-  lastSeparator = NULL;
-  
-  while((*curChar) != '\0') {
-    if((*curChar) == '/')
-      lastSeparator = curChar;
-    curChar++;
-  }
-  
-  if(lastSeparator == NULL) {
-    srcFolderRec = (HFSPlusCatalogFolder*) getRecordFromPath("/", volume, NULL, NULL);
-  } else {
-    *lastSeparator = '\0';
-    srcFolderRec = (HFSPlusCatalogFolder*) getRecordFromPath(srcFolderName, volume, NULL, NULL);
+  srcFolderRec = (HFSPlusCatalogFolder*) getRecordByCNID(srcKey.parentID, volume);
     
-    if(srcFolderRec == NULL || srcFolderRec->recordType != kHFSPlusFolderRecord) {
-      free(srcFolderName);
-      free(srcRec);
-      free(srcFolderRec);
-      return FALSE;
-    }
+  if(srcFolderRec == NULL || srcFolderRec->recordType != kHFSPlusFolderRecord) {
+    free(srcRec);
+    free(srcFolderRec);
+    return FALSE;
   }
     
   destPath = strdup(dest);
@@ -669,7 +664,6 @@ int move(const char* source, const char* dest, Volume* volume) {
       free(destPath);
       free(srcRec);
       free(destRec);
-      free(srcFolderName);
       free(srcFolderRec);
       return FALSE;
     }
@@ -737,7 +731,6 @@ int move(const char* source, const char* dest, Volume* volume) {
   free(destPath);
   free(srcRec);
   free(destRec);
-  free(srcFolderName);
   free(srcFolderRec);
       
   return TRUE;
@@ -745,50 +738,27 @@ int move(const char* source, const char* dest, Volume* volume) {
 
 int removeFile(const char* fileName, Volume* volume) {
   HFSPlusCatalogRecord* record;
+  HFSPlusCatalogRecord* parentRecord;
   HFSPlusCatalogKey key;
+  HFSPlusCatalogKey parentKey;
   io_func* io;
   HFSPlusCatalogFolder* parentFolder;
-  char* path;
-  char* name;
-  char* curChar;
-  char* lastSeparator;
-  
-  path = strdup(fileName);
-  
-  curChar = path;
-  lastSeparator = NULL;
-  
-  while((*curChar) != '\0') {
-    if((*curChar) == '/')
-      lastSeparator = curChar;
-    curChar++;
-  }
-  
-  if(lastSeparator == NULL) {
-    parentFolder = (HFSPlusCatalogFolder*) getRecordFromPath("/", volume, NULL, NULL);
-    name = path;
-  } else {
-    name = lastSeparator + 1;
-    *lastSeparator = '\0';
-    parentFolder = (HFSPlusCatalogFolder*) getRecordFromPath(path, volume, NULL, NULL);
-    
-	if(parentFolder != NULL) {
-		if(parentFolder->recordType != kHFSPlusFolderRecord) {
-			ASSERT(FALSE, "parent not folder");
-			free(path);
-			free(parentFolder);
-			return FALSE;
-		}
-	} else {
-		free(path);
-		ASSERT(FALSE, "can't find parent");
+  int exact;
+
+  record = getRecordFromPath3(fileName, volume, NULL, &key, TRUE, FALSE, kHFSRootFolderID);
+  if(record != NULL) {
+    parentFolder = (HFSPlusCatalogFolder*) getRecordByCNID(key.parentID, volume);
+    if(parentFolder != NULL) {
+	if(parentFolder->recordType != kHFSPlusFolderRecord) {
+		ASSERT(FALSE, "parent not folder");
+		free(parentFolder);
 		return FALSE;
 	}
-  }  
-  
-  record = getRecordFromPath(fileName, volume, NULL, &key);
-  
-  if(record != NULL) {
+    } else {
+	ASSERT(FALSE, "can't find parent");
+	return FALSE;
+    }
+
     if(record->recordType == kHFSPlusFileRecord) {
       io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &((HFSPlusCatalogFile*)record)->dataFork, record, volume);
       allocate((RawFile*)io->data, 0);
@@ -806,7 +776,6 @@ int removeFile(const char* fileName, Volume* volume) {
       if(((HFSPlusCatalogFolder*)record)->valence > 0) {
 		free(record);
 		free(parentFolder);
-		free(path);
 		ASSERT(FALSE, "folder not empty");
         return FALSE;
       } else {
@@ -827,12 +796,10 @@ int removeFile(const char* fileName, Volume* volume) {
 
 	free(record);
 	free(parentFolder);
-	free(path);
 	
     return TRUE;
   } else {
 	free(parentFolder);
-	free(path);
 	ASSERT(FALSE, "cannot find record");
     return FALSE;
   }
@@ -842,7 +809,7 @@ int makeSymlink(const char* pathName, const char* target, Volume* volume) {
 	io_func* io;
 	HFSPlusCatalogFile* record;
 
-	record = (HFSPlusCatalogFile*) getRecordFromPath2(pathName, volume, NULL, NULL, FALSE);
+	record = (HFSPlusCatalogFile*) getRecordFromPath3(pathName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
 
 	if(!record) {
 		newFile(pathName, volume);

@@ -517,7 +517,7 @@ void addAllInFolder(HFSCatalogNodeID folderID, Volume* volume, const char* paren
 		while(list != NULL) {
 			name = unicodeToAscii(&list->name);
 			if(strcmp(name, ent->d_name) == 0) {
-				list->record = getLinkTarget(list->record, NULL, volume);
+				list->record = getLinkTarget(list->record, folderID, NULL, volume);
 				cnid = (list->record->recordType == kHFSPlusFolderRecord) ? (((HFSPlusCatalogFolder*)list->record)->folderID)
 				: (((HFSPlusCatalogFile*)list->record)->fileID);
 				free(name);

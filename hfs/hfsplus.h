@@ -475,10 +475,11 @@ extern "C" {
 	int makeSymlink(const char* pathName, const char* target, Volume* volume);
 
 	HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume);
-	HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSPlusCatalogKey *key, Volume* volume);
+	HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSCatalogNodeID parentID, HFSPlusCatalogKey *key, Volume* volume);
 	CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume);
 	HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey);
 	HFSPlusCatalogRecord* getRecordFromPath2(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse);
+	HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey, char traverse, char returnLink, HFSCatalogNodeID parentID);
 	void releaseCatalogRecordList(CatalogRecordList* list);
 
 	int isBlockUsed(Volume* volume, uint32_t block);
