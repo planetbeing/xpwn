@@ -82,38 +82,3 @@ clean:
 	rm -f *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
-o_names.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
-o_names.o: ../../include/openssl/crypto.h ../../include/openssl/e_os2.h
-o_names.o: ../../include/openssl/err.h ../../include/openssl/lhash.h
-o_names.o: ../../include/openssl/obj_mac.h ../../include/openssl/objects.h
-o_names.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
-o_names.o: ../../include/openssl/ossl_typ.h ../../include/openssl/safestack.h
-o_names.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
-o_names.o: o_names.c
-obj_dat.o: ../../e_os.h ../../include/openssl/asn1.h
-obj_dat.o: ../../include/openssl/bio.h ../../include/openssl/buffer.h
-obj_dat.o: ../../include/openssl/crypto.h ../../include/openssl/e_os2.h
-obj_dat.o: ../../include/openssl/err.h ../../include/openssl/lhash.h
-obj_dat.o: ../../include/openssl/obj_mac.h ../../include/openssl/objects.h
-obj_dat.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
-obj_dat.o: ../../include/openssl/ossl_typ.h ../../include/openssl/safestack.h
-obj_dat.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
-obj_dat.o: ../cryptlib.h obj_dat.c obj_dat.h
-obj_err.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
-obj_err.o: ../../include/openssl/crypto.h ../../include/openssl/e_os2.h
-obj_err.o: ../../include/openssl/err.h ../../include/openssl/lhash.h
-obj_err.o: ../../include/openssl/obj_mac.h ../../include/openssl/objects.h
-obj_err.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
-obj_err.o: ../../include/openssl/ossl_typ.h ../../include/openssl/safestack.h
-obj_err.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
-obj_err.o: obj_err.c
-obj_lib.o: ../../e_os.h ../../include/openssl/asn1.h
-obj_lib.o: ../../include/openssl/bio.h ../../include/openssl/buffer.h
-obj_lib.o: ../../include/openssl/crypto.h ../../include/openssl/e_os2.h
-obj_lib.o: ../../include/openssl/err.h ../../include/openssl/lhash.h
-obj_lib.o: ../../include/openssl/obj_mac.h ../../include/openssl/objects.h
-obj_lib.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
-obj_lib.o: ../../include/openssl/ossl_typ.h ../../include/openssl/safestack.h
-obj_lib.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
-obj_lib.o: ../cryptlib.h obj_lib.c

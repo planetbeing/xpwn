@@ -1,0 +1,153 @@
+#!/bin/sh
+
+# zgrep -- a wrapper around a grep program that decompresses files as needed
+# Adapted from a version sent by Charles Levert <charles@comm.polymtl.ca>
+
+# Copyright (C) 1998, 2001, 2002, 2006 Free Software Foundation
+# Copyright (C) 1993 Jean-loup Gailly
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+PATH="/usr/bin:$PATH"; export PATH
+
+case "$0" in
+	*egrep)	grep=${EGREP-egrep}	;;
+	*fgrep)	grep=${FGREP-fgrep}	;;
+	*)	grep=${GREP-grep}	;;
+esac
+
+version="z$grep (gzip) 1.3.9
+Copyright (C) 2006 Free Software Foundation, Inc.
+This is free software.  You may redistribute copies of it under the terms of
+the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Jean-loup Gailly."
+
+usage="Usage: z$grep [OPTION]... [-e] PATTERN [FILE]...
+Look for instances of PATTERN in the input FILEs, using their
+uncompressed contents if they are compressed.
+
+OPTIONs are the same as for '$grep'.
+
+Report bugs to <bug-gzip@gnu.org>."
+
+pat=""
+after_dash_dash=""
+files_with_matches=0
+files_without_matches=0
+no_filename=0
+with_filename=0
+
+while test $# -ne 0; do
+  case "$after_dash_dash$1" in
+  --d* | --rec*)	echo >&2 "$0: $1: option not supported"; exit 2;;
+  --h*)			echo "$usage" || exit 2; exit;;
+  --files-with-*)	files_with_matches=1;;
+  --files-witho*)	files_without_matches=1;;
+  --no-f*)	no_filename=1;;
+  --v*)		echo "$version" || exit 2; exit;;
+  --wi*)	with_filename=1;;
+  --*)	;;
+  -*)
+	case "$1" in
+	-*[dr]*) echo >&2 "$0: $1: option not supported"; exit 2;;
+	esac
+	case "$1" in
+	-*H*)	with_filename=1;;
+	esac
+	case "$1" in
+	-*h*)	no_filename=1;;
+	esac
+	case "$1" in
+	-*L*)	files_without_matches=1;;
+	esac
+	case "$1" in
+	-*l*)	files_with_matches=1;;
+	esac;;
+  esac
+  case "$after_dash_dash$1" in
+  -[ef])   opt="$opt $1"; shift; pat="$1"
+           if test "$grep" = grep; then  # grep is buggy with -e on SVR4
+             grep=egrep
+           fi;;
+  -[ABCdm])opt="$opt $1 $2"; shift;;
+  --)      opt="$opt $1"; after_dash_dash=1;;
+  -*)	   opt="$opt $1";;
+   *)      if test -z "$pat"; then
+	     pat="$1"
+	   else
+	     break;
+           fi;;
+  esac
+  shift
+done
+
+if test -z "$pat"; then
+  echo "$usage"
+  exit 2
+fi
+
+if test $# -eq 0; then
+  gzip -cdfq | $grep $opt "$pat"
+  exit $?
+fi
+
+res=0
+for i do
+  gzip -cdfq -- "$i" |
+    if test $files_with_matches -eq 1; then
+      $grep $opt "$pat" > /dev/null && printf '%s\n' "$i"
+    elif test $files_without_matches -eq 1; then
+      $grep $opt "$pat" > /dev/null || printf '%s\n' "$i"
+    elif test $with_filename -eq 0 && { test $# -eq 1 || test $no_filename -eq 1; }; then
+      $grep $opt "$pat"
+    else
+      escaped=
+      while :; do
+	case $i in
+	*'
+'*)
+	  char='
+'	  repl='\\n';;
+	*'&'*) char='&' repl='\&';;
+	*'\'*) char='\\' repl='\\';;
+	*'|'*) char='|' repl='\|';;
+	*) break;;
+	esac
+	up_to_first_char="\\([^$char]*\\)"
+	after_first_char="[^$char]*$char\\(.*\\)"
+	escaped=$escaped`expr "X$i" : "X$up_to_first_char"`$repl
+ 	i=`expr "X$i" : "$after_first_char"`
+      done
+      if test $with_filename -eq 1; then
+	sed_script="s|[^:]*|$escaped$i|"
+      else
+	sed_script="s|^|$escaped$i:|"
+      fi
+
+      # Fail if either grep or sed fails.
+      # Bash has ${PIPESTATUS[0]}, but that's not portable.
+      exec 3>&1
+      r=`
+	exec 4>&1
+	($grep $opt "$pat" 4>&-; echo $? >&4) 3>&- | sed "$sed_script" >&3 4>&-
+      ` &&
+      exit $r
+    fi
+  r=$?
+  test $res -lt $r && res=$r
+done
+exit $res

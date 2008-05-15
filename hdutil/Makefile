@@ -19,6 +19,7 @@ util: $(DMGOBJS) $(HFSOBJS) $(UTILOBJS)
 	cd ../dmg/zlib-1.2.3; make
 
 ../dmg/openssl-0.9.8g/libcrypto.a:
+	touch ../dmg/openssl-0.9.8g/Makefile
 	cd ../dmg/openssl-0.9.8g/crypto; make
 
 

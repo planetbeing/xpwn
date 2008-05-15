@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>-ActivationStateAcknowledged</key>
+	<true/>
+	<key>-BrickState</key>
+	<false/>
+	<key>-DeviceCertificate</key>
+	<data>
+	LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURQekNDQXFpZ0F3SUJBZ0lLQTRC
+	UllCOVBRUms3NlRBTkJna3Foa2lHOXcwQkFRc0ZBREJhTVFzd0NRWUQKVlFRR0V3SlZV
+	ekVUTUJFR0ExVUVDaE1LUVhCd2JHVWdTVzVqTGpFVk1CTUdBMVVFQ3hNTVFYQndiR1Vn
+	YVZCbwpiMjVsTVI4d0hRWURWUVFERXhaQmNIQnNaU0JwVUdodmJtVWdSR1YyYVdObElF
+	TkJNQjRYRFRBM01EY3dOekl6Ck1EZ3dNMW9YRFRFd01EY3dOekl6TURnd00xb3dnWWN4
+	TVRBdkJnTlZCQU1US0RNNE5URmhOamRqT0dFM01ETTMKTnpjek9HWXhOVEJsTTJGaFlU
+	WTJOV1U1TkRFNU5tUXpOekV4Q3pBSkJnTlZCQVlUQWxWVE1Rc3dDUVlEVlFRSQpFd0pE
+	UVRFU01CQUdBMVVFQnhNSlEzVndaWEowYVc1dk1STXdFUVlEVlFRS0V3cEJjSEJzWlNC
+	SmJtTXVNUTh3CkRRWURWUVFMRXdacFVHaHZibVV3Z1o4d0RRWUpLb1pJaHZjTkFRRUJC
+	UUFEZ1kwQU1JR0pBb0dCQU9XTEIxejYKMEI0M0l3SVRudFFNS0JacW51YmkxSjR4cnJO
+	SmtvWC9GUmtjS1NoemQwZnBTRXplNi9ZcTE2ZDVjaTg1dUt0agpUSnRHRFpjcTltaFlt
+	TWc2anZUelB4b3g1Z09ib0h1NGFVeGNlZ2NHUDhtRFpUcjdPM21rZU1rV0RRVkd2Z3NL
+	CkwwdWE0WGJZVXdiYnB6aFJTN041aWZERXJSWUt3UlljWXovVkFnTUJBQUdqZ2Qwd2dk
+	b3dnWUlHQTFVZEl3UjcKTUhtQUZMTCtJU05FaHBWcWVkV0JKbzV6RU5pblRJNTBvVjZr
+	WERCYU1Rc3dDUVlEVlFRR0V3SlZVekVUTUJFRwpBMVVFQ2hNS1FYQndiR1VnU1c1akxq
+	RVZNQk1HQTFVRUN4TU1RWEJ3YkdVZ2FWQm9iMjVsTVI4d0hRWURWUVFECkV4WkJjSEJz
+	WlNCcFVHaHZibVVnUkdWMmFXTmxJRU5CZ2dFQk1CMEdBMVVkRGdRV0JCVHBsVTJrZE5z
+	eFpFbmEKTXFUSnVaVWdaQzM1WHpBTUJnTlZIUk1CQWY4RUFqQUFNQTRHQTFVZER3RUIv
+	d1FFQXdJRm9EQVdCZ05WSFNVQgpBZjhFRERBS0JnZ3JCZ0VGQlFjREFUQU5CZ2txaGtp
+	Rzl3MEJBUXNGQUFPQmdRQ3FjbVNyTnFnWldGdkZJYzluCkNwMktacUVRK0ozdTNLS2h4
+	ZUwzR05KZ2twS3JQa3R3RC8rRGhIMlFDRUNtRUNMNTI0MHVLWGkvTzFlZjZZMkIKWjM4
+	SVFuOHVoci9oYkRXUWFpV1o2OFhQWUEvTzRFZ3lKMHp6cmlzMks3UzBPSG9vTm1uZVow
+	cEVMMElib2ZaOApKRjhHbjRaK0I2dHR6MEtQSDdJWTJ3LzRYZz09Ci0tLS0tRU5EIENF
+	UlRJRklDQVRFLS0tLS0K
+	</data>
+	<key>-DeviceName</key>
+	<string></string>
+	<key>-FirmwareVersion</key>
+	<string>iBoot-204.2.9</string>
+	<key>-PasswordProtected</key>
+	<false/>
+	<key>-ProtocolVersion</key>
+	<string>1</string>
+	<key>-SBLockdownEverRegisteredKey</key>
+	<true/>
+	<key>com.apple.international-Language</key>
+	<string>en</string>
+	<key>com.apple.international-Locale</key>
+	<string>en_US</string>
+	<key>com.apple.mobile.lockdown_cache-ActivationState</key>
+	<string>FactoryActivated</string>
+</dict>
+</plist>

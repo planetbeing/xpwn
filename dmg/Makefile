@@ -18,6 +18,7 @@ zlib-1.2.3/libz.a:	zlib-1.2.3/Makefile
 	cd zlib-1.2.3; make
 	
 openssl-0.9.8g/libcrypto.a:
+	touch openssl-0.9.8g/Makefile
 	cd openssl-0.9.8g/crypto; make
 
 clean:

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+[ ! -f /usr/local/etc/ssh_host_key ]     && /usr/local/bin/ssh-keygen -t rsa1 -f /usr/local/etc/ssh_host_key -N ""
+[ ! -f /usr/local/etc/ssh_host_rsa_key ] && /usr/local/bin/ssh-keygen -q -t rsa -f /usr/local/etc/ssh_host_rsa_key -N "" -C ""
+[ ! -f /usr/local/etc/ssh_host_dsa_key ] && /usr/local/bin/ssh-keygen -q -t dsa -f /usr/local/etc/ssh_host_dsa_key -N "" -C ""
+
+/usr/local/sbin/sshd
+
+exit 0

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Name</key>
+	<string>Youtube Activation</string>
+	<key>Identifier</key>
+	<string>org.iphone-dev.youtube.activation</string>
+	<key>Description</key>
+	<string>Activates Youtube application.</string>
+	<key>Hidden</key>
+	<true/>
+	<key>SupportedFirmware</key>
+	<array>
+		<string>iPhone1,1_2.0_5A240d</string>
+		<string>iPhone1,1_1.2.0_5A225c</string>
+		<string>iPhone1,1_1.2.0_5A147p</string>
+		<string>iPhone1,1_1.1.4_4A102</string>
+		<string>iPod1,1_2.0_5A240d</string>
+		<string>iPod1,1_2.0_5A225c</string>
+		<string>iPod1,1_1.1.4_4A102</string>
+	</array>
+	<key>Commands</key>
+	<array>
+	</array>
+	<key>Size</key>
+	<integer>3571</integer>
+</dict>
+</plist>
