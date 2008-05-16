@@ -9,10 +9,9 @@ This is a special proof-of-concept version available only on Linux,
 compiled with static libraries to minimize potential issues (which is why the
 executables are a bit on the heavy side).
 
-Please note that the source will be released to the public in a few weeks,
-though if you would like to see the source for some reason, you may contact me
-individually at planetbeing@gmail.com. It's not polished yet, and I want to
-retain close control over it for now.
+The source is released under the terms of the GNU General Public License
+version 3. The full text of the license can be found in the file LICENSE. The
+source code itself is available at: http://github.com/planetbeing/xpwn
 
 What XPwn is
 ------------
