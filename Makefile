@@ -15,7 +15,7 @@ ipsw-patch/pch:	hfs/hfsplus dmg/dmg
 xpwn/xpwn:	hfs/hfsplus dmg/dmg
 	cd xpwn; make
 
-install:	xpwn/xpwn ipsw-patch/pch
+install:	ipsw-patch/pch xpwn/xpwn
 	-rm -rf xpwn-build
 	mkdir xpwn-build
 	cp ipsw-patch/pch xpwn-build/ipsw
@@ -27,7 +27,7 @@ install:	xpwn/xpwn ipsw-patch/pch
 	cp LICENSE xpwn-build/LICENSE
 	tar jcvf xpwn-linux.tar.bz2 xpwn-build
 
-install-win:	xpwn/xpwn ipsw-patch/pch
+install-win:	ipsw-patch/pch xpwn/xpwn
 	-rm -rf xpwn-build
 	mkdir xpwn-build
 	cp ipsw-patch/pch.exe xpwn-build/ipsw.exe

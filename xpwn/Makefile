@@ -1,7 +1,7 @@
 #
 # Simple make for ibooter/libibooter
 #
-CC=g++
+CPP=g++
 
 CFLAGS=
 
@@ -23,11 +23,14 @@ all: prepare xpwn
 
 VPATH=$(SRCDIR)
 
-.cpp.o:
-	$(CC) $(CFLAGS) -c $< $(INC) -o $(OBJDIR)/$@
+$(OBJDIR)/%.o:	%.cpp
+	$(CPP) $(CFLAGS) -c $< $(INC) -o $@
 
-xpwn: $(OBJS) $(LIBOBJS)
-	cd $(OBJDIR); $(CC) $(LDFLAGS) $(IPSWOBJS) $(IMGOBJS) $^ $(LIBUSB) $(HFSOBJS) $(LIBRARIES) -o $@
+../ipsw-patch/pch:
+	cd ../ipsw-patch; make
+
+xpwn: $(OBJDIR)/$(OBJS) $(OBJDIR)/$(LIBOBJS) ../ipsw-patch/pch
+	cd $(OBJDIR); $(CPP) $(LDFLAGS) $(IPSWOBJS) $(IMGOBJS) $(OBJS) $(LIBOBJS) $(LIBUSB) $(HFSOBJS) $(LIBRARIES) -o $@
 
 prepare:
 	mkdir -p $(OBJDIR)
