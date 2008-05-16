@@ -50,6 +50,15 @@ dist-clean:	clean
 	-cd ipsw-patch/libpng-1.2.28; make clean
 	-cd ipsw-patch/bzip2-1.0.5; make clean
 	-cd xpwn/libusb-0.1.12; make clean
+	-rm -rf xpwn/libusb-0.1.12/autom4te.cache
+	-rm xpwn/libusb-0.1.12/config.h
+	-rm xpwn/libusb-0.1.12/config.log
+	-rm xpwn/libusb-0.1.12/config.status
+	-rm xpwn/libusb-0.1.12/config.status.lineno
+	-rm xpwn/libusb-0.1.12/libtool
+	-rm xpwn/libusb-0.1.12/doc/Makefile
+	-rm xpwn/libusb-0.1.12/tests/Makefile
+	-rm xpwn/libusb-0.1.12/Makefile
 	-cd xpwn/libusb-win32; make clean
 	-rm -rf ide/xcode/build
 	-rm dmg/zlib-1.2.3/contrib/minizip/*.o
