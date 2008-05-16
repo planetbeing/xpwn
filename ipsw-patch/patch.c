@@ -8,8 +8,8 @@
 #include "ibootim.h"
 #include "plist.h"
 #include "outputstate.h"
-#include "dmghfs.h"
 #include "../hfs/hfslib.h"
+#include "../dmg/dmglib.h"
 
 char endianness;
 

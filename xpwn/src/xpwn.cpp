@@ -1,7 +1,6 @@
 #include "../../hfs/common.h"
 #include "../../ipsw-patch/plist.h"
 #include "../../ipsw-patch/outputstate.h"
-#include "../../ipsw-patch/dmghfs.h"
 #include "../../hfs/hfslib.h"
 #include "../../ipsw-patch/ibootim.h"
 #include "libibooter.h"
