@@ -24,6 +24,7 @@ install:	xpwn/xpwn ipsw-patch/pch
 	cp -R ipsw-patch/FirmwareBundles xpwn-build/FirmwareBundles
 	cp -R ipsw-patch/bundles xpwn-build/bundles
 	cp README.markdown xpwn-build/README
+	cp LICENSE xpwn-build/LICENSE
 	tar jcvf xpwn-linux.tar.bz2 xpwn-build
 
 install-win:	xpwn/xpwn ipsw-patch/pch
@@ -35,6 +36,7 @@ install-win:	xpwn/xpwn ipsw-patch/pch
 	cp -R ipsw-patch/FirmwareBundles xpwn-build/FirmwareBundles
 	cp -R ipsw-patch/bundles xpwn-build/bundles
 	cp README.markdown xpwn-build/README.txt
+	cp LICENSE xpwn-build/LICENSE.txt
 
 clean:
 	cd dmg; make clean
