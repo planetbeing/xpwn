@@ -76,7 +76,7 @@ void close8900(AbstractFile* file) {
 				info->header.sizeOfData = ((Img2Header*)info->buffer)->dataLenPadded + sizeof(Img2Header);
 				
 				cksum = 0;
-				CRC32Checksum(&cksum, (unsigned char *)info->buffer, 0x64);
+				crc32(&cksum, (unsigned char *)info->buffer, 0x64);
 				FLIPENDIANLE(cksum);
 				((Img2Header*)info->buffer)->header_checksum = cksum;
 			}

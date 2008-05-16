@@ -71,7 +71,7 @@ void closeImg2(AbstractFile* file) {
 		flipImg2Header(&(info->header));
 		
 		cksum = 0;
-		CRC32Checksum(&cksum, (unsigned char *)&(info->header), 0x64);
+		crc32(&cksum, (unsigned char *)&(info->header), 0x64);
 		FLIPENDIANLE(cksum);
 		info->header.header_checksum = cksum;
 			
