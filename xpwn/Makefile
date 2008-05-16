@@ -29,8 +29,11 @@ $(OBJDIR)/%.o:	%.cpp
 ../ipsw-patch/pch:
 	cd ../ipsw-patch; make
 
-xpwn: $(OBJDIR)/$(OBJS) $(OBJDIR)/$(LIBOBJS) ../ipsw-patch/pch
+xpwn: libusb $(OBJDIR)/$(OBJS) $(OBJDIR)/$(LIBOBJS) ../ipsw-patch/pch
 	cd $(OBJDIR); $(CPP) $(LDFLAGS) $(IPSWOBJS) $(IMGOBJS) $(OBJS) $(LIBOBJS) $(LIBUSB) $(HFSOBJS) $(LIBRARIES) -o $@
+
+libusb:
+	if $(CC) win32test.c -o /dev/null 2>/dev/null ; then cd libusb-0.1.12; ./configure; make; else cd libusb-win32; make; fi
 
 prepare:
 	mkdir -p $(OBJDIR)
