@@ -9,6 +9,7 @@
 #include "plist.h"
 #include "outputstate.h"
 #include "dmghfs.h"
+#include "../hfs/hfslib.h"
 
 char endianness;
 

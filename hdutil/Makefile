@@ -1,6 +1,6 @@
 UTILOBJS=hdutil.o
 DMGOBJS=../dmg/base64.o ../dmg/resources.o ../dmg/checksum.o ../dmg/udif.o ../dmg/partition.o ../dmg/io.o ../dmg/filevault.o ../dmg/dmgfile.o ../dmg/zlib-1.2.3/libz.a ../dmg/openssl-0.9.8g/libcrypto.a
-HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o ../hfs/abstractfile.o
+HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o ../hfs/abstractfile.o ../hfs/hfslib.o
 CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT
 LIBRARIES=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo ""; else echo "-lgdi32"; fi`
 

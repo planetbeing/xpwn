@@ -326,14 +326,6 @@ extern "C" {
 	void writeATAPI(AbstractFile* file,  ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
 	void writeFreePartition(AbstractFile* outFile, uint32_t numSectors, ResourceKey** resources);
 
-	AbstractFile* createAbstractFileFromFile(FILE* file);
-	AbstractFile* createAbstractFileFromDummy();
-	AbstractFile* createAbstractFileFromMemory(void** buffer, size_t size);
-	AbstractFile* createAbstractFileFromMemoryFile(void** buffer, size_t* size);
-	AbstractFile* createAbstractFileFromMemoryFileBuffer(void** buffer, size_t* size, size_t actualBufferSize);
-	void abstractFilePrint(AbstractFile* file, const char* format, ...);
-	io_func* IOFuncFromAbstractFile(AbstractFile* file);
-
 	void extractBLKX(AbstractFile* in, AbstractFile* out, BLKXTable* blkx);
 	BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorNumber, uint32_t numSectors, uint32_t blocksDescriptor,
 				uint32_t checksumType, ChecksumFunc uncompressedChk, void* uncompressedChkToken, ChecksumFunc compressedChk,
