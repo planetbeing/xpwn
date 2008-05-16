@@ -58,6 +58,8 @@ dist-clean:	clean
 	-rm xpwn/libusb-0.1.12/libtool
 	-rm xpwn/libusb-0.1.12/doc/Makefile
 	-rm xpwn/libusb-0.1.12/tests/Makefile
+	-rm -rf xpwn/libusb-0.1.12/.deps
+	-rm -rf xpwn/libusb-0.1.12/tests/.deps
 	-rm xpwn/libusb-0.1.12/Makefile
 	-cd xpwn/libusb-win32; make clean
 	-rm -rf ide/xcode/build
