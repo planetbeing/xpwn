@@ -30,13 +30,16 @@ install:	ipsw-patch/pch xpwn/xpwn
 install-win:	ipsw-patch/pch xpwn/xpwn
 	-rm -rf xpwn-build
 	mkdir xpwn-build
-	cp ipsw-patch/pch.exe xpwn-build/ipsw.exe
-	cp xpwn/build/xpwn.exe xpwn-build/xpwn.exe
+	-cp ipsw-patch/pch.exe xpwn-build/ipsw.exe
+	-cp xpwn/build/xpwn.exe xpwn-build/xpwn.exe
+	-cp ipsw-patch/pch xpwn-build/ipsw.exe
+	-cp xpwn/build/xpwn xpwn-build/xpwn.exe
 	cp xpwn/ramdisk.dmg xpwn-build/ramdisk.dmg
 	cp -R ipsw-patch/FirmwareBundles xpwn-build/FirmwareBundles
 	cp -R ipsw-patch/bundles xpwn-build/bundles
 	cp README.markdown xpwn-build/README.txt
 	cp LICENSE xpwn-build/LICENSE.txt
+	cd xpwn-build; zip -r ../xpwn-windows.zip * 
 
 clean:
 	cd dmg; make clean
