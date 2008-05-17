@@ -4,10 +4,12 @@
 #include "usb.h"
 
 #include "error.h"
+#include <stdint.h>
 
+/*
 typedef unsigned char uint8_t; 
 typedef unsigned short uint16_t; 
-typedef unsigned long uint32_t; 
+typedef unsigned long uint32_t; */
 
 extern int usb_debug;
 
