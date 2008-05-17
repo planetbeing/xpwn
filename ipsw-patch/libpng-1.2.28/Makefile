@@ -8,7 +8,7 @@ ZLIBINC = ../zlib
 ZLIBLIB = ../zlib
 
 # Compiler, linker, lib and other tools
-CC = gcc
+#CC = gcc
 LD = $(CC)
 AR_RC = ar rcs
 RANLIB = ranlib
