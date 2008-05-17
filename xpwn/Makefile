@@ -1,9 +1,8 @@
 #
 # Simple make for ibooter/libibooter
 #
-CPP=g++
 
-CFLAGS=
+CFLAGS=-O3
 
 LIBUSB=`if $(CC) ../win32test.c -o /dev/null 2>/dev/null ; then echo "../libusb-0.1.12/.libs/libusb.a"; else echo "../libusb-win32/libusb.a"; fi`
 LIBUSBH=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo "-I./libusb-0.1.12/"; else echo "-I./libusb-win32/src/"; fi`
@@ -24,13 +23,13 @@ all: prepare xpwn
 VPATH=$(SRCDIR)
 
 $(OBJDIR)/%.o:	%.cpp
-	$(CPP) $(CFLAGS) -c $< $(INC) -o $@
+	$(CXX) $(CFLAGS) -c $< $(INC) -o $@
 
 ../ipsw-patch/pch:
 	cd ../ipsw-patch; make
 
 xpwn: libusb $(OBJDIR)/$(OBJS) $(OBJDIR)/$(LIBOBJS) ../ipsw-patch/pch
-	cd $(OBJDIR); $(CPP) $(LDFLAGS) $(IPSWOBJS) $(IMGOBJS) $(OBJS) $(LIBOBJS) $(LIBUSB) $(HFSOBJS) $(LIBRARIES) -o $@
+	cd $(OBJDIR); $(CXX) $(LDFLAGS) $(IPSWOBJS) $(IMGOBJS) $(OBJS) $(LIBOBJS) $(LIBUSB) $(HFSOBJS) $(LIBRARIES) -o $@
 
 libusb:
 	if $(CC) win32test.c -o /dev/null 2>/dev/null ; then cd libusb-0.1.12; ./configure; make; else cd libusb-win32; make; fi
