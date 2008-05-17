@@ -10,8 +10,9 @@ ZLIBLIB = ../zlib
 # Compiler, linker, lib and other tools
 #CC = gcc
 LD = $(CC)
-AR_RC = ar rcs
-RANLIB = ranlib
+AR?=ar
+AR_RC = $(AR) rcs
+RANLIB ?= ranlib
 RM_F = rm -f
 
 CDEBUG = -g -DPNG_DEBUG=5

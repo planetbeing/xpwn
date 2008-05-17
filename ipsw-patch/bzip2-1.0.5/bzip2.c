@@ -128,7 +128,7 @@
 #if BZ_LCCWIN32
 #   include <io.h>
 #   include <fcntl.h>
-#   include <sys\stat.h>
+#   include <sys/stat.h>
 
 #   define NORETURN       /**/
 #   define PATH_SEP       '\\'
