@@ -11,7 +11,7 @@ MAKEDEPPROG=	makedepend
 MAKEDEPEND=	$(TOP)/util/domd $(TOP) -MD $(MAKEDEPPROG)
 MAKEFILE=       Makefile
 RM=             rm -f
-AR=		ar r
+AR?=		ar r
 
 RECURSIVE_MAKE=	[ -n "$(SDIRS)" ] && for i in $(SDIRS) ; do \
 		    (cd $$i && echo "making $$target in $(DIR)/$$i..." && \
