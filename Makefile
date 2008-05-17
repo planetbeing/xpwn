@@ -72,3 +72,4 @@ dist-clean:	clean
 	-rm -rf ide/xcode/build
 	-rm dmg/zlib-1.2.3/contrib/minizip/*.o
 	-rm ipsw-patch/bzip2-1.0.5/*.exe
+	-rm -rf xpwn-build
