@@ -10,6 +10,7 @@
 #include "outputstate.h"
 #include "../hfs/hfslib.h"
 #include "../dmg/dmglib.h"
+#include "pwnutil.h"
 
 char endianness;
 
@@ -19,9 +20,6 @@ void TestByteOrder()
 	char *byte = (char *) &word;
 	endianness = byte[0] ? IS_LITTLE_ENDIAN : IS_BIG_ENDIAN;
 }
-
-
-#define BUFFERSIZE (1024*1024)
 
 int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state) {
 	char* patchPath;
@@ -165,60 +163,6 @@ void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct,
 	free(plist);
 }
 
-Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bundlePath, OutputState** state) {
-	char* outputIPSW;
-	Dictionary* info;
-	char* infoPath;
-	char seek;
-	char* curChar;
-	char* ipswName;
-	AbstractFile* plistFile;
-	char* plist;
-
-	seek = '_';
-	ipswName = (char*) malloc(sizeof(char) * (strlen(inputIPSW) + 1));
-	strcpy(ipswName, inputIPSW);
-	for(curChar = ipswName + strlen(ipswName); curChar > ipswName; curChar--) {
-		if(*curChar == seek) {
-			*curChar = '\0';
-			if(seek == '/') {
-				curChar++;
-				break;
-			} else {
-				seek = '/';
-			}
-		}
-	}
-
-	*bundlePath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + strlen(curChar) + sizeof(".bundle")));
-	strcpy(*bundlePath, bundleRoot);
-	strcat(*bundlePath, curChar);
-	strcat(*bundlePath, ".bundle");
-
-	free(ipswName);
-
-	*state = loadZip(inputIPSW);
-	
-	infoPath = (char*) malloc(sizeof(char) * (strlen(*bundlePath) + sizeof("/Info.plist") + 1));
-	strcpy(infoPath, *bundlePath);
-	strcat(infoPath, "/Info.plist");
-	plistFile = createAbstractFileFromFile(fopen(infoPath, "rb"));
-	if(plistFile == NULL) {
-		printf("Cannot open Info.plist: %s\n", infoPath);
-		exit(0);
-	}
-
-	free(infoPath);
-	
-	plist = (char*) malloc(plistFile->getLength(plistFile));
-	plistFile->read(plistFile, plist, plistFile->getLength(plistFile));
-	plistFile->close(plistFile);
-	info = createRoot(plist);
-	free(plist);
-
-	return info;
-}
-
 int main(int argc, char* argv[]) {
 	TestByteOrder();
 	
@@ -293,6 +237,10 @@ int main(int argc, char* argv[]) {
 	outputIPSW = argv[2];
 
 	info = parseIPSW(argv[1], bundleRoot, &bundlePath, &outputState);
+	if(info == NULL) {
+		printf("error: Could not load IPSW\n");
+		exit(1);
+	}
 
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
 	for(i = 3; i < argc; i++) {

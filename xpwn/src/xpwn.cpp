@@ -1,4 +1,5 @@
 #include "../../hfs/common.h"
+#include "../../ipsw-patch/pwnutil.h"
 #include "../../ipsw-patch/plist.h"
 #include "../../ipsw-patch/outputstate.h"
 #include "../../hfs/hfslib.h"
@@ -16,59 +17,6 @@ void TestByteOrder()
 	short int word = 0x0001;
 	char *byte = (char *) &word;
 	endianness = byte[0] ? IS_LITTLE_ENDIAN : IS_BIG_ENDIAN;
-}
-
-Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bundlePath, OutputState** state) {
-	Dictionary* info;
-	char* infoPath;
-	char seek;
-	char* curChar;
-	char* ipswName;
-	AbstractFile* plistFile;
-	char* plist;
-
-	seek = '_';
-	ipswName = (char*) malloc(sizeof(char) * (strlen(inputIPSW) + 1));
-	strcpy(ipswName, inputIPSW);
-	for(curChar = ipswName + strlen(ipswName); curChar > ipswName; curChar--) {
-		if(*curChar == seek) {
-			*curChar = '\0';
-			if(seek == '/') {
-				curChar++;
-				break;
-			} else {
-				seek = '/';
-			}
-		}
-	}
-
-	*bundlePath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + strlen(curChar) + sizeof(".bundle")));
-	strcpy(*bundlePath, bundleRoot);
-	strcat(*bundlePath, curChar);
-	strcat(*bundlePath, ".bundle");
-
-	free(ipswName);
-
-	*state = loadZip(inputIPSW);
-	
-	infoPath = (char*) malloc(sizeof(char) * (strlen(*bundlePath) + sizeof("/Info.plist") + 1));
-	strcpy(infoPath, *bundlePath);
-	strcat(infoPath, "/Info.plist");
-	plistFile = createAbstractFileFromFile(fopen(infoPath, "rb"));
-	if(plistFile == NULL) {
-		printf("Cannot open Info.plist: %s\n", infoPath);
-		exit(1);
-	}
-
-	free(infoPath);
-	
-	plist = (char*) malloc(plistFile->getLength(plistFile));
-	plistFile->read(plistFile, plist, plistFile->getLength(plistFile));
-	plistFile->close(plistFile);
-	info = createRoot(plist);
-	free(plist);
-
-	return info;
 }
 
 int main(int argc, char *argv[]) 
@@ -128,6 +76,11 @@ int main(int argc, char *argv[])
 
 	cout << " ... Loading IPSW" << endl;
 	info = parseIPSW(argv[1], bundleRoot, &bundlePath, &ipswContents);
+
+	if(!info) {
+		printf("error: cannot load IPSW file\n");
+		exit(1);
+	}
 
 	cout << " ... Opening ramdisk" << endl;
 	AbstractFile* ramdiskSrc = createAbstractFileFromFile(fopen("ramdisk.dmg", "rb"));
