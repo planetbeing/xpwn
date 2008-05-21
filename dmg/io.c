@@ -3,7 +3,7 @@
 #include <string.h>
 #include <zlib.h>
 
-#include "dmg.h"
+#include <dmg/dmg.h>
 
 #define SECTORS_AT_A_TIME 0x200
 

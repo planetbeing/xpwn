@@ -6,7 +6,7 @@
 #include "libibooter.h"
 #include <cstring>
 #include <cstdio>
-#include "../../dmg/dmg.h"
+#include "abstractfile.h"
 
 #ifdef WIN32
 #define sleep(x) Sleep(x * 1000)

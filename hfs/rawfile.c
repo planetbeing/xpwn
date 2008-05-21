@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "hfsplus.h"
+#include <hfs/hfsplus.h>
 
 int writeExtents(RawFile* rawFile);
 

@@ -1,8 +1,8 @@
 #ifndef PWNUTIL_H
 #define PWNUTIL_H
 
-#include "plist.h"
-#include "outputstate.h"
+#include <xpwn/plist.h>
+#include <xpwn/outputstate.h>
 
 #ifdef __cplusplus
 extern "C" {

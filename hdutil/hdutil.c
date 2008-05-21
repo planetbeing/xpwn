@@ -4,9 +4,9 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
-#include "../hfs/hfsplus.h"
-#include "../dmg/dmgfile.h"
-#include "../dmg/filevault.h"
+#include <hfs/hfsplus.h>
+#include <dmg/dmgfile.h>
+#include <dmg/filevault.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>

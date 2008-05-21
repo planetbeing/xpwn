@@ -1,7 +1,7 @@
 #include <string.h>
-#include "../hfs/common.h"
-#include "../hfs/abstractfile.h"
-#include "dmg.h"
+#include "common.h"
+#include "abstractfile.h"
+#include <dmg/dmg.h>
 
 uint32_t calculateMasterChecksum(ResourceKey* resources);
 

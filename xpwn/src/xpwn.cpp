@@ -1,9 +1,9 @@
-#include "../../hfs/common.h"
-#include "../../ipsw-patch/pwnutil.h"
-#include "../../ipsw-patch/plist.h"
-#include "../../ipsw-patch/outputstate.h"
-#include "../../hfs/hfslib.h"
-#include "../../ipsw-patch/ibootim.h"
+#include "common.h"
+#include <xpwn/pwnutil.h>
+#include <xpwn/plist.h>
+#include <xpwn/outputstate.h>
+#include <hfs/hfslib.h>
+#include <xpwn/ibootim.h>
 #include "libibooter.h"
 #include <iostream>
 

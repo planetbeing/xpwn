@@ -3,9 +3,9 @@
 #include <string.h>
 #include <dirent.h>
 #include <openssl/sha.h>
-#include "plist.h"
-#include "outputstate.h"
-#include "pwnutil.h"
+#include <xpwn/plist.h>
+#include <xpwn/outputstate.h>
+#include <xpwn/pwnutil.h>
 
 #define BUFFERSIZE (1024*1024)
 

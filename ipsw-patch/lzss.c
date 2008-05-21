@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include "lzss.h"
+#include <xpwn/lzss.h>
 
 #define BASE 65521L /* largest prime smaller than 65536 */
 #define NMAX 5000  

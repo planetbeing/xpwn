@@ -3,7 +3,7 @@
 
 #include <usb.h>
 #include <string>
-#include "../../dmg/dmg.h"
+#include "abstractfile.h"
 
 namespace ibooter
 {

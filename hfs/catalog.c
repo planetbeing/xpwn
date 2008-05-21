@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "hfsplus.h"
+#include <hfs/hfsplus.h>
 
 static inline void flipBSDInfo(HFSPlusBSDInfo* info) {
   FLIPENDIAN(info->ownerID);

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "plist.h"
+#include <xpwn/plist.h>
 #include "common.h"
 
 Tag* getNextTag(char** xmlPtr) {

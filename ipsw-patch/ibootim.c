@@ -3,10 +3,10 @@
 #include <string.h>
 #include "common.h"
 #include "abstractfile.h"
-#include "ibootim.h"
-#include "lzss.h"
+#include <xpwn/ibootim.h>
+#include <xpwn/lzss.h>
 #include <png.h>
-#include "nor_files.h"
+#include <xpwn/nor_files.h>
 
 void flipIBootIMHeader(IBootIMHeader* header) {
 	FLIPENDIANLE(header->unknown);

@@ -4,7 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include "common.h"
-#include "hfsplus.h"
+#include <hfs/hfsplus.h>
 #include "abstractfile.h"
 #include <sys/stat.h>
 

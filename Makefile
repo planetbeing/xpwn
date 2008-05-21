@@ -42,6 +42,7 @@ install-win:	ipsw-patch/pch xpwn/xpwn
 	cd xpwn-build; zip -r ../xpwn-windows.zip * 
 
 clean:
+	-rm common/*.o
 	cd dmg; make clean
 	cd hfs; make clean
 	cd hdutil; make clean

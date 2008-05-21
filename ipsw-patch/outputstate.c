@@ -3,8 +3,8 @@
 #include <string.h>
 #include <time.h>
 #include "common.h"
-#include "dmg.h"
-#include "outputstate.h"
+#include <dmg/dmg.h>
+#include <xpwn/outputstate.h>
 #include <contrib/minizip/zip.h>
 #include <contrib/minizip/unzip.h>
 

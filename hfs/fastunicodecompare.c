@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "hfsplus.h"
+#include <hfs/hfsplus.h>
 
 /* This routine is taken from Apple's TN 1150, with adaptations for C */
 

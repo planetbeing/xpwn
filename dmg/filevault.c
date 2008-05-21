@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dmg.h"
-#include "filevault.h"
+#include <dmg/dmg.h>
+#include <dmg/filevault.h>
 
 #ifdef HAVE_CRYPT
 

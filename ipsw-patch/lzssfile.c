@@ -2,8 +2,8 @@
 #include <string.h>
 #include "common.h"
 #include "abstractfile.h"
-#include "lzssfile.h"
-#include "lzss.h"
+#include <xpwn/lzssfile.h>
+#include <xpwn/lzss.h>
 
 void flipCompHeader(CompHeader* header) {
 	FLIPENDIAN(header->signature);

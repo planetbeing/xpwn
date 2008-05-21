@@ -7,8 +7,8 @@
 #include <string.h>
 #include <zlib.h>
 
-#include "dmg.h"
-#include "dmgfile.h"
+#include <dmg/dmg.h>
+#include <dmg/dmgfile.h>
 
 static void cacheRun(DMG* dmg, BLKXTable* blkx, int run) {
 	size_t bufferSize;

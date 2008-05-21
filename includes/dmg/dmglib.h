@@ -1,8 +1,8 @@
 #ifndef DMGLIB_H
 #define DMGLIB_H
 
-#include "dmg.h"
-#include "../hfs/abstractfile.h"
+#include <dmg/dmg.h>
+#include "abstractfile.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "hfsplus.h"
+#include <hfs/hfsplus.h>
 
 void panic(const char* panicString) {
   fprintf(stderr, "%s\n", panicString);
