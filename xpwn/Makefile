@@ -6,7 +6,7 @@ CFLAGS=-O3
 
 LIBUSB=`if $(CC) ../win32test.c -o /dev/null 2>/dev/null ; then echo "../libusb-0.1.12/.libs/libusb.a"; else echo "../libusb-win32/libusb.a"; fi`
 LIBUSBH=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo "-I./libusb-0.1.12/"; else echo "-I./libusb-win32/src/"; fi`
-INC=-I./include/ $(LIBUSBH)
+INC=-I./include/ $(LIBUSBH) -I../hfs -I../dmg
 
 SRCDIR=src
 OBJDIR=build

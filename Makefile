@@ -37,8 +37,8 @@ install-win:	ipsw-patch/pch xpwn/xpwn
 	cp xpwn/ramdisk.dmg xpwn-build/ramdisk.dmg
 	cp -R ipsw-patch/FirmwareBundles xpwn-build/FirmwareBundles
 	cp -R ipsw-patch/bundles xpwn-build/bundles
-	cp README.markdown xpwn-build/README.txt
-	cp LICENSE xpwn-build/LICENSE.txt
+	sed "`echo s/$$/\\\r`/" README.markdown > xpwn-build/README.txt
+	sed "`echo s/$$/\\\r`/" LICENSE > xpwn-build/LICENSE.txt
 	cd xpwn-build; zip -r ../xpwn-windows.zip * 
 
 clean:
@@ -73,3 +73,4 @@ dist-clean:	clean
 	-rm dmg/zlib-1.2.3/contrib/minizip/*.o
 	-rm ipsw-patch/bzip2-1.0.5/*.exe
 	-rm -rf xpwn-build
+
