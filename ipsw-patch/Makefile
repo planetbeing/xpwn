@@ -1,19 +1,21 @@
 RANLIB ?= ranlib
 PCHOBJS=patch.o 
-XPWNOBJS=plist.o pwnutil.o outputstate.o nor_files.o 8900.o img2.o bspatch.o ibootim.o lzss.o lzssfile.o ../dmg/openssl-0.9.8g/libcrypto.a bzip2-1.0.5/libbz2.a ../dmg/zlib-1.2.3/contrib/minizip/ioapi.o ../dmg/zlib-1.2.3/contrib/minizip/unzip.o ../dmg/zlib-1.2.3/contrib/minizip/zip.o libpng-1.2.28/libpng.a
-DMGOBJS=../dmg/base64.o ../dmg/resources.o ../dmg/checksum.o ../dmg/udif.o ../dmg/partition.o ../dmg/io.o ../dmg/filevault.o ../dmg/dmgfile.o ../dmg/dmglib.o ../dmg/zlib-1.2.3/libz.a ../dmg/openssl-0.9.8g/libcrypto.a
+XPWNOBJS=plist.o pwnutil.o outputstate.o nor_files.o 8900.o img2.o bspatch.o ibootim.o lzss.o lzssfile.o ../dmg/zlib-1.2.3/contrib/minizip/ioapi.o ../dmg/zlib-1.2.3/contrib/minizip/unzip.o ../dmg/zlib-1.2.3/contrib/minizip/zip.o
+DMGOBJS=../dmg/base64.o ../dmg/resources.o ../dmg/checksum.o ../dmg/udif.o ../dmg/partition.o ../dmg/io.o ../dmg/filevault.o ../dmg/dmgfile.o ../dmg/dmglib.o
 HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o ../hfs/abstractfile.o ../hfs/hfslib.o
 CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT -O3
+STATIC_LIBRARIES=../dmg/zlib-1.2.3/libz.a ../dmg/openssl-0.9.8g/libcrypto.a ../dmg/openssl-0.9.8g/libcrypto.a bzip2-1.0.5/libbz2.a libpng-1.2.28/libpng.a
 LIBRARIES=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo ""; else echo "-lgdi32"; fi` -lm
 
 all: pch
 
-pch: $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(PCHOBJS)
-	$(CC) $(CFLAGS) $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(PCHOBJS) $(LIBRARIES) -o pch
+pch: $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(PCHOBJS) $(STATIC_LIBRARIES)
+	$(CC) $(CFLAGS) $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(PCHOBJS) $(STATIC_LIBRARIES) $(LIBRARIES) -o pch
 
-libxpwn.a: $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS)
-	$(AR) rc libxpwn.a $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS)
-	$(RANLIB) libxpwn.a
+libxpwn.a: libxpwn.o $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(STATIC_LIBRARIES)
+	$(LD) libxpwn.o $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(STATIC_LIBRARIES) -r -o libxpwnbuild.o
+	ar rc libxpwn.a libxpwnbuild.o
+	ranlib libxpwn.a
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -Ilibpng-1.2.28 -I../dmg/zlib-1.2.3 -I../dmg/openssl-0.9.8g/include -Ibzip2-1.0.5 -c $< -o $@
