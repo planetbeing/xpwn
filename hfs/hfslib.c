@@ -453,7 +453,7 @@ void addall_hfs(Volume* volume, const char* dirToMerge, const char* dest) {
 	ASSERT(chdir(cwd) == 0, "chdir");
 	free(record);
 	
-}
+}
 int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2) {
 	void* buffer;
 	size_t bufferSize;
