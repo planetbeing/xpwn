@@ -2,8 +2,7 @@
 #define IBOOTIM_H
 
 #include <stdint.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 typedef struct IBootIMHeader {
 	char    signature[8];

@@ -1,15 +1,15 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
-#include "../hfs/common.h"
+#include "common.h"
 #include "nor_files.h"
-#include "../dmg/dmg.h"
-#include "../dmg/filevault.h"
+#include "dmg.h"
+#include "filevault.h"
 #include "ibootim.h"
 #include "plist.h"
 #include "outputstate.h"
-#include "../hfs/hfslib.h"
-#include "../dmg/dmglib.h"
+#include "hfslib.h"
+#include "dmglib.h"
 #include "pwnutil.h"
 
 char endianness;

@@ -6,6 +6,7 @@ HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/
 CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT -O3
 STATIC_LIBRARIES=../dmg/zlib-1.2.3/libz.a ../dmg/openssl-0.9.8g/libcrypto.a ../dmg/openssl-0.9.8g/libcrypto.a bzip2-1.0.5/libbz2.a libpng-1.2.28/libpng.a
 LIBRARIES=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo ""; else echo "-lgdi32"; fi` -lm
+INCLUDES=-I../hfs -I../dmg -Ilibpng-1.2.28 -I../dmg/zlib-1.2.3 -I../dmg/openssl-0.9.8g/include -Ibzip2-1.0.5
 
 all: pch
 
@@ -18,7 +19,7 @@ libxpwn.a: libxpwn.o $(DMGOBJS) $(HFSOBJS) $(XPWNOBJS) $(STATIC_LIBRARIES)
 	ranlib libxpwn.a
 
 %.o:	%.c
-	$(CC) $(CFLAGS) -Ilibpng-1.2.28 -I../dmg/zlib-1.2.3 -I../dmg/openssl-0.9.8g/include -Ibzip2-1.0.5 -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 ../dmg/zlib-1.2.3/Makefile:
 	cd ../dmg/zlib-1.2.3; ./configure

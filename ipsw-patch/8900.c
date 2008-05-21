@@ -3,7 +3,7 @@
 #include <openssl/aes.h>
 #include <openssl/sha.h>
 
-#include "../hfs/common.h"
+#include "common.h"
 #include "8900.h"
 #include "img2.h"
 

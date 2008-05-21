@@ -1,6 +1,5 @@
 #include <stdint.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 #define COMP_SIGNATURE 0x636F6D70
 #define LZSS_SIGNATURE 0x6C7A7373

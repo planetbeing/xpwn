@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "common.h"
+#include "dmg.h"
 #include "outputstate.h"
 #include <contrib/minizip/zip.h>
 #include <contrib/minizip/unzip.h>

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "common.h"
+#include "abstractfile.h"
 #include "img2.h"
 
 void flipImg2Header(Img2Header* header) {

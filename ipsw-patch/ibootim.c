@@ -1,8 +1,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "common.h"
+#include "abstractfile.h"
 #include "ibootim.h"
 #include "lzss.h"
 #include <png.h>

@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <openssl/aes.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 #ifndef INC_8900_H
 #define INC_8900_H

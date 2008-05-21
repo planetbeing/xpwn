@@ -1,6 +1,5 @@
 #include <stdint.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 #define IMG2_SIGNATURE 0x496D6732
 

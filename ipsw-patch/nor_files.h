@@ -1,7 +1,7 @@
 #ifndef NOR_FILES_H
 #define NOR_FILES_H
 
-#include "../hfs/common.h"
+#include "abstractfile.h"
 #include "8900.h"
 #include "img2.h"
 #include "lzssfile.h"

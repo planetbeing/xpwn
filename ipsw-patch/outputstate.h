@@ -1,7 +1,7 @@
 #ifndef OUTPUTSTATE_H
 #define OUTPUTSTATE_H
 
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 typedef struct OutputState {
 	char* fileName;

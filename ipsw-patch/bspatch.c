@@ -2,8 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <bzlib.h>
-#include "../hfs/common.h"
-#include "../dmg/dmg.h"
+#include "abstractfile.h"
 
 static off_t offtin(unsigned char *buf)
 {
