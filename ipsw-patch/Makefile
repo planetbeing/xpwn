@@ -1,5 +1,5 @@
 RANLIB ?= ranlib
-PCHOBJS=patch.o 
+PCHOBJS=main.o 
 XPWNOBJS=plist.o pwnutil.o outputstate.o nor_files.o 8900.o img2.o bspatch.o ibootim.o lzss.o lzssfile.o ../dmg/zlib-1.2.3/contrib/minizip/ioapi.o ../dmg/zlib-1.2.3/contrib/minizip/unzip.o ../dmg/zlib-1.2.3/contrib/minizip/zip.o
 DMGOBJS=../dmg/base64.o ../dmg/resources.o ../dmg/checksum.o ../dmg/udif.o ../dmg/partition.o ../dmg/io.o ../dmg/filevault.o ../dmg/dmgfile.o ../dmg/dmglib.o
 HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o ../hfs/hfslib.o

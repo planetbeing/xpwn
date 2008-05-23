@@ -84,14 +84,35 @@ int main(int argc, char *argv[])
 
 	cout << " ... Opening ramdisk" << endl;
 	AbstractFile* ramdiskSrc = createAbstractFileFromFile(fopen("ramdisk.dmg", "rb"));
+	if(!ramdiskSrc) {
+		cout << "error: cannot find ramdisk.dmg!" << endl;
+		exit(1);
+	}
+
 	size_t bufferSize = ramdiskSrc->getLength(ramdiskSrc);
 	void* buffer = (void*) malloc(bufferSize);
 	cout << " ... Reading ramdisk" << endl;
 	ramdiskSrc->read(ramdiskSrc, buffer, bufferSize);
+	io_func* myRamdisk = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile(&buffer, &bufferSize));
+	Volume* ramdiskVolume = openVolume(myRamdisk);
+
+	Dictionary* ibootDict = (Dictionary*)getValueByKey((Dictionary*)getValueByKey(info, "FirmwarePatches"), "iBoot");
+	if(!ibootDict) {
+		cout << "Error reading iBoot info" << endl;
+		exit(1);
+	}
+
+	add_hfs(ramdiskVolume, getFileFromOutputState(&ipswContents, ((StringValue*)getValueByKey(ibootDict, "File"))->value), "/ipwner/iboot.img2");
+	StringValue* patchValue = (StringValue*) getValueByKey(ibootDict, "Patch");
+	char* patchPath = (char*) malloc(sizeof(char) * (strlen(bundlePath) + strlen(patchValue->value) + 2));
+	strcpy(patchPath, bundlePath);
+	strcat(patchPath, "/");
+	strcat(patchPath, patchValue->value);
+	printf("patching /ipwner/iboot.img2 (%s)... ", patchPath);
+	doPatchInPlace(ramdiskVolume, "/ipwner/iboot.img2", patchPath);
+	free(patchPath);
 
 	if(applelogo || recoverymode) {
-		io_func* myRamdisk = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile(&buffer, &bufferSize));
-		Volume* ramdiskVolume = openVolume(myRamdisk);
 		cout << " ... Adding boot logos" << endl;
 
 		StringValue* fileValue;
@@ -112,10 +133,11 @@ int main(int argc, char *argv[])
 			add_hfs(ramdiskVolume, createAbstractFileFromMemory(&imageBuffer, imageSize), "/ipwner/recovery.img2");			
 		}
 
-		cout << " ... Finalizing ramdisk" << endl;
-		closeVolume(ramdiskVolume);
-		CLOSE(myRamdisk);
 	}
+
+	cout << " ... Finalizing ramdisk" << endl;
+	closeVolume(ramdiskVolume);
+	CLOSE(myRamdisk);
 
 	ramdisk = createAbstractFileFromMemoryFile(&buffer, &bufferSize);
 
