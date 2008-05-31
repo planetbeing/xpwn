@@ -1,10 +1,10 @@
 RANLIB ?= ranlib
 PCHOBJS=main.o 
-XPWNOBJS=plist.o pwnutil.o outputstate.o nor_files.o 8900.o img2.o bspatch.o ibootim.o lzss.o lzssfile.o ../dmg/zlib-1.2.3/contrib/minizip/ioapi.o ../dmg/zlib-1.2.3/contrib/minizip/unzip.o ../dmg/zlib-1.2.3/contrib/minizip/zip.o
+XPWNOBJS=plist.o pwnutil.o outputstate.o nor_files.o 8900.o img2.o img3.o bspatch.o ibootim.o lzss.o lzssfile.o ../dmg/zlib-1.2.3/contrib/minizip/ioapi.o ../dmg/zlib-1.2.3/contrib/minizip/unzip.o ../dmg/zlib-1.2.3/contrib/minizip/zip.o
 DMGOBJS=../dmg/base64.o ../dmg/resources.o ../dmg/checksum.o ../dmg/udif.o ../dmg/partition.o ../dmg/io.o ../dmg/filevault.o ../dmg/dmgfile.o ../dmg/dmglib.o
 HFSOBJS=../hfs/volume.o ../hfs/btree.o ../hfs/extents.o ../hfs/rawfile.o ../hfs/catalog.o ../hfs/flatfile.o ../hfs/utility.o ../hfs/fastunicodecompare.o ../hfs/hfslib.o
 COMMONOBJS=../common/abstractfile.o
-CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT -O3
+CFLAGS=-D_FILE_OFFSET_BITS=64 -DHAVE_CRYPT -g
 STATIC_LIBRARIES=../dmg/zlib-1.2.3/libz.a ../dmg/openssl-0.9.8g/libcrypto.a ../dmg/openssl-0.9.8g/libcrypto.a bzip2-1.0.5/libbz2.a libpng-1.2.28/libpng.a
 LIBRARIES=`if $(CC) win32test.c -o /dev/null 2>/dev/null ; then echo ""; else echo "-lgdi32"; fi` -lm
 INCLUDES=-I../includes -Ilibpng-1.2.28 -I../dmg/zlib-1.2.3 -I../dmg/openssl-0.9.8g/include -Ibzip2-1.0.5

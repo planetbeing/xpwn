@@ -1,6 +1,7 @@
 #include "common.h"
 #include <xpwn/8900.h>
 #include <xpwn/img2.h>
+#include <xpwn/img3.h>
 #include <xpwn/lzssfile.h>
 #include <xpwn/ibootim.h>
 
@@ -14,11 +15,13 @@ AbstractFile* openAbstractFile(AbstractFile* file) {
 	FLIPENDIAN(signatureBE);
 	FLIPENDIANLE(signatureLE);
 	file->seek(file, 0);
-	
+
 	if(signatureBE == SIGNATURE_8900) {
 		return openAbstractFile(createAbstractFileFrom8900(file));
 	} else if(signatureLE == IMG2_SIGNATURE) {
 		return openAbstractFile(createAbstractFileFromImg2(file));
+	} else if(signatureLE == IMG3_SIGNATURE) {
+		return openAbstractFile(createAbstractFileFromImg3(file));
 	} else if(signatureBE == COMP_SIGNATURE) {
 		return openAbstractFile(createAbstractFileFromComp(file));
 	} else if(signatureBE == IBOOTIM_SIG_UINT) {
@@ -46,6 +49,9 @@ AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing) {
 	} else if(signatureLE == IMG2_SIGNATURE) {
 		orig = createAbstractFileFromImg2(file);
 		return duplicateAbstractFile(orig, duplicateImg2File(orig, backing));
+	} else if(signatureLE == IMG3_SIGNATURE) {
+		orig = createAbstractFileFromImg3(file);
+		return duplicateAbstractFile(orig, duplicateImg3File(orig, backing));
 	} else if(signatureBE == COMP_SIGNATURE) {
 		orig = createAbstractFileFromComp(file);
 		return duplicateAbstractFile(orig, duplicateCompFile(orig, backing));
