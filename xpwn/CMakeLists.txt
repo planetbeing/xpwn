@@ -18,3 +18,6 @@ link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJEC
 target_link_libraries(xpwn-bin xpwn)
 
 set_target_properties(xpwn-bin PROPERTIES OUTPUT_NAME "xpwn")
+
+install(FILES ramdisk.dmg DESTINATION .)
+install(TARGETS xpwn-bin DESTINATION .)

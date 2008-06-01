@@ -29,7 +29,7 @@ include_directories(${PNG_INCLUDE_DIR})
 link_directories(${PNG_LIBRARIES})
 
 include_directories(${PROJECT_SOURCE_DIR}/minizip)
-link_directories(${PROJECT_SOURCE_DIR}/minizip)
+link_directories(${PROJECT_BINARY_DIR}/minizip)
 
 link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJECT_BINARY_DIR}/dmg)
 
@@ -40,3 +40,6 @@ target_link_libraries(xpwn z crypto bz2 png minizip common dmg hfs)
 add_executable(ipsw main.c)
 target_link_libraries(ipsw xpwn)
 
+install(TARGETS ipsw RUNTIME DESTINATION .)
+install(DIRECTORY FirmwareBundles/ DESTINATION FirmwareBundles)
+install(DIRECTORY bundles/ DESTINATION bundles)
