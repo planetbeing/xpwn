@@ -21,6 +21,7 @@ ENDIF(OPENSSL_FOUND)
 
 target_link_libraries(dmg common hfs z)
 
-add_executable(dmgx dmg.c)
-target_link_libraries (dmgx dmg)
+add_executable(dmg-bin dmg.c)
+target_link_libraries (dmg-bin dmg)
 
+set_target_properties(dmg-bin PROPERTIES OUTPUT_NAME "dmg")
