@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.6)
 
 project (XPWN)
 
+IF(BUILD_STATIC)
+	SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+ENDIF(BUILD_STATIC)
+
 include_directories (${XPWN_SOURCE_DIR}/includes)
 
 add_subdirectory (common)
