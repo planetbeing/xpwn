@@ -158,7 +158,7 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	free(patchPath);
 }
 
-void doPatchInPlace(Volume* volume, char* filePath, char* patchPath) {
+void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath) {
 	void* buffer;
 	void* buffer2;
 	size_t bufferSize;

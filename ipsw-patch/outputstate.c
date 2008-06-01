@@ -5,8 +5,8 @@
 #include "common.h"
 #include <dmg/dmg.h>
 #include <xpwn/outputstate.h>
-#include <contrib/minizip/zip.h>
-#include <contrib/minizip/unzip.h>
+#include <zip.h>
+#include <unzip.h>
 
 void addToOutputQueue(OutputState** state, char* fileName, void* buffer, size_t bufferSize) {
 	OutputState* leftNeighbor;
