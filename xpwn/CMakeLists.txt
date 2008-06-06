@@ -4,10 +4,10 @@ IF(NOT USB_FOUND)
 	message(FATAL_ERROR "libusb is required for xpwn!")
 ENDIF(NOT USB_FOUND)
 
+include_directories(include)
+
 include_directories(${USB_INCLUDE_DIR})
 link_directories(${USB_LIBRARIES})
-
-include_directories (include)
 
 add_executable(xpwn-bin src/xpwn.cpp src/libibooter.cpp)
 
