@@ -1,10 +1,10 @@
+#include <zlib.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "common.h"
 #include "abstractfile.h"
 #include <xpwn/img2.h>
-#include <zlib.h>
 
 void flipImg2Header(Img2Header* header) {
 	FLIPENDIANLE(header->signature);

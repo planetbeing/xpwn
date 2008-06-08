@@ -1,3 +1,4 @@
+#include <zlib.h>
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/aes.h>
@@ -6,7 +7,6 @@
 #include "common.h"
 #include <xpwn/8900.h>
 #include <xpwn/img2.h>
-#include <zlib.h>
 
 void flipApple8900Header(Apple8900Header* header) {
 	FLIPENDIAN(header->magic);
