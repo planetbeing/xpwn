@@ -125,8 +125,6 @@ void createArray(ArrayValue* myself, char* xml) {
 	Tag* valueTag;
 	DictValue* curValue;
 	
-	int i;
-	
 	myself->values = NULL;
 	myself->size = 0;
 	while(*xml != '\0') {

@@ -57,7 +57,6 @@ off_t getLengthIBootIM(AbstractFile* file) {
 
 void closeIBootIM(AbstractFile* file) {
 	InfoIBootIM* info = (InfoIBootIM*) (file->data);
-	uint32_t cksum;
 	uint8_t *compressed;
 	if(info->dirty) {
 		compressed = malloc(info->length * 2);
@@ -143,7 +142,6 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 
 AbstractFile* duplicateIBootIMFile(AbstractFile* file, AbstractFile* backing) {
 	InfoIBootIM* info;
-	unsigned char* copyCertificate;
 	AbstractFile* toReturn;
 
 	if(!file) {
@@ -184,7 +182,7 @@ void pngError(png_structp png_ptr, png_const_charp error_msg) {
 
 void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fileSize) {
 	AbstractFile* imageFile;
-	char header[8];
+	unsigned char header[8];
 	InfoIBootIM* info;
 	png_uint_32 i;
 	png_bytepp row_pointers;
@@ -252,7 +250,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fi
 	
 
 	if(info_ptr->width > 320 || info_ptr->height > 480) {
-		printf("error: dimensions out of range, must be within 320x480, not %dx%d\n", info_ptr->width, info_ptr->height);
+		printf("error: dimensions out of range, must be within 320x480, not %lux%lu\n", info_ptr->width, info_ptr->height);
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		return NULL;
 	}

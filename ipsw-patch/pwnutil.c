@@ -7,6 +7,7 @@
 #include <xpwn/outputstate.h>
 #include <xpwn/pwnutil.h>
 #include <xpwn/nor_files.h>
+#include <hfs/hfslib.h>
 
 #define BUFFERSIZE (1024*1024)
 
@@ -14,7 +15,6 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	Dictionary* info;
 	char* infoPath;
 
-	char* ipswName;
 	AbstractFile* plistFile;
 	char* plist;
 	FILE* inputIPSWFile;
@@ -22,7 +22,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	SHA_CTX sha1_ctx;
 	char buffer[BUFFERSIZE];
 	int read;
-	char hash[20];
+	unsigned char hash[20];
 
 	DIR* dir;
 	struct dirent* ent;
@@ -74,7 +74,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 
 			plistSHA1String = (StringValue*)getValueByKey(info, "SHA1");
 			if(plistSHA1String) {
-				sscanf(plistSHA1String->value, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+				sscanf(plistSHA1String->value, "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
 					&plistHash[0], &plistHash[1], &plistHash[2], &plistHash[3], &plistHash[4],
 					&plistHash[5], &plistHash[6], &plistHash[7], &plistHash[8], &plistHash[9],
 					&plistHash[10], &plistHash[11], &plistHash[12], &plistHash[13], &plistHash[14],
@@ -156,6 +156,8 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	printf("success\n"); fflush(stdout);
 
 	free(patchPath);
+
+	return 0;
 }
 
 void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath) {

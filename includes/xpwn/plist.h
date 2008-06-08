@@ -61,6 +61,7 @@ extern "C" {
 	char* getXmlFromRoot(Dictionary* root);
 	DictValue* getValueByKey(Dictionary* myself, const char* key);
 	void addStringToArray(ArrayValue* array, char* str);
+	void removeKey(Dictionary* dict, char* key);
 #ifdef __cplusplus
 }
 #endif

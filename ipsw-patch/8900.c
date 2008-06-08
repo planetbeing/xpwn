@@ -6,6 +6,7 @@
 #include "common.h"
 #include <xpwn/8900.h>
 #include <xpwn/img2.h>
+#include <zlib.h>
 
 void flipApple8900Header(Apple8900Header* header) {
 	FLIPENDIAN(header->magic);
@@ -75,8 +76,7 @@ void close8900(AbstractFile* file) {
 				((Img2Header*)info->buffer)->dataLenPadded = ((Img2Header*)info->buffer)->dataLenPadded % 16 == 0 ? ((Img2Header*)info->buffer)->dataLenPadded : ((((Img2Header*)info->buffer)->dataLenPadded/16) + 1) * 16;
 				info->header.sizeOfData = ((Img2Header*)info->buffer)->dataLenPadded + sizeof(Img2Header);
 				
-				cksum = 0;
-				crc32(&cksum, (unsigned char *)info->buffer, 0x64);
+				cksum = crc32(0, (unsigned char *)info->buffer, 0x64);
 				FLIPENDIANLE(cksum);
 				((Img2Header*)info->buffer)->header_checksum = cksum;
 			}

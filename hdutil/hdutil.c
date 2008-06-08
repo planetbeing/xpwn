@@ -10,13 +10,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "hfs/hfslib.h"
 
 char endianness;
 
-void cmd_ls(Volume* volume, int argc, const char *argv[]) {
-	HFSPlusCatalogRecord* record;
-	char* name;
-	
+void cmd_ls(Volume* volume, int argc, const char *argv[]) {	
 	if(argc > 1)
 		hfs_ls(volume, argv[1]);
 	else

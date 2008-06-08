@@ -61,8 +61,6 @@ int main(int argc, char* argv[]) {
 	void* imageBuffer;	
 	size_t imageSize;
 
-	FILE* temp;
-
 	AbstractFile* bootloader39;
 	AbstractFile* bootloader46;
 	AbstractFile* applelogo;
@@ -288,7 +286,7 @@ int main(int argc, char* argv[]) {
 		patchArray = (ArrayValue*) patchArray->dValue.next;
 	}
 	
-	for(mergePaths; mergePaths < argc; mergePaths++) {
+	for(; mergePaths < argc; mergePaths++) {
 		addall_hfs(rootVolume, argv[mergePaths], "/");
 	}
 	

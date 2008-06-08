@@ -319,7 +319,7 @@ static void readResourceData(ResourceData* data, char** location, FlipDataFunc f
       sscanf(buffer, "%d", &(data->id));
       free(buffer);
     } else if(strncmp(tagBegin, "Name", strLen) == 0) {
-      data->name = (unsigned char*) getXMLString(&curLoc);
+      data->name = getXMLString(&curLoc);
     }
   }
   
@@ -492,7 +492,7 @@ ResourceKey* writeNSiz(NSizResource* nSiz) {
     
     curData->attributes = 0;
     curData->id = curNSiz->partitionNumber;
-    curData->name = (unsigned char*) malloc(sizeof(char));
+    curData->name = (char*) malloc(sizeof(char));
     curData->name[0] = '\0';
     curData->next = NULL;
     curData->dataLength = sizeof(char) * strlen(buffer);
@@ -810,7 +810,7 @@ ResourceKey* insertData(ResourceKey* resources, const char* key, int id, const c
   curData->attributes = attributes;
   curData->dataLength = dataLength;
   curData->id = id;
-  curData->name = (unsigned char*) malloc(strlen(name) + 1);
+  curData->name = (char*) malloc(strlen(name) + 1);
   strcpy((char*) curData->name, name);
   curData->data = (unsigned char*) malloc(dataLength);
   memcpy(curData->data, data, dataLength);

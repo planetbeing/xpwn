@@ -215,7 +215,7 @@ typedef struct ResourceData {
 	unsigned char* data;
 	size_t dataLength;
 	int id;
-	unsigned char* name;
+	char* name;
 	struct ResourceData* next;
 } ResourceData;
 

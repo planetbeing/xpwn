@@ -31,8 +31,9 @@ int main(int argc, char *argv[])
 	StringValue* kernelValue;
 	AbstractFile* ramdisk;
 
-	AbstractFile* applelogo;
-	AbstractFile* recoverymode;
+	AbstractFile* applelogo = NULL;
+	AbstractFile* recoverymode = NULL;
+	AbstractFile* iboot = NULL;
 	int i;
 
 	TestByteOrder();
@@ -59,6 +60,15 @@ int main(int argc, char *argv[])
 		if(strcmp(argv[i], "-r") == 0) {
 			recoverymode = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
 			if(!recoverymode) {
+				cout << "cannot open " << argv[i + 1] << endl;
+				return 1;
+			}
+			i++;
+			continue;
+		}
+		if(strcmp(argv[i], "-i") == 0) {
+			iboot = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
+			if(!iboot) {
 				cout << "cannot open " << argv[i + 1] << endl;
 				return 1;
 			}
@@ -102,15 +112,20 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	add_hfs(ramdiskVolume, getFileFromOutputState(&ipswContents, ((StringValue*)getValueByKey(ibootDict, "File"))->value), "/ipwner/iboot.img2");
-	StringValue* patchValue = (StringValue*) getValueByKey(ibootDict, "Patch");
-	char* patchPath = (char*) malloc(sizeof(char) * (strlen(bundlePath) + strlen(patchValue->value) + 2));
-	strcpy(patchPath, bundlePath);
-	strcat(patchPath, "/");
-	strcat(patchPath, patchValue->value);
-	printf("patching /ipwner/iboot.img2 (%s)... ", patchPath);
-	doPatchInPlace(ramdiskVolume, "/ipwner/iboot.img2", patchPath);
-	free(patchPath);
+	if(!iboot) {
+		add_hfs(ramdiskVolume, getFileFromOutputState(&ipswContents, ((StringValue*)getValueByKey(ibootDict, "File"))->value), "/ipwner/iboot.img2");
+		StringValue* patchValue = (StringValue*) getValueByKey(ibootDict, "Patch");
+		char* patchPath = (char*) malloc(sizeof(char) * (strlen(bundlePath) + strlen(patchValue->value) + 2));
+		strcpy(patchPath, bundlePath);
+		strcat(patchPath, "/");
+		strcat(patchPath, patchValue->value);
+		printf("patching /ipwner/iboot.img2 (%s)... ", patchPath);
+		doPatchInPlace(ramdiskVolume, "/ipwner/iboot.img2", patchPath);
+		free(patchPath);
+	} else {
+		cout << "adding custom iboot" << endl;
+		add_hfs(ramdiskVolume, iboot, "/ipwner/iboot.img2");
+	}
 
 	if(applelogo || recoverymode) {
 		cout << " ... Adding boot logos" << endl;

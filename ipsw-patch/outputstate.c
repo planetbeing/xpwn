@@ -60,11 +60,7 @@ void addToOutputQueue(OutputState** state, char* fileName, void* buffer, size_t 
 
 void addToOutput(OutputState** state, char* fileName, void* buffer, size_t bufferSize) {
 	char* fileNamePath;
-	char* path;
 	char* fileNameNoPath;
-	char pathExists;
-	OutputState* leftNeighbor;
-	OutputState* rightNeighbor;
 
 	fileNamePath = (char*) malloc(sizeof(char) * (strlen(fileName) + 1));
 	strcpy(fileNamePath, fileName);
@@ -196,7 +192,7 @@ OutputState* loadZip(const char* ipsw) {
 		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
 		if(fileName[strlen(fileName) - 1] != '/') {
 			buffer = malloc((pfile_info.uncompressed_size > 0) ? pfile_info.uncompressed_size : 1);
-			printf("loading: %s (%d)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
+			printf("loading: %s (%ld)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
 			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
 			ASSERT(unzReadCurrentFile(zip, buffer, pfile_info.uncompressed_size) == pfile_info.uncompressed_size, "cannot read file from ipsw");
 			ASSERT(unzCloseCurrentFile(zip) == UNZ_OK, "cannot close compressed file in IPSW");

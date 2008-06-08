@@ -48,7 +48,7 @@ size_t bzRead(int *bzerr, BZStream* stream, unsigned char* out, size_t len) {
 			haveRead = stream->file->read(stream->file, stream->inBuffer + stream->bz2.avail_in, stream->bufferLen - stream->bz2.avail_in);
 			stream->offset += haveRead;
 			stream->bz2.avail_in += haveRead;
-			stream->bz2.next_in = stream->inBuffer;
+			stream->bz2.next_in = (char*) stream->inBuffer;
 			
 			*bzerr = BZ2_bzDecompress(&(stream->bz2));
 			
@@ -100,9 +100,9 @@ BZStream* openBZStream(AbstractFile* file, off_t offset, size_t bufferLen) {
 	memset(&(stream->bz2), 0, sizeof(bz_stream));
 	BZ2_bzDecompressInit(&(stream->bz2), 0, FALSE);
 	
-	stream->bz2.next_in = stream->inBuffer;
+	stream->bz2.next_in = (char*) stream->inBuffer;
 	stream->bz2.avail_in = 0;
-	stream->bz2.next_out = stream->outBuffer;
+	stream->bz2.next_out = (char*) stream->outBuffer;
 	stream->bz2.avail_out = bufferLen;
 
 	stream->ended = FALSE;

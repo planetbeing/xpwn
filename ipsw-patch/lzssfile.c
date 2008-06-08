@@ -54,7 +54,6 @@ off_t getLengthComp(AbstractFile* file) {
 
 void closeComp(AbstractFile* file) {
 	InfoComp* info = (InfoComp*) (file->data);
-	uint32_t cksum;
 	uint8_t *compressed;
 	if(info->dirty) {
 		info->header.checksum = lzadler32((uint8_t*)info->buffer, info->header.length_uncompressed);
@@ -132,7 +131,6 @@ AbstractFile* createAbstractFileFromComp(AbstractFile* file) {
 
 AbstractFile* duplicateCompFile(AbstractFile* file, AbstractFile* backing) {
 	InfoComp* info;
-	unsigned char* copyCertificate;
 	AbstractFile* toReturn;
 
 	if(!file) {

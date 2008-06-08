@@ -62,7 +62,6 @@ off_t getLengthImg3(AbstractFile* file) {
 }
 
 void closeImg3(AbstractFile* file) {
-	int i;
 	Img3Info* info = (Img3Info*) file->data;
 
 	if(info->dirty) {

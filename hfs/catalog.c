@@ -184,10 +184,6 @@ static int catalogCompare(BTKey* vLeft, BTKey* vRight) {
 static int catalogCompareCS(BTKey* vLeft, BTKey* vRight) {
   HFSPlusCatalogKey* left;
   HFSPlusCatalogKey* right;
-  uint16_t i;
-
-  uint16_t cLeft;
-  uint16_t cRight;
   
   left = (HFSPlusCatalogKey*) vLeft;
   right =(HFSPlusCatalogKey*) vRight;
@@ -738,12 +734,9 @@ int move(const char* source, const char* dest, Volume* volume) {
 
 int removeFile(const char* fileName, Volume* volume) {
   HFSPlusCatalogRecord* record;
-  HFSPlusCatalogRecord* parentRecord;
   HFSPlusCatalogKey key;
-  HFSPlusCatalogKey parentKey;
   io_func* io;
   HFSPlusCatalogFolder* parentFolder;
-  int exact;
 
   record = getRecordFromPath3(fileName, volume, NULL, &key, TRUE, FALSE, kHFSRootFolderID);
   if(record != NULL) {

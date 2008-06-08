@@ -467,7 +467,7 @@ int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2
 	printf("retrieving... "); fflush(stdout);
 	get_hfs(volume1, path1, tmpFile);
 	tmpFile->seek(tmpFile, 0);
-	printf("writing (%lld)... ", tmpFile->getLength(tmpFile)); fflush(stdout);
+	printf("writing (%ld)... ", tmpFile->getLength(tmpFile)); fflush(stdout);
 	ret = add_hfs(volume2, tmpFile, path2);
 	printf("done\n");
 	
@@ -526,7 +526,7 @@ void displayFileLSLine(HFSPlusCatalogFile* file, const char* name) {
 	printf("%06o ", file->permissions.fileMode);
 	printf("%3d ", file->permissions.ownerID);
 	printf("%3d ", file->permissions.groupID);
-	printf("%12d ", file->dataFork.logicalSize);
+	printf("%12lld ", file->dataFork.logicalSize);
 	fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 	date = localtime(&fileTime);
 	if(date != NULL) {

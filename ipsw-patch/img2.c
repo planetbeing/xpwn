@@ -4,6 +4,7 @@
 #include "common.h"
 #include "abstractfile.h"
 #include <xpwn/img2.h>
+#include <zlib.h>
 
 void flipImg2Header(Img2Header* header) {
 	FLIPENDIANLE(header->signature);
@@ -70,8 +71,7 @@ void closeImg2(AbstractFile* file) {
 	  
 		flipImg2Header(&(info->header));
 		
-		cksum = 0;
-		crc32(&cksum, (unsigned char *)&(info->header), 0x64);
+		cksum = crc32(0, (unsigned char *)&(info->header), 0x64);
 		FLIPENDIANLE(cksum);
 		info->header.header_checksum = cksum;
 			
@@ -124,7 +124,6 @@ AbstractFile* createAbstractFileFromImg2(AbstractFile* file) {
 
 AbstractFile* duplicateImg2File(AbstractFile* file, AbstractFile* backing) {
 	InfoImg2* info;
-	unsigned char* copyCertificate;
 	AbstractFile* toReturn;
 
 	if(!file) {
