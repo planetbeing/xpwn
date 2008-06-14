@@ -37,6 +37,10 @@ add_library(xpwn 8900.c bspatch.c ibootim.c img2.c img3.c libxpwn.c lzss.c lzssf
 
 target_link_libraries(xpwn z crypto bz2 png minizip common dmg hfs)
 
+IF(WIN32)
+	TARGET_LINK_LIBRARIES(xpwn gdi32)
+ENDIF(WIN32)
+
 add_executable(ipsw main.c)
 target_link_libraries(ipsw xpwn)
 
