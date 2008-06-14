@@ -54,6 +54,10 @@ ADD_CUSTOM_TARGET(libXPwn.a ALL
 	COMMAND ${CMAKE_RANLIB} libXPwn.a
 	DEPENDS xpwn dmg hfs common minizip)
 
+IF(WIN32)
+	TARGET_LINK_LIBRARIES(xpwn gdi32)
+ENDIF(WIN32)
+
 add_executable(ipsw main.c)
 target_link_libraries(ipsw xpwn)
 
