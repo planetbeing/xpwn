@@ -176,6 +176,7 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 
 	printf("retrieving..."); fflush(stdout);
 	get_hfs(volume, filePath, bufferFile);
+	bufferFile->close(bufferFile);
 	
 	printf("patching..."); fflush(stdout);
 				
@@ -184,6 +185,9 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 	buffer2 = malloc(1);
 	bufferSize2 = 0;
 	out = duplicateAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), createAbstractFileFromMemoryFile((void**)&buffer2, &bufferSize2));
+
+	// reopen the inner package
+	bufferFile = openAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
 	
 	if(!patchFile || !bufferFile || !out) {
 		printf("file error\n");
