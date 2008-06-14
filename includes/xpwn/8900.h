@@ -43,5 +43,6 @@ typedef struct Info8900 {
 
 AbstractFile* createAbstractFileFrom8900(AbstractFile* file);
 AbstractFile* duplicate8900File(AbstractFile* file, AbstractFile* backing);
+void replaceCertificate8900(AbstractFile* file, AbstractFile* certificate);
 
 #endif

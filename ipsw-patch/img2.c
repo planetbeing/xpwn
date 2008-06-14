@@ -119,6 +119,7 @@ AbstractFile* createAbstractFileFromImg2(AbstractFile* file) {
 	toReturn->tell = tellImg2;
 	toReturn->getLength = getLengthImg2;
 	toReturn->close = closeImg2;
+	toReturn->type = AbstractFileTypeImg2;
 	return toReturn;
 }
 
@@ -147,6 +148,7 @@ AbstractFile* duplicateImg2File(AbstractFile* file, AbstractFile* backing) {
 	toReturn->tell = tellImg2;
 	toReturn->getLength = getLengthImg2;
 	toReturn->close = closeImg2;
+	toReturn->type = AbstractFileTypeImg2;
 	return toReturn;
 }
 

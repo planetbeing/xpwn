@@ -172,7 +172,19 @@ AbstractFile* createAbstractFileFrom8900(AbstractFile* file) {
 	toReturn->tell = tell8900;
 	toReturn->getLength = getLength8900;
 	toReturn->close = close8900;
+	toReturn->type = AbstractFileType8900;
 	return toReturn;
+}
+
+void replaceCertificate8900(AbstractFile* file, AbstractFile* certificate) {
+	Info8900* info = (Info8900*) (file->data); 
+	info->header.footerCertLen = certificate->getLength(certificate);
+	if(info->footerCertificate != NULL) {
+		free(info->footerCertificate);
+	}
+	info->footerCertificate = (unsigned char*) malloc(info->header.footerCertLen);
+	certificate->read(certificate, info->footerCertificate, info->header.footerCertLen);
+	info->dirty = TRUE;
 }
 
 AbstractFile* duplicate8900File(AbstractFile* file, AbstractFile* backing) {
@@ -204,5 +216,6 @@ AbstractFile* duplicate8900File(AbstractFile* file, AbstractFile* backing) {
 	toReturn->tell = tell8900;
 	toReturn->getLength = getLength8900;
 	toReturn->close = close8900;
+	toReturn->type = AbstractFileType8900;
 	return toReturn;
 }

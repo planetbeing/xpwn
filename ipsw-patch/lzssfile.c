@@ -125,6 +125,7 @@ AbstractFile* createAbstractFileFromComp(AbstractFile* file) {
 	toReturn->tell = tellComp;
 	toReturn->getLength = getLengthComp;
 	toReturn->close = closeComp;
+	toReturn->type = AbstractFileTypeLZSS;
 
 	return toReturn;
 }
@@ -154,7 +155,8 @@ AbstractFile* duplicateCompFile(AbstractFile* file, AbstractFile* backing) {
 	toReturn->tell = tellComp;
 	toReturn->getLength = getLengthComp;
 	toReturn->close = closeComp;
-	
+	toReturn->type = AbstractFileTypeLZSS;	
+
 	return toReturn;
 }
 

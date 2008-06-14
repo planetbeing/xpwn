@@ -136,6 +136,7 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 	toReturn->tell = tellIBootIM;
 	toReturn->getLength = getLengthIBootIM;
 	toReturn->close = closeIBootIM;
+	toReturn->type = AbstractFileTypeIBootIM;
 	
 	return toReturn;
 }
@@ -165,6 +166,7 @@ AbstractFile* duplicateIBootIMFile(AbstractFile* file, AbstractFile* backing) {
 	toReturn->tell = tellIBootIM;
 	toReturn->getLength = getLengthIBootIM;
 	toReturn->close = closeIBootIM;
+	toReturn->type = AbstractFileTypeIBootIM;
 	
 	return toReturn;
 }

@@ -3,6 +3,12 @@ INCLUDE(FindZLIB)
 INCLUDE(FindBZip2)
 INCLUDE(FindPNG)
 
+FIND_LIBRARY(CRYPTO_LIBRARIES crypto
+      PATHS
+      /usr/lib
+      /usr/local/lib
+   )
+
 IF(NOT ZLIB_FOUND)
 	message(FATAL_ERROR "zlib is required for ipsw!")
 ENDIF(NOT ZLIB_FOUND)
@@ -35,7 +41,18 @@ link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJEC
 
 add_library(xpwn 8900.c bspatch.c ibootim.c img2.c img3.c libxpwn.c lzss.c lzssfile.c nor_files.c outputstate.c plist.c pwnutil.c)
 
-target_link_libraries(xpwn z crypto bz2 png minizip common dmg hfs)
+target_link_libraries(xpwn dmg hfs common minizip ${CRYPTO_LIBRARIES} ${BZIP2_LIBRARIES} ${PNG_LIBRARIES} ${ZLIB_LIBRARIES} m)
+
+ADD_CUSTOM_TARGET(libXPwn.a ALL
+	COMMAND ${CMAKE_C_COMPILER}
+		-L${PROJECT_BINARY_DIR}/ipsw-patch -L${PROJECT_BINARY_DIR}/dmg -L${PROJECT_BINARY_DIR}/hfs
+		-L${PROJECT_BINARY_DIR}/hfs -L${PROJECT_BINARY_DIR}/minizip -L${PROJECT_BINARY_DIR}/common
+		-Xlinker --whole-archive -lxpwn -ldmg -lhfs -lcommon -lminizip
+		${CRYPTO_LIBRARIES} ${BZIP2_LIBRARIES} ${PNG_LIBRARIES}
+		-Xlinker --unresolved-symbols=ignore-all -Xlinker -r -nostdlib -o libXPwn.o
+	COMMAND ${CMAKE_AR} cr libXPwn.a libXPwn.o
+	COMMAND ${CMAKE_RANLIB} libXPwn.a
+	DEPENDS xpwn dmg hfs common minizip)
 
 add_executable(ipsw main.c)
 target_link_libraries(ipsw xpwn)

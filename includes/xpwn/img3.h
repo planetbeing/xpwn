@@ -51,6 +51,7 @@ typedef struct Img3Info {
 	AbstractFile* file;
 	Img3Element* root;
 	Img3Element* data;
+	Img3Element* cert;
 	size_t offset;
 	char dirty;
 } Img3Info;
@@ -60,6 +61,7 @@ extern "C" {
 #endif
 	AbstractFile* createAbstractFileFromImg3(AbstractFile* file);
 	AbstractFile* duplicateImg3File(AbstractFile* file, AbstractFile* backing);
+	void replaceCertificateImg3(AbstractFile* file, AbstractFile* certificate);
 #ifdef __cplusplus
 }
 #endif

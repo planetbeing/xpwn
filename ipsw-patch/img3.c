@@ -249,7 +249,9 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	while(current != NULL) {
 		if(current->header->magic == IMG3_DATA_MAGIC) {
 			info->data = current;
-			break;
+		}
+		if(current->header->magic == IMG3_CERT_MAGIC) {
+			info->cert = current;
 		}
 		current = current->next;
 	}
@@ -265,8 +267,24 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	toReturn->tell = tellImg3;
 	toReturn->getLength = getLengthImg3;
 	toReturn->close = closeImg3;
+	toReturn->type = AbstractFileTypeImg3;
 	return toReturn;
 }
+
+void replaceCertificateImg3(AbstractFile* file, AbstractFile* certificate) {
+	Img3Info* info = (Img3Info*) file->data;
+
+	info->cert->header->dataSize = certificate->getLength(certificate);
+	info->cert->header->size = info->cert->header->dataSize + sizeof(AppleImg3Header);
+	if(info->cert->data != NULL) {
+		free(info->cert->data);
+	}
+	info->cert->data = malloc(info->cert->header->dataSize);
+	certificate->read(certificate, info->cert->data, info->cert->header->dataSize);
+
+	info->dirty = TRUE;
+}
+
 AbstractFile* duplicateImg3File(AbstractFile* file, AbstractFile* backing) {
 	Img3Info* info;
 	AbstractFile* toReturn;

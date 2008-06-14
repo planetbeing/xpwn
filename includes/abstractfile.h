@@ -12,6 +12,18 @@ typedef off_t (*TellFunc)(AbstractFile* file);
 typedef void (*CloseFunc)(AbstractFile* file);
 typedef off_t (*GetLengthFunc)(AbstractFile* file);
 
+typedef enum AbstractFileType {
+	AbstractFileTypeFile,
+	AbstractFileType8900,
+	AbstractFileTypeImg2,
+	AbstractFileTypeImg3,
+	AbstractFileTypeLZSS,
+	AbstractFileTypeIBootIM,
+	AbstractFileTypeMem,
+	AbstractFileTypeMemFile,
+	AbstractFileTypeDummy
+} AbstractFileType;
+
 struct AbstractFile {
 	void* data;
 	WriteFunc write;
@@ -20,6 +32,7 @@ struct AbstractFile {
 	TellFunc tell;
 	GetLengthFunc getLength;
 	CloseFunc close;
+	AbstractFileType type;
 };
 
 typedef struct {
