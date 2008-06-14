@@ -207,6 +207,7 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	file->read(file, &signature, sizeof(uint64_t));
 	FLIPENDIAN(signature);
 	if(signature != FILEVAULT_V2_SIGNATURE) {
+		printf("Unknown signature: %x\n", signature);
 		/* no FileVault v1 handling yet */
 		return NULL;
 	}
