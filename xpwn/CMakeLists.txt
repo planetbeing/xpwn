@@ -11,7 +11,7 @@ link_directories(${USB_LIBRARIES})
 
 add_executable(xpwn-bin src/xpwn.cpp src/libibooter.cpp)
 
-target_link_libraries(xpwn-bin usb)
+target_link_libraries(xpwn-bin ${USB_LIBRARIES})
 
 link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJECT_BINARY_DIR}/ipsw-patch)
 
