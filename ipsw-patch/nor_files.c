@@ -8,6 +8,9 @@
 AbstractFile* openAbstractFile(AbstractFile* file) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
+
+	if(!file)
+		return NULL;
 	
 	file->seek(file, 0);
 	file->read(file, &signatureBE, sizeof(signatureBE));
@@ -61,6 +64,37 @@ AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing) {
 	} else {
 		file->close(file);
 		return backing;
+	}
+}
+
+AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const uint8_t* iv) {
+	uint32_t signatureBE;
+	uint32_t signatureLE;
+
+	if(!file)
+		return NULL;
+	
+	file->seek(file, 0);
+	file->read(file, &signatureBE, sizeof(signatureBE));
+	signatureLE = signatureBE;
+	FLIPENDIAN(signatureBE);
+	FLIPENDIANLE(signatureLE);
+	file->seek(file, 0);
+
+	if(signatureBE == SIGNATURE_8900) {
+		return openAbstractFile2(createAbstractFileFrom8900(file), key, iv);
+	} else if(signatureLE == IMG2_SIGNATURE) {
+		return openAbstractFile2(createAbstractFileFromImg2(file), key, iv);
+	} else if(signatureLE == IMG3_SIGNATURE) {
+		AbstractFile2* img3 = (AbstractFile2*) createAbstractFileFromImg3(file);
+		img3->setKey(img3, key, iv);
+		return openAbstractFile((AbstractFile*) img3);
+	} else if(signatureBE == COMP_SIGNATURE) {
+		return openAbstractFile(createAbstractFileFromComp(file));
+	} else if(signatureBE == IBOOTIM_SIG_UINT) {
+		return openAbstractFile(createAbstractFileFromIBootIM(file));
+	} else {
+		return file;
 	}
 }
 

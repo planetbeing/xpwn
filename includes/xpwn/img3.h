@@ -1,9 +1,10 @@
+#ifndef IMG3_H
+#define IMG3_H
+
 #include <stdint.h>
 #include "common.h"
 #include <abstractfile.h>
-
-#ifndef IMG3_H
-#define IMG3_H
+#include <openssl/aes.h>
 
 #define IMG3_MAGIC 0x496d6733
 #define IMG3_DATA_MAGIC 0x44415441
@@ -52,6 +53,10 @@ typedef struct Img3Info {
 	Img3Element* root;
 	Img3Element* data;
 	Img3Element* cert;
+	int encrypted;
+	AES_KEY encryptKey;
+	AES_KEY decryptKey;
+	uint8_t iv[16];
 	size_t offset;
 	char dirty;
 } Img3Info;

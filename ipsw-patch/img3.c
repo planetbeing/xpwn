@@ -65,6 +65,12 @@ void closeImg3(AbstractFile* file) {
 	Img3Info* info = (Img3Info*) file->data;
 
 	if(info->dirty) {
+		if(info->encrypted) {
+			uint8_t ivec[16];
+			memcpy(ivec, info->iv, 16);
+			AES_cbc_encrypt(info->data->data, info->data->data, info->data->header->size - sizeof(AppleImg3Header), &(info->encryptKey), ivec, AES_ENCRYPT);
+		}
+
 		info->file->seek(info->file, 0);
 		info->root->header->dataSize = 0;	/* hack to make certain writeImg3Element doesn't preallocate */
 		info->root->header->size = 0;
@@ -75,6 +81,23 @@ void closeImg3(AbstractFile* file) {
 	info->file->close(info->file);
 	free(info);
 	free(file);
+}
+
+void setKeyImg3(AbstractFile2* file, const uint8_t* key, const uint8_t* iv) {
+	Img3Info* info = (Img3Info*) file->super.data;
+
+	AES_set_encrypt_key(key, 128, &(info->encryptKey));
+	AES_set_decrypt_key(key, 128, &(info->decryptKey));
+
+	memcpy(info->iv, iv, 16);
+
+	if(!info->encrypted) {
+		uint8_t ivec[16];
+		memcpy(ivec, info->iv, 16);
+		AES_cbc_encrypt(info->data->data, info->data->data, info->data->header->size - sizeof(AppleImg3Header), &(info->decryptKey), ivec, AES_DECRYPT);
+	}
+
+	info->encrypted = TRUE;
 }
 
 Img3Element* readImg3Element(AbstractFile* file);
@@ -244,6 +267,7 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	info->root = readImg3Element(file);
 
 	info->data = NULL;
+	info->encrypted = FALSE;
 
 	current = (Img3Element*) info->root->data;
 	while(current != NULL) {
@@ -258,8 +282,9 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 
 	info->offset = 0;
 	info->dirty = FALSE;
+	info->encrypted = FALSE;
 
-	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile));
+	toReturn = (AbstractFile*) malloc(sizeof(AbstractFile2));
 	toReturn->data = info;
 	toReturn->read = readImg3;
 	toReturn->write = writeImg3;
@@ -268,6 +293,10 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	toReturn->getLength = getLengthImg3;
 	toReturn->close = closeImg3;
 	toReturn->type = AbstractFileTypeImg3;
+
+	AbstractFile2* abstractFile2 = (AbstractFile2*) toReturn;
+	abstractFile2->setKey = setKeyImg3;
+
 	return toReturn;
 }
 

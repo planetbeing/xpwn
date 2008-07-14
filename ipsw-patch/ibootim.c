@@ -95,20 +95,26 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 	flipIBootIMHeader(&(info->header));
 	if(strcmp(info->header.signature, IBOOTIM_SIGNATURE) != 0) {
 		free(info);
+		fprintf(stderr, "createAbstractFileFromIBootIM: signature does not match\n");
 		return NULL;
 	}
 	
 	info->compLength = file->getLength(file) - sizeof(info->header);
 	if(info->header.compression_type != IBOOTIM_LZSS_TYPE) {
-		free(info);
-		return NULL;
+		//free(info);
+		fprintf(stderr, "createAbstractFileFromIBootIM: (warning) unsupported compression type: %x\n", info->header.compression_type);
+		//return NULL;
 	}
-	
+
+	int depth = 0;	
 	if(info->header.format == IBOOTIM_ARGB) {
 		info->length = 4 * info->header.width * info->header.height;
+		depth = 4;
 	} else if(info->header.format == IBOOTIM_GREY) {
 		info->length = 2 * info->header.width * info->header.height;
+		depth = 2;
 	} else {
+		fprintf(stderr, "createAbstractFileFromIBootIM: unsupported color type: %x\n", info->header.format);
 		free(info);
 		return NULL;
 	}
@@ -117,10 +123,14 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 	compressed = malloc(info->compLength);
 	file->read(file, compressed, info->compLength);
 
-	if(decompress_lzss(info->buffer, compressed, info->compLength) != info->length) {
+	int length = decompress_lzss(info->buffer, compressed, info->compLength);
+	if(length > info->length) {
+		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error, length == %d (%d + %d), should be == %d (%d x %d x %d)\n", length, info->compLength, sizeof(info->header), info->length, info->header.width, info->header.height, depth);
 		free(compressed);
 		free(info);
 		return NULL;
+	} else if(length < info->length) {
+		info->length = length;
 	}
 
 	free(compressed);

@@ -44,7 +44,7 @@ add_library(xpwn 8900.c bspatch.c ibootim.c img2.c img3.c libxpwn.c lzss.c lzssf
 target_link_libraries(xpwn dmg hfs common minizip ${CRYPTO_LIBRARIES} ${BZIP2_LIBRARIES} ${PNG_LIBRARIES} ${ZLIB_LIBRARIES} m)
 
 ADD_CUSTOM_TARGET(libXPwn.a
-	COMMAND ${CMAKE_C_COMPILER} ${CMAKE_C_FLAGS}
+	COMMAND ${CMAKE_C_COMPILER}
 		-L${PROJECT_BINARY_DIR}/ipsw-patch -L${PROJECT_BINARY_DIR}/dmg -L${PROJECT_BINARY_DIR}/hfs
 		-L${PROJECT_BINARY_DIR}/hfs -L${PROJECT_BINARY_DIR}/minizip -L${PROJECT_BINARY_DIR}/common
 		-Xlinker --whole-archive -lxpwn -ldmg -lhfs -lcommon -lminizip
@@ -61,6 +61,10 @@ ENDIF(WIN32)
 add_executable(ipsw main.c)
 target_link_libraries(ipsw xpwn)
 
-install(TARGETS ipsw RUNTIME DESTINATION .)
+add_executable(xpwntool xpwntool.c)
+target_link_libraries(xpwntool xpwn)
+
+install(TARGETS ipsw xpwntool RUNTIME DESTINATION .)
 install(DIRECTORY FirmwareBundles/ DESTINATION FirmwareBundles)
 install(DIRECTORY bundles/ DESTINATION bundles)
+

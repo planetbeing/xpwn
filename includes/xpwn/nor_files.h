@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 	AbstractFile* openAbstractFile(AbstractFile* file);
+	AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const uint8_t* iv);
 	AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing);
 	AbstractFile* duplicateAbstractFileWithCertificate(AbstractFile* file, AbstractFile* backing, AbstractFile* certificate);
 #ifdef __cplusplus
