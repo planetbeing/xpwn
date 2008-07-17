@@ -63,8 +63,11 @@ void closeComp(AbstractFile* file) {
 		
 		info->file->seek(info->file, sizeof(info->header));
 		info->file->write(info->file, compressed, info->header.length_compressed);
+
+		printf("lzss: %d %d %x %x %x\n", info->header.length_compressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1], info->header.length_compressed + sizeof(info->header));
+
 		free(compressed);
-			
+
 		flipCompHeader(&(info->header));
 		info->file->seek(info->file, 0);
 		info->file->write(info->file, &(info->header), sizeof(info->header));
@@ -104,12 +107,16 @@ AbstractFile* createAbstractFileFromComp(AbstractFile* file) {
 	info->buffer = malloc(info->header.length_uncompressed);
 	compressed = malloc(info->header.length_compressed);
 	file->read(file, compressed, info->header.length_compressed);
-	
-	if(decompress_lzss(info->buffer, compressed, info->header.length_compressed) != info->header.length_uncompressed) {
+
+	uint32_t real_uncompressed = decompress_lzss(info->buffer, compressed, info->header.length_compressed);
+	if(real_uncompressed != info->header.length_uncompressed) {
+		printf("mismatch: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
 		free(compressed);
 		free(info);
 		return NULL;
 	}
+
+	printf("match: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
 	
 	free(compressed);
 

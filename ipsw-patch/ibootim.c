@@ -118,6 +118,8 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 		free(info);
 		return NULL;
 	}
+
+	printf("iBootIM: depth = %d, width = %d, height = %d, length = %d\n", depth, info->header.width, info->header.height, info->length);
 	
 	info->buffer = malloc(info->length);
 	compressed = malloc(info->compLength);
@@ -130,6 +132,7 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 		free(info);
 		return NULL;
 	} else if(length < info->length) {
+		fprintf(stderr, "createAbstractFileFromIBootIM: (warning) uncompressed data shorter than expected: %d\n", length);
 		info->length = length;
 	}
 

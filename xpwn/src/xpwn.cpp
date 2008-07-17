@@ -6,6 +6,7 @@
 #include <xpwn/ibootim.h>
 #include "libibooter.h"
 #include <iostream>
+#include <string.h>
 
 using namespace ibooter;
 using namespace std;

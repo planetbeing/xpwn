@@ -77,10 +77,10 @@ int main(int argc, char* argv[]) {
 	AbstractFile* newFile;
 
 	if(template) {
-		if(certificate != NULL) {
-			newFile = duplicateAbstractFileWithCertificate(template, outFile, certificate);
+		if(hasKey) {
+			newFile = duplicateAbstractFile2(template, outFile, key, iv, certificate);
 		} else {
-			newFile = duplicateAbstractFile(template, outFile);
+			newFile = duplicateAbstractFile2(template, outFile, NULL, NULL, certificate);
 		}
 		if(!newFile) {
 			fprintf(stderr, "error: cannot duplicate file from provided template\n");

@@ -543,6 +543,7 @@ void hfs_ls(Volume* volume, const char* path) {
 
 	record = getRecordFromPath(path, volume, &name, NULL);
 	
+	printf("%s: \n", name);
 	if(record != NULL) {
 		if(record->recordType == kHFSPlusFolderRecord)
 			displayFolder(((HFSPlusCatalogFolder*)record)->folderID, volume);  

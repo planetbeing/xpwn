@@ -12,7 +12,7 @@ extern "C" {
 	AbstractFile* openAbstractFile(AbstractFile* file);
 	AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const uint8_t* iv);
 	AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing);
-	AbstractFile* duplicateAbstractFileWithCertificate(AbstractFile* file, AbstractFile* backing, AbstractFile* certificate);
+	AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const uint8_t* key, const uint8_t* iv, AbstractFile* certificate);
 #ifdef __cplusplus
 }
 #endif
