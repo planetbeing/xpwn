@@ -564,7 +564,6 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 	char block[512];
 
 	while(curRecord < tarSize) {
-		printf("curRecord = %x\n", curRecord);
 		tarFile->seek(tarFile, curRecord);
 		tarFile->read(tarFile, block, 512);
 
@@ -587,6 +586,20 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 		if(fileName[0] == '\0')
 			break;
 
+		if(fileName[strlen(fileName) - 1] == '/')
+			fileName[strlen(fileName) - 1] = '\0';
+
+		HFSPlusCatalogRecord* record = getRecordFromPath3(fileName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
+		if(record) {
+			if(record->recordType == kHFSPlusFolderRecord || type == 5) {
+				printf("ignoring %s", fileName);
+				goto loop;
+			} else {
+				printf("replacing %s", fileName);
+				removeFile(fileName, volume);
+			}
+		}
+
 		if(type == 0) {
 			printf("file: %s (%04o), size = %d\n", fileName, mode, size);
 			void* buffer = malloc(size);
@@ -595,17 +608,8 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 			AbstractFile* inFile = createAbstractFileFromMemory(&buffer, size);
 			add_hfs(volume, inFile, fileName);
 		} else if(type == 5) {
-			if(fileName[strlen(fileName) - 1] == '/')
-				fileName[strlen(fileName) - 1] = '\0';
-
-			printf("directory: %s (%04o)... ", fileName, mode);
-			HFSPlusCatalogRecord* record = getRecordFromPath3(fileName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
-			if(record == NULL) {
-				printf("creating\n");
-				newFolder(fileName, volume);
-			} else {
-				printf("exists\n");
-			}
+			printf("directory: %s (%04o)\n", fileName, mode);
+			newFolder(fileName, volume);
 		} else if(type == 2) {
 			printf("symlink: %s (%04o) -> %s\n", fileName, mode, target);
 			makeSymlink(fileName, target, volume);
@@ -613,6 +617,8 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 
 		chmodFile(fileName, mode, volume);
 		chownFile(fileName, uid, gid, volume);
+
+loop:
 
 		curRecord = (curRecord + 512) + ((size + 511) / 512 * 512);
 	}

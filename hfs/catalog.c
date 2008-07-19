@@ -462,7 +462,7 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
   char* pathLimit;
   
   uint32_t realParent;
-  char* lastWordDetectSlash; 
+ 
   int exact;
   
   if(path[0] == '\0' || (path[0] == '/' && path[1] == '\0')) {
@@ -522,8 +522,7 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
     }
 
     if(traverse) {
-      lastWordDetectSlash = strchr(word, '/');
-      if((lastWordDetectSlash && *(lastWordDetectSlash + 1) != '\0') || returnLink) {
+      if(((word + strlen(word) + 1) < pathLimit) || returnLink) {
         record = getLinkTarget(record, key.parentID, &key, volume);
         if(record == NULL || exact == FALSE) {
           free(origPath);
@@ -533,13 +532,18 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
     }
 	
     if(record->recordType == kHFSPlusFileRecord) {	
-      free(origPath);
+	if((word + strlen(word) + 1) >= pathLimit) {
+		free(origPath);
       
-      if(retKey != NULL) {
-        memcpy(retKey, &key, sizeof(HFSPlusCatalogKey));
-      }
+		if(retKey != NULL) {
+			memcpy(retKey, &key, sizeof(HFSPlusCatalogKey));
+		}
       
-      return record;
+		return record;
+	} else {
+		free(origPath);
+		return NULL;
+	}
     }
     
     if(record->recordType != kHFSPlusFolderRecord)
@@ -860,13 +864,13 @@ HFSCatalogNodeID newFolder(const char* pathName, Volume* volume) {
   } else {
     name = lastSeparator + 1;
     *lastSeparator = '\0';
-    parentFolder = (HFSPlusCatalogFolder*) getRecordFromPath(path, volume, NULL, NULL);
-    
-    if(parentFolder == NULL || parentFolder->recordType != kHFSPlusFolderRecord) {
-      free(path);
-      free(parentFolder);
-      return FALSE;
-    }
+    parentFolder = (HFSPlusCatalogFolder*) getRecordFromPath(path, volume, NULL, NULL);  
+  }
+
+  if(parentFolder == NULL || parentFolder->recordType != kHFSPlusFolderRecord) {
+    free(path);
+    free(parentFolder);
+    return FALSE;
   }
   
   newFolderID = volume->volumeHeader->nextCatalogID++;
@@ -955,12 +959,12 @@ HFSCatalogNodeID newFile(const char* pathName, Volume* volume) {
     name = lastSeparator + 1;
     *lastSeparator = '\0';
     parentFolder = (HFSPlusCatalogFolder*) getRecordFromPath(path, volume, NULL, NULL);
-    
-    if(parentFolder == NULL || parentFolder->recordType != kHFSPlusFolderRecord) {
-      free(path);
-      free(parentFolder);
-      return FALSE;
-    }
+  }
+
+  if(parentFolder == NULL || parentFolder->recordType != kHFSPlusFolderRecord) {
+    free(path);
+    free(parentFolder);
+    return FALSE;
   }
   
   newFileID = volume->volumeHeader->nextCatalogID++;
