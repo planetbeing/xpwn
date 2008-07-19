@@ -222,6 +222,23 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 	printf("grew volume: %lld\n", newSize);
 }
 
+void cmd_untar(Volume* volume, int argc, const char *argv[]) {
+	AbstractFile *inFile;
+	
+	if(argc < 2) {
+		printf("Not enough arguments");
+		return;
+	}
+	
+	inFile = createAbstractFileFromFile(fopen(argv[1], "rb"));
+	
+	if(inFile == NULL) {
+		printf("file to untar not found");
+	}
+
+	hfs_untar(volume, inFile);
+}
+
 void TestByteOrder()
 {
 	short int word = 0x0001;
@@ -238,7 +255,7 @@ int main(int argc, const char *argv[]) {
 	TestByteOrder();
 	
 	if(argc < 3) {
-		printf("usage: %s <image-file> (-k <key>) <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall> <arguments>\n", argv[0]);
+		printf("usage: %s <image-file> (-k <key>) <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall|grow|untar> <arguments>\n", argv[0]);
 		return 0;
 	}
 
@@ -296,6 +313,8 @@ int main(int argc, const char *argv[]) {
 			cmd_addall(volume, argc - argOff, argv + argOff);
 		} else if(strcmp(argv[argOff], "grow") == 0) {
 			cmd_grow(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "untar") == 0) {
+			cmd_untar(volume, argc - argOff, argv + argOff);
 		}
 	}
 	

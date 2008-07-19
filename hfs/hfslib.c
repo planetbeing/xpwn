@@ -132,7 +132,6 @@ int add_hfs(Volume* volume, AbstractFile* inFile, const char* outFileName) {
 			writeToHFSFile((HFSPlusCatalogFile*)record, inFile, volume);
 			ret = TRUE;
 		} else {
-			inFile->close(inFile);
 			ret = FALSE;
 		}
 	}
@@ -454,6 +453,7 @@ void addall_hfs(Volume* volume, const char* dirToMerge, const char* dest) {
 	free(record);
 	
 }
+
 int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2) {
 	void* buffer;
 	size_t bufferSize;
@@ -557,3 +557,65 @@ void hfs_ls(Volume* volume, const char* path) {
 	
 	free(record);
 }
+
+void hfs_untar(Volume* volume, AbstractFile* tarFile) {
+	size_t tarSize = tarFile->getLength(tarFile);
+	size_t curRecord = 0;
+	char block[512];
+
+	while(curRecord < tarSize) {
+		printf("curRecord = %x\n", curRecord);
+		tarFile->seek(tarFile, curRecord);
+		tarFile->read(tarFile, block, 512);
+
+		uint32_t mode = 0;
+		char* fileName = NULL;
+		const char* target = NULL;
+		uint32_t type = 0;
+		uint32_t size;
+		uint32_t uid;
+		uint32_t gid;
+
+		sscanf(&block[100], "%o", &mode);
+		fileName = &block[0];
+		sscanf(&block[156], "%o", &type);
+		target = &block[157];
+		sscanf(&block[124], "%o", &size);
+		sscanf(&block[108], "%o", &uid);
+		sscanf(&block[116], "%o", &gid);
+
+		if(fileName[0] == '\0')
+			break;
+
+		if(type == 0) {
+			printf("file: %s (%04o), size = %d\n", fileName, mode, size);
+			void* buffer = malloc(size);
+			tarFile->seek(tarFile, curRecord + 512);
+			tarFile->read(tarFile, buffer, size);
+			AbstractFile* inFile = createAbstractFileFromMemory(&buffer, size);
+			add_hfs(volume, inFile, fileName);
+		} else if(type == 5) {
+			if(fileName[strlen(fileName) - 1] == '/')
+				fileName[strlen(fileName) - 1] = '\0';
+
+			printf("directory: %s (%04o)... ", fileName, mode);
+			HFSPlusCatalogRecord* record = getRecordFromPath3(fileName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
+			if(record == NULL) {
+				printf("creating\n");
+				newFolder(fileName, volume);
+			} else {
+				printf("exists\n");
+			}
+		} else if(type == 2) {
+			printf("symlink: %s (%04o) -> %s\n", fileName, mode, target);
+			makeSymlink(fileName, target, volume);
+		}
+
+		chmodFile(fileName, mode, volume);
+		chownFile(fileName, uid, gid, volume);
+
+		curRecord = (curRecord + 512) + ((size + 511) / 512 * 512);
+	}
+
+}
+
