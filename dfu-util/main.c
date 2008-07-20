@@ -455,98 +455,6 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 	if (!get_first_dfu_if(&_rt_dif))
 		exit(1);
 
-	if (!_rt_dif.flags & DFU_IFF_DFU) {
-		/* In the 'first round' during runtime mode, there can only be one
-	 	* DFU Interface descriptor according to the DFU Spec. */
-
-		/* FIXME: check if the selected device really has only one */
-
-		printf("Claiming USB DFU Runtime Interface...\n");
-		if (usb_claim_interface(_rt_dif.dev_handle, _rt_dif.interface) < 0) {
-			fprintf(stderr, "Cannot claim interface: %s\n", usb_strerror());
-			exit(1);
-		}
-
-		printf("Determining device status: ");
-		if (dfu_get_status(_rt_dif.dev_handle, _rt_dif.interface, &status ) < 0) {
-			fprintf(stderr, "error get_status: %s\n", usb_strerror());
-			exit(1);
-		}
-		printf("state = %s, status = %d\n", dfu_state_to_string(status.bState), status.bStatus);
-
-		switch (status.bState) {
-		case DFU_STATE_appIDLE:
-		case DFU_STATE_appDETACH:
-			printf("Device really in Runtime Mode, send DFU detach request...\n");
-			if (dfu_detach(_rt_dif.dev_handle, _rt_dif.interface, 1000) < 0) {
-				fprintf(stderr, "error detaching: %s\n", usb_strerror());
-				exit(1);
-				break;
-			}
-			printf("Resetting USB...\n");
-			ret = usb_reset(_rt_dif.dev_handle);
-			if (ret < 0 && ret != -ENODEV)
-				fprintf(stderr, "error resetting after detach: %s\n", 
-					usb_strerror());
-			sleep(2);
-			break;
-		case DFU_STATE_dfuERROR:
-			printf("dfuERROR, clearing status\n");
-			if (dfu_clear_status(_rt_dif.dev_handle, _rt_dif.interface) < 0) {
-				fprintf(stderr, "error clear_status: %s\n", usb_strerror());
-				exit(1);
-				break;
-			}
-			break;
-		default:
-			fprintf(stderr, "WARNING: Runtime device already in DFU state ?!?\n");
-			goto dfustate;
-			break;
-		}
-
-		/* now we need to re-scan the bus and locate our device */
-		if (usb_find_devices() < 2)
-			printf("not at least 2 device changes found ?!?\n");
-
-		if (dif->flags & DFU_IFF_PATH) {
-			ret = resolve_device_path(dif);
-			if (ret < 0) {
-				fprintf(stderr,
-				    "internal error: cannot re-parse `%s'\n",
-				    dif->path);
-				abort();
-			}
-			if (!ret) {
-				fprintf(stderr,
-				    "Can't resolve path after RESET?\n");
-				exit(1);
-			}
-		}
-
-		num_devs = count_dfu_devices(dif);
-		if (num_devs == 0) {
-			fprintf(stderr, "Lost device after RESET?\n");
-			exit(1);
-		} else if (num_devs > 1) {
-			fprintf(stderr, "More than one DFU capable USB device found, "
-			       "you might try `--list' and then disconnect all but one "
-			       "device\n");
-			exit(1);
-		}
-		if (!get_first_dfu_device(dif))
-			exit(3);
-
-		printf("Opening USB Device...\n");
-		dif->dev_handle = usb_open(dif->dev);
-		if (!dif->dev_handle) {
-			fprintf(stderr, "Cannot open device: %s\n", usb_strerror());
-			exit(1);
-		}
-	} else {
-		/* we're already in DFU mode, so we can skip the detach/reset
-		 * procedure */
-	}
-
 dfustate:
 	if (alt_name) {
 		int n;
@@ -582,24 +490,20 @@ dfustate:
 		exit(1);
 	}
 
-#if 0
 	printf("Setting Configuration %u...\n", dif->configuration);
 	if (usb_set_configuration(dif->dev_handle, dif->configuration) < 0) {
 		fprintf(stderr, "Cannot set configuration: %s\n", usb_strerror());
-		exit(1);
 	}
-#endif
+
 	printf("Claiming USB DFU Interface...\n");
 	if (usb_claim_interface(dif->dev_handle, dif->interface) < 0) {
 		fprintf(stderr, "Cannot claim interface: %s\n", usb_strerror());
-		exit(1);
 	}
 
 	printf("Setting Alternate Setting ...\n");
 	if (usb_set_altinterface(dif->dev_handle, dif->altsetting) < 0) {
 		fprintf(stderr, "Cannot set alternate interface: %s\n",
 			usb_strerror());
-		exit(1);
 	}
 
 status_again:
@@ -730,7 +634,9 @@ int main(int argc, char* argv[]) {
 	loadZipFile(argv[1], &data, ibssName);
 
 	download(getFileFromOutputState(&data, "Firmware/dfu/WTF.s5l8900xall.RELEASE.dfu"), 2048, 1);
+	sleep(1);
 	download(getFileFromOutputState(&data, wtfName), 2048, 1);
+	sleep(3);
 	download(getFileFromOutputState(&data, ibssName), 2048, 1);
 
 	releaseOutput(&data);
