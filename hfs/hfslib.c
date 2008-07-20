@@ -592,10 +592,10 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 		HFSPlusCatalogRecord* record = getRecordFromPath3(fileName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
 		if(record) {
 			if(record->recordType == kHFSPlusFolderRecord || type == 5) {
-				printf("ignoring %s", fileName);
+				printf("ignoring %s, type = %d\n", fileName, type);
 				goto loop;
 			} else {
-				printf("replacing %s", fileName);
+				printf("replacing %s\n", fileName);
 				removeFile(fileName, volume);
 			}
 		}

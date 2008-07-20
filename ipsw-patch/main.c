@@ -210,11 +210,32 @@ int main(int argc, char* argv[]) {
 			ramdiskFSPathInIPSW = fileValue->value;
 		}
 
+		StringValue* keyValue = (StringValue*) getValueByKey(patchDict, "Key");
+		StringValue* ivValue = (StringValue*) getValueByKey(patchDict, "IV");
+		uint8_t key[16];
+		uint8_t iv[16];
+		uint8_t* pKey = NULL;
+		uint8_t* pIV = NULL;
+
+		if(keyValue) {
+			sscanf(keyValue->value, "%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx",
+				&key[0], &key[1], &key[2], &key[3], &key[4], &key[5], &key[6], &key[7], &key[8],
+				&key[9], &key[10], &key[11], &key[12], &key[13], &key[14], &key[15]);
+			pKey = key;
+		}
+
+		if(ivValue) {
+			sscanf(ivValue->value, "%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx",
+				&iv[0], &iv[1], &iv[2], &iv[3], &iv[4], &iv[5], &iv[6], &iv[7], &iv[8],
+				&iv[9], &iv[10], &iv[11], &iv[12], &iv[13], &iv[14], &iv[15]);
+			pIV = iv;
+		}
+
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch2");
 		if(patchValue) {
 			if(!noBB) {
 				printf("%s: ", patchDict->dValue.key); fflush(stdout);
-				doPatch(patchValue, fileValue, bundlePath, &outputState);
+				doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 				patchDict = (Dictionary*) patchDict->dValue.next;
 				continue; /* skip over the normal Patch */
 			}
@@ -223,7 +244,7 @@ int main(int argc, char* argv[]) {
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
 		if(patchValue) {
 			printf("%s: ", patchDict->dValue.key); fflush(stdout);
-			doPatch(patchValue, fileValue, bundlePath, &outputState);
+			doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 		}
 		
 		if(strcmp(patchDict->dValue.key, "AppleLogo") == 0 && applelogo) {
@@ -244,8 +265,9 @@ int main(int argc, char* argv[]) {
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
 		
-	sscanf(((StringValue*) getValueByKey(info, "RootFilesystemResize"))->value, "%d", &rootSize);
+	rootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
 	rootSize *= 1024 * 1024;
+	rootSize -= 47438 * 512;
 	buffer = malloc(rootSize);
 
 	extractDmg(
@@ -287,7 +309,9 @@ int main(int argc, char* argv[]) {
 	}
 	
 	for(; mergePaths < argc; mergePaths++) {
-		addall_hfs(rootVolume, argv[mergePaths], "/");
+		AbstractFile* tarFile = createAbstractFileFromFile(fopen(argv[mergePaths], "rb"));
+		hfs_untar(rootVolume, tarFile);
+		tarFile->close(tarFile);
 	}
 	
 	if(doBootNeuter) {

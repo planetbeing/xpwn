@@ -113,7 +113,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	return info;
 }
 
-int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state) {
+int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, uint8_t* key, uint8_t* iv) {
 	char* patchPath;
 	size_t bufferSize;
 	void* buffer;
@@ -135,9 +135,17 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	
 	bufferSize = 0;
 
-	out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
-	
-	file = openAbstractFile(getFileFromOutputState(state, fileValue->value));
+	if(key != NULL) {
+		out = duplicateAbstractFile2(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), key, iv, NULL);
+	} else {
+		out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+	}
+
+	if(key != NULL) {
+		file = openAbstractFile2(getFileFromOutputState(state, fileValue->value), key, iv);
+	} else {
+		file = openAbstractFile(getFileFromOutputState(state, fileValue->value));
+	}
 	
 	if(!patchFile || !file || !out) {
 		printf("file error\n");
@@ -147,6 +155,13 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	if(patch(file, out, patchFile) != 0) {
 		printf("patch failed\n");
 		exit(0);
+	}
+
+	if(strstr(fileValue->value, "WTF.s5l8900xall.RELEASE")) {
+		printf("Exploiting 8900 vulnerability... ;)\n");
+		AbstractFile* exploited = createAbstractFileFrom8900(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+		exploit8900(exploited);
+		exploited->close(exploited);
 	}
 	
 	printf("writing... "); fflush(stdout);
