@@ -37,6 +37,17 @@ Credits
 This utility is merely an implementation of Pwnage, which is the work of
 roxfan, Turbo, wizdaz, bgm, and pumpkin. Those guys are the real heroes.
 
+Also, the new super-awesome bootrom exploit is courtesy of wizdaz.
+
+MuscleNerd has put a lot of work into the 3G effort. The BootNeuter unlock
+for first-generation iPhones packaged within is primarily his effort.
+
+Thanks also go to gray and c1de0x for their RCE efforts. saurik is the author
+of Cydia, included within. bugout was the lucky guy who did our first 3G tests.
+
+Thanks to chris for his hardware wisdom, Zf for his French humor, and pytey
+for the support on the serial stuff.
+
 XPwn attempts to use all the same data files and patches as PwnageTool to
 avoid duplication of present and future labor. I believe that wizdaz probably
 put the most sweat into PwnageTool, and the pwnage ramdisk is the work of
@@ -52,10 +63,103 @@ the initial exploratory work with the undocumented DMG format.
 Usage
 -----
 
-There are two utilities in this package, as well as the InternalPackages and
+There are two utilities in this package, as well as the bundles and
 FirmwareBundles folders from PwnageTool, and Turbo's autopwn ramdisk.
 
-## xpwn
+## ipsw
+
+*NOTE: Important change for 2.0: (uncompressed) tarballs rather than paths are
+now used for bundles*
+
+ipsw is a more complex tool to generate custom IPSWs that you can restore
+after using xpwn (or any other pwnage-based utility). This is important, since
+that's how the jailbreak actually occurs.
+
+	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nobbupdate] \
+		[-r <recoveryimage.png>] [-e "<action to exclude>"] \
+		[[-unlock] [-use39] [-use46] [-cleanup] \
+		-3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] \
+		<package1.tar> <package2.tar>...
+
+Yes, I know, confusing syntax. The first two options are the IPSW you want to
+modify, and where you want to save the modified IPSW respectively. -b and -r
+have the same semantics and requirements as for xpwn. You can also specify
+actions to exclude from the "FilesystemPatches" section of the Info.plist
+for your particular IPSW (in FirmwareBundles/).
+
+The most common use of the '-e' flag is to disable automatic activation, i.e.
+'-e "Phone Activation"'. Note that the double-quotes are necessary.
+
+-nobbupdate disables Apple's baseband upgrade program from running during
+the restore. However, bbupdate must be enabled for unlocking with BootNeuter.
+
+-unlock, -use39, -use46, -cleanup, -3, and -4 are valid only if you merge the
+BootNeuter package. These provide instructions to BootNeuter (which provides
+unlocking for iPhones). If you choose to use BootNeuter, you must specify the
+location where the 3.9 and 4.9 bootloader can be found with the -3 and -4
+options. These cannot be included with xpwn due to copyright restrictions.
+
+-unlock specifies that you wish BootNeuter to unlock the phone (if it is not
+already unlocked). -use39 and -use46 instructs BootNeuter to either upgrade
+or downgrade your bootloader (if it is not already on the version you choose).
+-cleanup instructs BootNeuter to delete itself off of the iPhone after it is
+complete. If you do not specify -cleanup, BootNeuter will be accessible via
+SpringBoard.
+
+The last options are for tar-files to merge. All permissions and ownership
+will be preserved except for already directories that already exist. This is
+to prevent accidental clobbering (we're guessing you don't really want to
+alter permissions on existing directories). This behavior may change in the
+future.
+
+Told you it was a mess.
+
+## dfu-util
+
+dfu-util is an utility adapted from OpenMoko that satisfies the "pwning" stage
+of the process, that is, allowing the execution of our unsigned code. It
+relies upon an exploit in the DFU mode of the iPhone/iPod touch bootrom. This
+cannot be fixed by Apple on the current hardware revisions. If we can mess
+with the device before iTunes sees it, we can have it load a WTF with
+signature checking disabled with the exploit, and load an iBSS with signature
+checking disabled over that WTF. iTunes will see the device as a regular
+iPhone/iPod in recovery mode, and will happily send our custom firmware to it,
+which will now be accepted.
+
+YOU MUST COMPLETELY DISABLE iTUNES WITH TASK MANAGER OR EQUIVALENT BEFORE
+PROCEEDING.
+
+Only AFTERWARDS do you put your device into DFU mode. If you switch the order
+of these steps, iTunes will be able to load software onto your device without
+this vulnerability, rendering dfu-util useless.
+
+AFTER you have disabled iTunes, iTunesHelper, etc., plug your device into the
+computer. Shut down the device in the normal way if necessary (Slide to
+shutdown). Hold down the Power and Home buttons simultaneously and count
+slowly to ten. (You may need to push down on power an instant before you
+push down on home). The iPhone will start. At around the time you count to 6,
+the iPhone will shut down again. KEEP HOLDING BOTH BUTTONS. Hold down both
+buttons until you reach 10. At this point, release the power button ONLY.
+Keep holding the stand-by button forever (this may take up to two minutes).
+You will know when you can stop holding the button when Windows notifies you
+via an audible cue that a USB device has connected. This is your device in
+DFU mode. The screen of the device will remain completely powered off.
+
+THEN, run dfu-util with the following syntax:
+
+	sudo ./dfu-util <custom.ipsw> <n82ap|m68ap|n45ap>
+
+Where n82ap = 3G iPhone, m68ap = First-generation iPhone, n45ap = iPod touch.
+Note that you're using your CUSTOM IPSW for this stage, since we will need the
+patched firmware, not the stock firmware. dfu-util will pick out the right
+files from the ipsw and send them in the right order. If your screen powers on
+and then turns white, then you know it worked. You can now restore with iTunes.
+
+## xpwn *(DEPRECATED)*
+
+If DFU mode is too complicated for you, and you have a first-generation phone,
+you can still use the legacy xpwn ramdisk method on 1.1.4 to pwn your phone.
+Then you can restore the custom IPSW without messing with DFU mode.
 
 xpwn will use libibooter to bootstrap the autopwn ramdisk. This will patch
 NOR so that unsigned IPSWs can subsequently be used. The vulnerability used
@@ -93,78 +197,26 @@ used to swap boot logos without restoring.
 A restore with a non-customized IPSW will undo what xpwn did (the NOR will be
 reflashed with Apple's image that does have signature checking)
 
-## ipsw
-
-ipsw is a more complex tool to generate custom IPSWs that you can restore
-after using xpwn (or any other pwnage-based utility). This is important, since
-that's how the jailbreak actually occurs.
-
-	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nobbupdate] \
-		[-r <recoveryimage.png>] [-e "<action to exclude>"] \
-		[[-unlock] [-use39] [-use46] [-cleanup] \
-		-3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] \
-		<path/to/merge1> <path/to/merge2>...
-
-Yes, I know, confusing syntax. The first two options are the IPSW you want to
-modify, and where you want to save the modified IPSW respectively. -b and -r
-have the same semantics and requirements as for xpwn. You can also specify
-actions to exclude from the "FilesystemPatches" section of the Info.plist
-for your particular IPSW (in FirmwareBundles/).
-
-The most common use of the '-e' flag is to disable automatic activation, i.e.
-'-e "Phone Activation"'. Note that the double-quotes are necessary.
-
--nobbupdate disables Apple's baseband upgrade program from running during
-the restore. However, bbupdate must be enabled for unlocking with BootNeuter.
-
--unlock, -use39, -use46, -cleanup, -3, and -4 are valid only if you merge the
-BootNeuter package. These provide instructions to BootNeuter (which provides
-unlocking for iPhones). If you choose to use BootNeuter, you must specify the
-location where the 3.9 and 4.9 bootloader can be found with the -3 and -4
-options. These cannot be included with xpwn due to copyright restrictions.
-
--unlock specifies that you wish BootNeuter to unlock the phone (if it is not
-already unlocked). -use39 and -use46 instructs BootNeuter to either upgrade
-or downgrade your bootloader (if it is not already on the version you choose).
--cleanup instructs BootNeuter to delete itself off of the iPhone after it is
-complete. If you do not specify -cleanup, BootNeuter will be accessible via
-SpringBoard.
-
-The last options are for directories to merge into the root filesystem of your
-device. The included bundles can be merged by specifying something like
-"bundles/Installer.bundle/files". Notice the "files" part must be specified.
-It is also perfectly possible to set up your own files to merge.
-
-/Applications/Installer.app/Installer will be given special setuid
-permissions. All files that have the format /Applications/XXX.app/XXX will be
-given execute permissions. All files in /sbin, /bin, /usr/bin, /usr/sbin,
-/usr/libexec, /usr/local/bin, /usr/local/sbin, /usr/local/libexec will also be
-given execute permissions. Special permissions are also given to BootNeuter.
-Everything else will be non-executable, so a special LaunchDaemon task may need
-to be constructed to properly set up your custom apps. Generally, however,
-those permissions are already sufficient.
-
-Told you it was a mess.
 
 ### Examples
 
-Jailbreaking iPod 1.1.4:
+Jailbreaking iPod 2.0:
 
-	./ipsw iPod1,1_1.1.4_4A102_Restore.ipsw custom.ipsw \
-		bundles/Installer.bundle/files
+	./ipsw iPod1,1_2.0_5A347.bundle custom.ipsw \
+		bundles/Cydia.tar
 
-Jailbreaking iPhone 1.1.4:
+Jailbreaking iPhone 3G:
 
-	./ipsw iPhone1,1_1.1.4_4A102_Restore.ipsw custom.ipsw \
-		-e "Phone Activation" bundles/Installer.bundle/files
+	./ipsw iPhone1,2_2.0_5A347.bundle custom.ipsw \
+		-e "Phone Activation" bundles/Cydia.tar
 
-Jailbreaking, activating, and unlocking iPhone 1.1.4:
+Jailbreaking, activating, and unlocking iPhone 2.0:
 
-	./ipsw iPhone1,1_1.1.4_4A102_Restore.ipsw custom.ipsw \
+	./ipsw iPhone1,1_2.0_5A347.bundle custom.ipsw \
 		-unlock -cleanup -3 bl39.bin -4 bl46.bin \
-		bundles/Installer.bundle/files \
-		bundles/BootNeuter.bundle/files \
-		bundles/YoutubeActivation.bundle/files
+		bundles/Cydia.tar \
+		bundles/BootNeuter.tar \
+		bundles/YoutubeActivation.tar
 
 Technical notes
 ---------------

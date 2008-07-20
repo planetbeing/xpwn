@@ -83,10 +83,9 @@ int main(int argc, char* argv[]) {
 	use39 = FALSE;
 	use46 = FALSE;
 	doBootNeuter = FALSE;
-	noBB = FALSE;
 
 	if(argc < 3) {
-		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-e \"<action to exclude>\"] [-nobbupdate] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <path/to/merge1> <path/to/merge2>...\n", argv[0]);
+		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -117,11 +116,6 @@ int main(int argc, char* argv[]) {
 
 		if(strcmp(argv[i], "-cleanup") == 0) {
 			selfDestruct = TRUE;
-			continue;
-		}
-
-		if(strcmp(argv[i], "-nobbupdate") == 0) {
-			noBB = TRUE;
 			continue;
 		}
 		
@@ -185,16 +179,11 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if(use39 || use46 || unlockBaseband || selfDestruct || bootloader39 || bootloader46) {
-		if(noBB) {
-			printf("error: bbupdate must be enabled for bootneuter\n");
+		if(!(bootloader39) || !(bootloader46)) {
+			printf("error: you must specify both bootloader files.\n");
 			exit(1);
 		} else {
-			if(!(bootloader39) || !(bootloader46)) {
-				printf("error: you must specify both bootloader files.\n");
-				exit(1);
-			} else {
-				doBootNeuter = TRUE;
-			}
+			doBootNeuter = TRUE;
 		}
 	}
 

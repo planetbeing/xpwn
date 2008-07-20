@@ -243,6 +243,8 @@ void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct,
 	arguments = (ArrayValue*) getValueByKey(info, "ProgramArguments");
 	addStringToArray(arguments, "-autoMode");
 	addStringToArray(arguments, "YES");
+	addStringToArray(arguments, "-RegisterForSystemEvents");
+	addStringToArray(arguments, "YES");
 	
 	if(unlockBaseband) {
 		addStringToArray(arguments, "-unlockBaseband");
