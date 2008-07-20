@@ -24,6 +24,11 @@
 #include <usb.h>
 #include "usb_dfu.h"
 
+#ifdef WIN32
+#define sleep(x) Sleep(1000 * x)
+#define usleep(x) Sleep(x / 1000)
+#endif
+
 /* DFU states */
 #define STATE_APP_IDLE                  0x00
 #define STATE_APP_DETACH                0x01

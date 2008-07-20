@@ -42,15 +42,6 @@ struct usb_dfu_func_descriptor {
 #define USB_REQ_DFU_GETSTATE	0x05
 #define USB_REQ_DFU_ABORT	0x06
 
-#if 0
-struct dfu_status {
-	u_int8_t bStatus;
-	u_int8_t bwPollTimeout[3];
-	u_int8_t bState;
-	u_int8_t iString;
-} __attribute__((packed));
-#endif
-
 #define DFU_STATUS_OK			0x00
 #define DFU_STATUS_errTARGET		0x01
 #define DFU_STATUS_errFILE		0x02

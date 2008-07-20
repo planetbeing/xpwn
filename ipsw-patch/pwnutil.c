@@ -27,7 +27,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	DIR* dir;
 	struct dirent* ent;
 	StringValue* plistSHA1String;
-	char plistHash[20];
+	unsigned char plistHash[20];
 	int i;
 
 	*bundlePath = NULL;
@@ -48,7 +48,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 
 	fclose(inputIPSWFile);
 
-	printf("Matching IPSW...\n");
+	printf("Matching IPSW... (%02hhx%02hhx%02hhx%02hhx...)\n", hash[0], hash[1], hash[2], hash[3]);
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
@@ -64,6 +64,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 		strcpy(infoPath, bundleRoot);
 		strcat(infoPath, ent->d_name);
 		strcat(infoPath, "/Info.plist");
+		printf("checking: %s\n", infoPath);
 
 		if((plistFile = createAbstractFileFromFile(fopen(infoPath, "rb"))) != NULL) {
 			plist = (char*) malloc(plistFile->getLength(plistFile));
@@ -81,7 +82,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 					&plistHash[15], &plistHash[16], &plistHash[17], &plistHash[18], &plistHash[19]);
 
 				for(i = 0; i < 20; i++) {
-					if(plistHash[0] != hash[0]) {
+					if(plistHash[i] != hash[i]) {
 						break;
 					}
 				}

@@ -60,18 +60,18 @@ static int verbose = 0;
 #define DFU_IFF_PATH		0x4000
 
 struct usb_vendprod {
-	u_int16_t vendor;
-	u_int16_t product;
+	uint16_t vendor;
+	uint16_t product;
 };
 
 struct dfu_if {
-	u_int16_t vendor;
-	u_int16_t product;
-	u_int8_t configuration;
-	u_int8_t interface;
-	u_int8_t altsetting;
+	uint16_t vendor;
+	uint16_t product;
+	uint8_t configuration;
+	uint8_t interface;
+	uint8_t altsetting;
 	int bus;
-	u_int8_t devnum;
+	uint8_t devnum;
 	const char *path;
 	unsigned int flags;
 	struct usb_device *dev;
