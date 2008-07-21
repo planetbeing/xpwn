@@ -611,11 +611,13 @@ status_again:
 }
 
 int main(int argc, char* argv[]) {
-	printf("----------------------------------------------------PLEASE READ THIS---------------------------------------------------\n");
-	printf("Please make certain that all iTunes related processes are not running at this time (use Task Manager, etc. to end them)\n");
-	printf("Your iPhone/iPod touch must be placed into DFU mode AFTER iTunes had been turned off. This will allow me to talk to\n");
-	printf("it without iTunes getting in beforehand. USB Product ID of iPhone ought to be 0x1222\n");
-	printf("----------------------------------------------------PLEASE READ THIS---------------------------------------------------\n");
+	printf("---------------------------PLEASE READ THIS---------------------------\n");
+	printf("Please make certain that all iTunes related processes are not running\n");
+	printf("at this time (use Task Manager, etc. to end them). Your iPhone/iPod\n");
+	printf("must be placed into DFU mode AFTER iTunes had been turned off. This\n");
+	printf(" will allow me to talk to it without iTunes getting in beforehand.\n");
+	printf("USB Product ID of iPhone ought to be 0x1222\n");
+	printf("---------------------------PLEASE READ THIS---------------------------\n");
 
 	if(argc < 3) {
 		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap>\n", argv[0]);
@@ -634,9 +636,9 @@ int main(int argc, char* argv[]) {
 	loadZipFile(argv[1], &data, ibssName);
 
 	download(getFileFromOutputState(&data, "Firmware/dfu/WTF.s5l8900xall.RELEASE.dfu"), 2048, 1);
-	sleep(1);
+	sleep(5);
 	download(getFileFromOutputState(&data, wtfName), 2048, 1);
-	sleep(3);
+	sleep(5);
 	download(getFileFromOutputState(&data, ibssName), 2048, 1);
 
 	releaseOutput(&data);

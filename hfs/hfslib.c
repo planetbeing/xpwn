@@ -586,6 +586,13 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 		if(fileName[0] == '\0')
 			break;
 
+		if(fileName[0] == '.' && fileName[1] == '/') {
+			fileName += 2;
+		}
+
+		if(fileName[0] == '\0')
+			goto loop;
+
 		if(fileName[strlen(fileName) - 1] == '/')
 			fileName[strlen(fileName) - 1] = '\0';
 

@@ -67,7 +67,7 @@ AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing) {
 	}
 }
 
-AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const uint8_t* iv) {
+AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, const unsigned int* iv) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
 
@@ -98,7 +98,7 @@ AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const ui
 	}
 }
 
-AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const uint8_t* key, const uint8_t* iv, AbstractFile* certificate) {
+AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const unsigned int* key, const unsigned int* iv, AbstractFile* certificate) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
 	AbstractFile* orig;

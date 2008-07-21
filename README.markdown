@@ -75,11 +75,12 @@ ipsw is a more complex tool to generate custom IPSWs that you can restore
 after using xpwn (or any other pwnage-based utility). This is important, since
 that's how the jailbreak actually occurs.
 
-	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nobbupdate] \
+	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nowipe] \
 		[-r <recoveryimage.png>] [-e "<action to exclude>"] \
 		[[-unlock] [-use39] [-use46] [-cleanup] \
 		-3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] \
 		<package1.tar> <package2.tar>...
+
 
 Yes, I know, confusing syntax. The first two options are the IPSW you want to
 modify, and where you want to save the modified IPSW respectively. -b and -r
@@ -90,8 +91,8 @@ for your particular IPSW (in FirmwareBundles/).
 The most common use of the '-e' flag is to disable automatic activation, i.e.
 '-e "Phone Activation"'. Note that the double-quotes are necessary.
 
--nobbupdate disables Apple's baseband upgrade program from running during
-the restore. However, bbupdate must be enabled for unlocking with BootNeuter.
+-nowipe disables Apple's wiping of the NAND (user data), before proceeding
+with the restore. This allows the restore to happen much, much more quickly.
 
 -unlock, -use39, -use46, -cleanup, -3, and -4 are valid only if you merge the
 BootNeuter package. These provide instructions to BootNeuter (which provides

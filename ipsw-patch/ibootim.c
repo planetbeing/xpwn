@@ -195,7 +195,7 @@ void pngError(png_structp png_ptr, png_const_charp error_msg) {
 	exit(0);
 }
 
-void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fileSize) {
+void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, const unsigned int* iv, AbstractFile* png, size_t *fileSize) {
 	AbstractFile* imageFile;
 	unsigned char header[8];
 	InfoIBootIM* info;
@@ -255,7 +255,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fi
 		printf("notice: attempting to expand palette into full rgb\n");
 	}
 	
-  png_set_expand(png_ptr);
+	png_set_expand(png_ptr);
 	png_set_strip_16(png_ptr);
 	png_set_bgr(png_ptr);
 	png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
@@ -295,13 +295,17 @@ void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fi
 		row_pointers[i] = imageBuffer + (info_ptr->rowbytes * i);
 	}
 
-  png_read_image(png_ptr, row_pointers);
+	png_read_image(png_ptr, row_pointers);
 	png_read_end(png_ptr, end_info);
 	
 	buffer = malloc(1);
 	*fileSize = 0;
-	
-	imageFile = duplicateAbstractFile(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize));
+
+	if(key != NULL) {
+		imageFile = duplicateAbstractFile2(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize), key, iv, NULL);
+	} else {	
+		imageFile = duplicateAbstractFile(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize));
+	}
 	info = (InfoIBootIM*) (imageFile->data);
 	
 	info->header.width = (uint16_t) info_ptr->width;

@@ -114,7 +114,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	return info;
 }
 
-int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, uint8_t* key, uint8_t* iv) {
+int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, unsigned int* key, unsigned int* iv) {
 	char* patchPath;
 	size_t bufferSize;
 	void* buffer;
@@ -137,12 +137,22 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	bufferSize = 0;
 
 	if(key != NULL) {
+		printf("\n%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
+			key, key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15]);
+
+		printf("%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
+			iv[0], iv[1], iv[2], iv[3], iv[4], iv[5], iv[6], iv[7], iv[8], iv[9], iv[10], iv[11], iv[12], iv[13], iv[14], iv[15]);
+	}
+
+	if(key != NULL) {
+		printf("encrypted input... ");
 		out = duplicateAbstractFile2(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), key, iv, NULL);
 	} else {
 		out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
 	}
 
 	if(key != NULL) {
+		printf("encrypted output... ");
 		file = openAbstractFile2(getFileFromOutputState(state, fileValue->value), key, iv);
 	} else {
 		file = openAbstractFile(getFileFromOutputState(state, fileValue->value));
@@ -224,7 +234,7 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 }
 
 void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct, char use39, char use46) {
-	char bootNeuterPlist[] = "/System/Library/LaunchDaemons/com.devteam.bootneuter.auto.plist";
+	const char bootNeuterPlist[] = "/System/Library/LaunchDaemons/com.devteam.bootneuter.auto.plist";
 	AbstractFile* plistFile;
 	char* plist;
 	Dictionary* info;

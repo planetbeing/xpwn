@@ -83,13 +83,19 @@ void closeImg3(AbstractFile* file) {
 	free(file);
 }
 
-void setKeyImg3(AbstractFile2* file, const uint8_t* key, const uint8_t* iv) {
+void setKeyImg3(AbstractFile2* file, const unsigned int* key, const unsigned int* iv) {
 	Img3Info* info = (Img3Info*) file->super.data;
 
-	AES_set_encrypt_key(key, 128, &(info->encryptKey));
-	AES_set_decrypt_key(key, 128, &(info->decryptKey));
+	int i;
+	uint8_t bKey[16];
 
-	memcpy(info->iv, iv, 16);
+	for(i = 0; i < 16; i++) {
+		bKey[i] = key[i] & 0xff;
+		info->iv[i] = iv[i] & 0xff;
+	}
+
+	AES_set_encrypt_key(bKey, 128, &(info->encryptKey));
+	AES_set_decrypt_key(bKey, 128, &(info->decryptKey));
 
 	if(!info->encrypted) {
 		uint8_t ivec[16];
@@ -194,21 +200,17 @@ void writeImg3Root(AbstractFile* file, Img3Element* element) {
 }
 
 void writeImg3Default(AbstractFile* file, Img3Element* element) {
+	const char zeros[0x10] = {0};
 	file->write(file, element->data, element->header->dataSize);
+	if((element->header->size - sizeof(AppleImg3Header)) > element->header->dataSize) {
+		file->write(file, zeros, (element->header->size - sizeof(AppleImg3Header)) - element->header->dataSize);
+	}
 }
 
 void writeImg3Element(AbstractFile* file, Img3Element* element) {
 	off_t curPos;
-	char zero;
-
-	zero = '\0';
 
 	curPos = file->tell(file);
-
-	file->seek(file, curPos + element->header->size - 1);
-	file->write(file, &zero, 1);
-
-	file->seek(file, curPos);
 
 	flipAppleImg3Header(element->header);
 	file->write(file, element->header, sizeof(AppleImg3Header));

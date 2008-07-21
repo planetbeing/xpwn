@@ -37,7 +37,7 @@ extern "C" {
 #endif
 	AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file);
 	AbstractFile* duplicateIBootIMFile(AbstractFile* file, AbstractFile* backing);
-	void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fileSize);
+	void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, const unsigned int* iv, AbstractFile* png, size_t *fileSize);
 #ifdef __cplusplus
 }
 #endif
