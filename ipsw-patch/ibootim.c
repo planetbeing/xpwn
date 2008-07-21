@@ -127,7 +127,7 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 
 	int length = decompress_lzss(info->buffer, compressed, info->compLength);
 	if(length > info->length) {
-		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error, length == %d (%d + %d), should be == %d (%d x %d x %d)\n", length, info->compLength, sizeof(info->header), info->length, info->header.width, info->header.height, depth);
+		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error\n");
 		free(compressed);
 		free(info);
 		return NULL;

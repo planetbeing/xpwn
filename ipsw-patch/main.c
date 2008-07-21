@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	printf("Growing root: %d\n", rootSize); fflush(stdout);
+	printf("Growing root: %ld\n", (long) rootSize); fflush(stdout);
 	grow_hfs(rootVolume, rootSize);
 	
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");

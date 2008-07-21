@@ -147,7 +147,7 @@ int sam7dfu_do_dnload(struct usb_dev_handle *usb_handle, int interface,
 	bytes_per_hash = fileSize / PROGRESS_BAR_WIDTH;
 	if (bytes_per_hash == 0)
 		bytes_per_hash = 1;
-	printf("bytes_per_hash=%u, fileSize=%u\n", bytes_per_hash, fileSize);
+	printf("bytes_per_hash=%u, fileSize=%lu\n", bytes_per_hash, (unsigned long) fileSize);
 #if 0
 	read(fd, DFU_HDR);
 #endif

@@ -64,8 +64,6 @@ void closeComp(AbstractFile* file) {
 		info->file->seek(info->file, sizeof(info->header));
 		info->file->write(info->file, compressed, info->header.length_compressed);
 
-		printf("lzss: %d %d %x %x %x\n", info->header.length_compressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1], info->header.length_compressed + sizeof(info->header));
-
 		free(compressed);
 
 		flipCompHeader(&(info->header));

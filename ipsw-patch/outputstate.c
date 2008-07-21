@@ -141,7 +141,7 @@ void writeOutput(OutputState** state, char* ipsw) {
 	while(next != NULL) {
 		curFile = next;
 		next = next->next;
-		printf("packing: %s (%d)\n", curFile->fileName, curFile->bufferSize); fflush(stdout);
+		printf("packing: %s (%ld)\n", curFile->fileName, (long) curFile->bufferSize); fflush(stdout);
 		
 		if(curFile->bufferSize > 0) {
 			ASSERT(zipOpenNewFileInZip(zip, curFile->fileName, &info, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION) == 0, "error adding to zip");

@@ -486,9 +486,6 @@ status_again:
 		}
 	}
 
-	if (transfer_size > page_size)
-		transfer_size = page_size;
-	
 	printf("Transfer Size = 0x%04x\n", transfer_size);
 
 	if (DFU_STATUS_OK != status.bStatus ) {
