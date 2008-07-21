@@ -45,6 +45,10 @@ int main(int argc, char* argv[]) {
 	size_t rootSize;
 	
 	char* ramdiskFSPathInIPSW;
+	unsigned int ramdiskKey[16];
+	unsigned int ramdiskIV[16];
+	unsigned int* pRamdiskKey = NULL;
+	unsigned int* pRamdiskIV = NULL;
 	io_func* ramdiskFS;
 	Volume* ramdiskVolume;
 	
@@ -61,32 +65,27 @@ int main(int argc, char* argv[]) {
 	void* imageBuffer;	
 	size_t imageSize;
 
-	AbstractFile* bootloader39;
-	AbstractFile* bootloader46;
-	AbstractFile* applelogo;
-	AbstractFile* recoverymode;
+	AbstractFile* bootloader39 = NULL;
+	AbstractFile* bootloader46 = NULL;
+	AbstractFile* applelogo = NULL;
+	AbstractFile* recoverymode = NULL;
+
+	char noWipe = FALSE;
 	
-	char unlockBaseband;
-	char selfDestruct;
-	char use39;
-	char use46;
-	char doBootNeuter;
-	char noBB;
+	char unlockBaseband = FALSE;
+	char selfDestruct = FALSE;
+	char use39 = FALSE;
+	char use46 = FALSE;
+	char doBootNeuter = FALSE;
 
-	applelogo = NULL;
-	recoverymode = NULL;
-	bootloader39 = NULL;
-	bootloader46 = NULL;
+	unsigned int key[16];
+	unsigned int iv[16];
 
-	unlockBaseband = FALSE;
-	selfDestruct = FALSE;
-	use39 = FALSE;
-	use46 = FALSE;
-	doBootNeuter = FALSE;
-	noBB = FALSE;
+	unsigned int* pKey = NULL;
+	unsigned int* pIV = NULL;
 
 	if(argc < 3) {
-		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-e \"<action to exclude>\"] [-nobbupdate] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <path/to/merge1> <path/to/merge2>...\n", argv[0]);
+		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -104,6 +103,10 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 
+		if(strcmp(argv[i], "-nowipe") == 0) {
+			noWipe = TRUE;
+		}
+
 		if(strcmp(argv[i], "-e") == 0) {
 			removeKey(firmwarePatches, argv[i + 1]);
 			i++;
@@ -117,11 +120,6 @@ int main(int argc, char* argv[]) {
 
 		if(strcmp(argv[i], "-cleanup") == 0) {
 			selfDestruct = TRUE;
-			continue;
-		}
-
-		if(strcmp(argv[i], "-nobbupdate") == 0) {
-			noBB = TRUE;
 			continue;
 		}
 		
@@ -185,16 +183,11 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if(use39 || use46 || unlockBaseband || selfDestruct || bootloader39 || bootloader46) {
-		if(noBB) {
-			printf("error: bbupdate must be enabled for bootneuter\n");
+		if(!(bootloader39) || !(bootloader46)) {
+			printf("error: you must specify both bootloader files.\n");
 			exit(1);
 		} else {
-			if(!(bootloader39) || !(bootloader46)) {
-				printf("error: you must specify both bootloader files.\n");
-				exit(1);
-			} else {
-				doBootNeuter = TRUE;
-			}
+			doBootNeuter = TRUE;
 		}
 	}
 
@@ -206,15 +199,44 @@ int main(int argc, char* argv[]) {
 	while(patchDict != NULL) {
 		fileValue = (StringValue*) getValueByKey(patchDict, "File");
 
+		StringValue* keyValue = (StringValue*) getValueByKey(patchDict, "Key");
+		StringValue* ivValue = (StringValue*) getValueByKey(patchDict, "IV");
+		pKey = NULL;
+		pIV = NULL;
+
+		if(keyValue) {
+			sscanf(keyValue->value, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
+				&key[0], &key[1], &key[2], &key[3], &key[4], &key[5], &key[6], &key[7], &key[8],
+				&key[9], &key[10], &key[11], &key[12], &key[13], &key[14], &key[15]);
+
+			pKey = key;
+		}
+
+		if(ivValue) {
+			sscanf(ivValue->value, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
+				&iv[0], &iv[1], &iv[2], &iv[3], &iv[4], &iv[5], &iv[6], &iv[7], &iv[8],
+				&iv[9], &iv[10], &iv[11], &iv[12], &iv[13], &iv[14], &iv[15]);
+			pIV = iv;
+		}
+
 		if(strcmp(patchDict->dValue.key, "Restore Ramdisk") == 0) {
 			ramdiskFSPathInIPSW = fileValue->value;
+			if(pKey) {
+				memcpy(ramdiskKey, key, sizeof(key));
+				memcpy(ramdiskIV, iv, sizeof(iv));
+				pRamdiskKey = ramdiskKey;
+				pRamdiskIV = ramdiskIV;
+			} else {
+				pRamdiskKey = NULL;
+				pRamdiskIV = NULL;
+			}
 		}
 
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch2");
 		if(patchValue) {
-			if(!noBB) {
+			if(noWipe) {
 				printf("%s: ", patchDict->dValue.key); fflush(stdout);
-				doPatch(patchValue, fileValue, bundlePath, &outputState);
+				doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 				patchDict = (Dictionary*) patchDict->dValue.next;
 				continue; /* skip over the normal Patch */
 			}
@@ -223,18 +245,18 @@ int main(int argc, char* argv[]) {
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
 		if(patchValue) {
 			printf("%s: ", patchDict->dValue.key); fflush(stdout);
-			doPatch(patchValue, fileValue, bundlePath, &outputState);
+			doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 		}
 		
 		if(strcmp(patchDict->dValue.key, "AppleLogo") == 0 && applelogo) {
 			printf("replacing %s\n", fileValue->value); fflush(stdout);
-			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), applelogo, &imageSize)) != NULL, "failed to use new image");
+			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), pKey, pIV, applelogo, &imageSize)) != NULL, "failed to use new image");
 			addToOutput(&outputState, fileValue->value, imageBuffer, imageSize);
 		}
 
 		if(strcmp(patchDict->dValue.key, "RecoveryMode") == 0 && recoverymode) {
 			printf("replacing %s\n", fileValue->value); fflush(stdout);
-			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), recoverymode, &imageSize)) != NULL, "failed to use new image");
+			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), pKey, pIV, recoverymode, &imageSize)) != NULL, "failed to use new image");
 			addToOutput(&outputState, fileValue->value, imageBuffer, imageSize);
 		}
 		
@@ -244,8 +266,9 @@ int main(int argc, char* argv[]) {
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
 		
-	sscanf(((StringValue*) getValueByKey(info, "RootFilesystemResize"))->value, "%d", &rootSize);
+	rootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
 	rootSize *= 1024 * 1024;
+	rootSize -= 47438 * 512;
 	buffer = malloc(rootSize);
 
 	extractDmg(
@@ -255,7 +278,7 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	printf("Growing root: %d\n", rootSize); fflush(stdout);
+	printf("Growing root: %ld\n", (long) rootSize); fflush(stdout);
 	grow_hfs(rootVolume, rootSize);
 	
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
@@ -287,11 +310,23 @@ int main(int argc, char* argv[]) {
 	}
 	
 	for(; mergePaths < argc; mergePaths++) {
-		addall_hfs(rootVolume, argv[mergePaths], "/");
+		printf("merging %s\n", argv[mergePaths]);
+		AbstractFile* tarFile = createAbstractFileFromFile(fopen(argv[mergePaths], "rb"));
+		hfs_untar(rootVolume, tarFile);
+		tarFile->close(tarFile);
 	}
 	
 	if(doBootNeuter) {
-		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW)));
+		if(pRamdiskKey) {
+			printf("%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
+				pRamdiskKey, pRamdiskKey[0], pRamdiskKey[1], pRamdiskKey[2], pRamdiskKey[3], pRamdiskKey[4], pRamdiskKey[5], pRamdiskKey[6], pRamdiskKey[7],
+				pRamdiskKey[8], pRamdiskKey[9], pRamdiskKey[10], pRamdiskKey[11], pRamdiskKey[12], pRamdiskKey[13], pRamdiskKey[14], pRamdiskKey[15]);
+
+			ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
+		} else {
+			printf("unencrypted ramdisk\n");
+			ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW)));
+		}
 		ramdiskVolume = openVolume(ramdiskFS);
 		firmwarePatches = (Dictionary*)getValueByKey(info, "BasebandPatches");
 		if(firmwarePatches != NULL) {

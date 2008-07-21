@@ -7,6 +7,7 @@
 #include <hfs/hfsplus.h>
 #include "abstractfile.h"
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #define BUFSIZE 1024*1024
 
@@ -132,7 +133,6 @@ int add_hfs(Volume* volume, AbstractFile* inFile, const char* outFileName) {
 			writeToHFSFile((HFSPlusCatalogFile*)record, inFile, volume);
 			ret = TRUE;
 		} else {
-			inFile->close(inFile);
 			ret = FALSE;
 		}
 	}
@@ -454,6 +454,7 @@ void addall_hfs(Volume* volume, const char* dirToMerge, const char* dest) {
 	free(record);
 	
 }
+
 int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2) {
 	void* buffer;
 	size_t bufferSize;
@@ -467,7 +468,7 @@ int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2
 	printf("retrieving... "); fflush(stdout);
 	get_hfs(volume1, path1, tmpFile);
 	tmpFile->seek(tmpFile, 0);
-	printf("writing (%ld)... ", tmpFile->getLength(tmpFile)); fflush(stdout);
+	printf("writing (%ld)... ", (long) tmpFile->getLength(tmpFile)); fflush(stdout);
 	ret = add_hfs(volume2, tmpFile, path2);
 	printf("done\n");
 	
@@ -499,7 +500,7 @@ void displayFolder(HFSCatalogNodeID folderID, Volume* volume) {
 			printf("%06o ", file->permissions.fileMode);
 			printf("%3d ", file->permissions.ownerID);
 			printf("%3d ", file->permissions.groupID);
-			printf("%12lld ", file->dataFork.logicalSize);
+			printf("%12" PRId64 " ", file->dataFork.logicalSize);
 			fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 		}
 			
@@ -526,7 +527,7 @@ void displayFileLSLine(HFSPlusCatalogFile* file, const char* name) {
 	printf("%06o ", file->permissions.fileMode);
 	printf("%3d ", file->permissions.ownerID);
 	printf("%3d ", file->permissions.groupID);
-	printf("%12lld ", file->dataFork.logicalSize);
+	printf("%12" PRId64 " ", file->dataFork.logicalSize);
 	fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 	date = localtime(&fileTime);
 	if(date != NULL) {
@@ -543,6 +544,7 @@ void hfs_ls(Volume* volume, const char* path) {
 
 	record = getRecordFromPath(path, volume, &name, NULL);
 	
+	printf("%s: \n", name);
 	if(record != NULL) {
 		if(record->recordType == kHFSPlusFolderRecord)
 			displayFolder(((HFSPlusCatalogFolder*)record)->folderID, volume);  
@@ -556,3 +558,78 @@ void hfs_ls(Volume* volume, const char* path) {
 	
 	free(record);
 }
+
+void hfs_untar(Volume* volume, AbstractFile* tarFile) {
+	size_t tarSize = tarFile->getLength(tarFile);
+	size_t curRecord = 0;
+	char block[512];
+
+	while(curRecord < tarSize) {
+		tarFile->seek(tarFile, curRecord);
+		tarFile->read(tarFile, block, 512);
+
+		uint32_t mode = 0;
+		char* fileName = NULL;
+		const char* target = NULL;
+		uint32_t type = 0;
+		uint32_t size;
+		uint32_t uid;
+		uint32_t gid;
+
+		sscanf(&block[100], "%o", &mode);
+		fileName = &block[0];
+		sscanf(&block[156], "%o", &type);
+		target = &block[157];
+		sscanf(&block[124], "%o", &size);
+		sscanf(&block[108], "%o", &uid);
+		sscanf(&block[116], "%o", &gid);
+
+		if(fileName[0] == '\0')
+			break;
+
+		if(fileName[0] == '.' && fileName[1] == '/') {
+			fileName += 2;
+		}
+
+		if(fileName[0] == '\0')
+			goto loop;
+
+		if(fileName[strlen(fileName) - 1] == '/')
+			fileName[strlen(fileName) - 1] = '\0';
+
+		HFSPlusCatalogRecord* record = getRecordFromPath3(fileName, volume, NULL, NULL, TRUE, FALSE, kHFSRootFolderID);
+		if(record) {
+			if(record->recordType == kHFSPlusFolderRecord || type == 5) {
+				printf("ignoring %s, type = %d\n", fileName, type);
+				goto loop;
+			} else {
+				printf("replacing %s\n", fileName);
+				removeFile(fileName, volume);
+			}
+		}
+
+		if(type == 0) {
+			printf("file: %s (%04o), size = %d\n", fileName, mode, size);
+			void* buffer = malloc(size);
+			tarFile->seek(tarFile, curRecord + 512);
+			tarFile->read(tarFile, buffer, size);
+			AbstractFile* inFile = createAbstractFileFromMemory(&buffer, size);
+			add_hfs(volume, inFile, fileName);
+		} else if(type == 5) {
+			printf("directory: %s (%04o)\n", fileName, mode);
+			newFolder(fileName, volume);
+		} else if(type == 2) {
+			printf("symlink: %s (%04o) -> %s\n", fileName, mode, target);
+			makeSymlink(fileName, target, volume);
+		}
+
+		chmodFile(fileName, mode, volume);
+		chownFile(fileName, uid, gid, volume);
+
+loop:
+
+		curRecord = (curRecord + 512) + ((size + 511) / 512 * 512);
+	}
+
+}
+

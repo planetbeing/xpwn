@@ -1,0 +1,10 @@
+This is a heavily hacked version of the DFU-Util written for the OpenMoko
+device, as made available here: http://wiki.openmoko.org/wiki/Dfu-util
+
+Many thanks to the OpenMoko folks. Writing a USB DFU implementation from
+scratch would not have been particularly fun.
+
+From the wiki:
+
+WARNING: Dfu-util is currently broken on big-endian architectures
+

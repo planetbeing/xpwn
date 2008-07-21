@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include "hfs/hfslib.h"
+#include <inttypes.h>
 
 char endianness;
 
@@ -18,7 +19,8 @@ void cmd_ls(Volume* volume, int argc, const char *argv[]) {
 	if(argc > 1)
 		hfs_ls(volume, argv[1]);
 	else
-		hfs_ls(volume, "/");}
+		hfs_ls(volume, "/");
+}
 
 void cmd_cat(Volume* volume, int argc, const char *argv[]) {
 	HFSPlusCatalogRecord* record;
@@ -215,11 +217,28 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 	}
 	
 	newSize = 0;
-	sscanf(argv[1], "%lld", &newSize);
+	sscanf(argv[1], "%" PRId64, &newSize);
 
 	grow_hfs(volume, newSize);
 
-	printf("grew volume: %lld\n", newSize);
+	printf("grew volume: %" PRId64 "\n", newSize);
+}
+
+void cmd_untar(Volume* volume, int argc, const char *argv[]) {
+	AbstractFile *inFile;
+	
+	if(argc < 2) {
+		printf("Not enough arguments");
+		return;
+	}
+	
+	inFile = createAbstractFileFromFile(fopen(argv[1], "rb"));
+	
+	if(inFile == NULL) {
+		printf("file to untar not found");
+	}
+
+	hfs_untar(volume, inFile);
 }
 
 void TestByteOrder()
@@ -238,7 +257,7 @@ int main(int argc, const char *argv[]) {
 	TestByteOrder();
 	
 	if(argc < 3) {
-		printf("usage: %s <image-file> (-k <key>) <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall> <arguments>\n", argv[0]);
+		printf("usage: %s <image-file> (-k <key>) <ls|cat|mv|mkdir|add|rm|chmod|extract|extractall|rmall|addall|grow|untar> <arguments>\n", argv[0]);
 		return 0;
 	}
 
@@ -296,6 +315,8 @@ int main(int argc, const char *argv[]) {
 			cmd_addall(volume, argc - argOff, argv + argOff);
 		} else if(strcmp(argv[argOff], "grow") == 0) {
 			cmd_grow(volume, argc - argOff, argv + argOff);
+		} else if(strcmp(argv[argOff], "untar") == 0) {
+			cmd_untar(volume, argc - argOff, argv + argOff);
 		}
 	}
 	

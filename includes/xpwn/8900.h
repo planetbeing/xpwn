@@ -39,10 +39,12 @@ typedef struct Info8900 {
 	AES_KEY         decryptKey;
 	
 	char            dirty;
+	char 		exploit;
 } Info8900;
 
 AbstractFile* createAbstractFileFrom8900(AbstractFile* file);
 AbstractFile* duplicate8900File(AbstractFile* file, AbstractFile* backing);
 void replaceCertificate8900(AbstractFile* file, AbstractFile* certificate);
+void exploit8900(AbstractFile* file);
 
 #endif

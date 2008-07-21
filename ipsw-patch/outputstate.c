@@ -141,7 +141,7 @@ void writeOutput(OutputState** state, char* ipsw) {
 	while(next != NULL) {
 		curFile = next;
 		next = next->next;
-		printf("packing: %s (%d)\n", curFile->fileName, curFile->bufferSize); fflush(stdout);
+		printf("packing: %s (%ld)\n", curFile->fileName, (long) curFile->bufferSize); fflush(stdout);
 		
 		if(curFile->bufferSize > 0) {
 			ASSERT(zipOpenNewFileInZip(zip, curFile->fileName, &info, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION) == 0, "error adding to zip");
@@ -205,4 +205,32 @@ OutputState* loadZip(const char* ipsw) {
 
 	return toReturn;
 }
+
+void loadZipFile(const char* ipsw, OutputState** output, const char* file) {
+	char* fileName;
+	void* buffer;
+	unzFile zip;
+	unz_file_info pfile_info;
+
+	ASSERT(zip = unzOpen(ipsw), "cannot open input ipsw");
+	ASSERT(unzGoToFirstFile(zip) == UNZ_OK, "cannot seek to first file in input ipsw");
+
+	do {
+		ASSERT(unzGetCurrentFileInfo(zip, &pfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file info from ipsw");
+		fileName = (char*) malloc(pfile_info.size_filename + 1);
+		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
+		if(strcmp(fileName, file) == 0) {
+			buffer = malloc((pfile_info.uncompressed_size > 0) ? pfile_info.uncompressed_size : 1);
+			printf("loading: %s (%ld)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
+			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
+			ASSERT(unzReadCurrentFile(zip, buffer, pfile_info.uncompressed_size) == pfile_info.uncompressed_size, "cannot read file from ipsw");
+			ASSERT(unzCloseCurrentFile(zip) == UNZ_OK, "cannot close compressed file in IPSW");
+			addToOutput(output, fileName, buffer, pfile_info.uncompressed_size);
+		}
+		free(fileName);
+	} while(unzGoToNextFile(zip) == UNZ_OK);
+
+	ASSERT(unzClose(zip) == UNZ_OK, "cannot close input ipsw file");
+}
+
 

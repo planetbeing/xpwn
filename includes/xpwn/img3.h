@@ -15,6 +15,7 @@
 #define IMG3_BDID_MAGIC 0x42444944
 #define IMG3_SHSH_MAGIC 0x53485348
 #define IMG3_CERT_MAGIC 0x43455254
+#define IMG3_KBAG_MAGIC 0x4B424147
 
 #define IMG3_SIGNATURE IMG3_MAGIC
 
@@ -39,6 +40,12 @@ typedef struct AppleImg3RootHeader {
 	AppleImg3RootExtra extra;
 }__attribute__((__packed__)) AppleImg3RootHeader;
 
+typedef struct AppleImg3KBAGHeader {
+ 
+  uint32_t key_modifier;		// key modifier, can be 0 or 1 	
+  uint32_t key_bits;			// number of bits in the key, can be 128, 192 or 256 (it seems only 128 is supported in current iBoot)
+} AppleImg3KBAGHeader;
+
 struct Img3Element
 {
 	AppleImg3Header* header;
@@ -53,6 +60,7 @@ typedef struct Img3Info {
 	Img3Element* root;
 	Img3Element* data;
 	Img3Element* cert;
+	Img3Element* kbag;
 	int encrypted;
 	AES_KEY encryptKey;
 	AES_KEY decryptKey;

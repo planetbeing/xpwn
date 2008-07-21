@@ -6,6 +6,7 @@
 #include <xpwn/ibootim.h>
 #include "libibooter.h"
 #include <iostream>
+#include <string.h>
 
 using namespace ibooter;
 using namespace std;
@@ -137,14 +138,14 @@ int main(int argc, char *argv[])
 		if(applelogo) {
 			fileValue = (StringValue*) getValueByKey((Dictionary*)getValueByKey((Dictionary*)getValueByKey(info, "FirmwarePatches"), "AppleLogo"), "File");
 			printf("replacing %s\n", fileValue->value); fflush(stdout);
-			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&ipswContents, fileValue->value), applelogo, &imageSize)) != NULL, "failed to use new image");
+			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&ipswContents, fileValue->value), NULL, NULL, applelogo, &imageSize)) != NULL, "failed to use new image");
 			add_hfs(ramdiskVolume, createAbstractFileFromMemory(&imageBuffer, imageSize), "/ipwner/logo.img2");
 		}
 
 		if(recoverymode) {
 			fileValue = (StringValue*) getValueByKey((Dictionary*)getValueByKey((Dictionary*)getValueByKey(info, "FirmwarePatches"), "RecoveryMode"), "File");
 			printf("replacing %s\n", fileValue->value); fflush(stdout);
-			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&ipswContents, fileValue->value), recoverymode, &imageSize)) != NULL, "failed to use new image");
+			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&ipswContents, fileValue->value), NULL, NULL, recoverymode, &imageSize)) != NULL, "failed to use new image");
 			add_hfs(ramdiskVolume, createAbstractFileFromMemory(&imageBuffer, imageSize), "/ipwner/recovery.img2");			
 		}
 

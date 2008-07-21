@@ -13,7 +13,7 @@ typedef int (*SeekFunc)(AbstractFile* file, off_t offset);
 typedef off_t (*TellFunc)(AbstractFile* file);
 typedef void (*CloseFunc)(AbstractFile* file);
 typedef off_t (*GetLengthFunc)(AbstractFile* file);
-typedef void (*SetKeyFunc)(AbstractFile2* file, const uint8_t* key, const uint8_t* iv);
+typedef void (*SetKeyFunc)(AbstractFile2* file, const unsigned int* key, const unsigned int* iv);
 
 typedef enum AbstractFileType {
 	AbstractFileTypeFile,

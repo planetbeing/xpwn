@@ -21,6 +21,7 @@ add_subdirectory (dmg)
 add_subdirectory (hdutil)
 add_subdirectory (hfs)
 add_subdirectory (ipsw-patch)
+add_subdirectory (dfu-util)
 add_subdirectory (xpwn)
 
 install(FILES README.markdown DESTINATION . RENAME README.txt)

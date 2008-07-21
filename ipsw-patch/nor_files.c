@@ -67,7 +67,7 @@ AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing) {
 	}
 }
 
-AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const uint8_t* iv) {
+AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, const unsigned int* iv) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
 
@@ -98,7 +98,7 @@ AbstractFile* openAbstractFile2(AbstractFile* file, const uint8_t* key, const ui
 	}
 }
 
-AbstractFile* duplicateAbstractFileWithCertificate(AbstractFile* file, AbstractFile* backing, AbstractFile* certificate) {
+AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const unsigned int* key, const unsigned int* iv, AbstractFile* certificate) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
 	AbstractFile* orig;
@@ -114,16 +114,24 @@ AbstractFile* duplicateAbstractFileWithCertificate(AbstractFile* file, AbstractF
 	if(signatureBE == SIGNATURE_8900) {
 		orig = createAbstractFileFrom8900(file);
 		newFile = duplicate8900File(orig, backing);
-		replaceCertificate8900(newFile, certificate);
+		if(certificate != NULL)
+			replaceCertificate8900(newFile, certificate);
 		return duplicateAbstractFile(orig, newFile);
 	} else if(signatureLE == IMG2_SIGNATURE) {
 		orig = createAbstractFileFromImg2(file);
 		return duplicateAbstractFile(orig, duplicateImg2File(orig, backing));
 	} else if(signatureLE == IMG3_SIGNATURE) {
-		orig = createAbstractFileFromImg3(file);
-		newFile = duplicateImg3File(orig, backing);
-		replaceCertificateImg3(newFile, certificate);
-		return duplicateAbstractFile(orig, newFile);
+		AbstractFile2* img3 = (AbstractFile2*) createAbstractFileFromImg3(file);
+		if(key != NULL)
+			img3->setKey(img3, key, iv);
+
+		AbstractFile2* newFile = (AbstractFile2*) duplicateImg3File((AbstractFile*) img3, backing);
+		if(key != NULL)
+			img3->setKey(newFile, key, iv);
+
+		if(certificate != NULL)
+			replaceCertificateImg3((AbstractFile*) newFile, certificate);
+		return duplicateAbstractFile((AbstractFile*) img3, (AbstractFile*) newFile);
 	} else if(signatureBE == COMP_SIGNATURE) {
 		orig = createAbstractFileFromComp(file);
 		return duplicateAbstractFile(orig, duplicateCompFile(orig, backing));

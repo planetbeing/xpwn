@@ -20,6 +20,7 @@ extern "C" {
 	void writeOutput(OutputState** state, char* ipsw);
 	void releaseOutput(OutputState** state);
 	OutputState* loadZip(const char* ipsw);
+	void loadZipFile(const char* ipsw, OutputState** output, const char* file);
 #ifdef __cplusplus
 }
 #endif

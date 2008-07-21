@@ -206,7 +206,7 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	closeBZStream(dpfbz2);
 	closeBZStream(epfbz2);
 	out->seek(out, 0);
-	
+
 	if(out->write(out, newBuffer, newsize) != newsize)
 		return -9;
 	out->close(out);

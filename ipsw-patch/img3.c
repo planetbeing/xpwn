@@ -31,8 +31,8 @@ size_t writeImg3(AbstractFile* file, const void* data, size_t len) {
 	while((info->offset + (size_t)len) > info->data->header->dataSize) {
 		info->data->header->dataSize = info->offset + (size_t)len;
 		info->data->header->size = info->data->header->dataSize + sizeof(AppleImg3Header);
-		if(info->data->header->size % 4 != 0) {
-			info->data->header->size += 4 - (info->data->header->size % 4);
+		if(info->data->header->size % 0x4 != 0) {
+			info->data->header->size += 0x4 - (info->data->header->size % 0x4);
 		}
 		info->data->data = realloc(info->data->data, info->data->header->dataSize);
 	}
@@ -68,7 +68,7 @@ void closeImg3(AbstractFile* file) {
 		if(info->encrypted) {
 			uint8_t ivec[16];
 			memcpy(ivec, info->iv, 16);
-			AES_cbc_encrypt(info->data->data, info->data->data, info->data->header->size - sizeof(AppleImg3Header), &(info->encryptKey), ivec, AES_ENCRYPT);
+			AES_cbc_encrypt(info->data->data, info->data->data, (info->data->header->dataSize / 16) * 16, &(info->encryptKey), ivec, AES_ENCRYPT);
 		}
 
 		info->file->seek(info->file, 0);
@@ -83,18 +83,24 @@ void closeImg3(AbstractFile* file) {
 	free(file);
 }
 
-void setKeyImg3(AbstractFile2* file, const uint8_t* key, const uint8_t* iv) {
+void setKeyImg3(AbstractFile2* file, const unsigned int* key, const unsigned int* iv) {
 	Img3Info* info = (Img3Info*) file->super.data;
 
-	AES_set_encrypt_key(key, 128, &(info->encryptKey));
-	AES_set_decrypt_key(key, 128, &(info->decryptKey));
+	int i;
+	uint8_t bKey[16];
 
-	memcpy(info->iv, iv, 16);
+	for(i = 0; i < 16; i++) {
+		bKey[i] = key[i] & 0xff;
+		info->iv[i] = iv[i] & 0xff;
+	}
+
+	AES_set_encrypt_key(bKey, 128, &(info->encryptKey));
+	AES_set_decrypt_key(bKey, 128, &(info->decryptKey));
 
 	if(!info->encrypted) {
 		uint8_t ivec[16];
 		memcpy(ivec, info->iv, 16);
-		AES_cbc_encrypt(info->data->data, info->data->data, info->data->header->size - sizeof(AppleImg3Header), &(info->decryptKey), ivec, AES_DECRYPT);
+		AES_cbc_encrypt(info->data->data, info->data->data, (info->data->header->dataSize / 16) * 16, &(info->decryptKey), ivec, AES_DECRYPT);
 	}
 
 	info->encrypted = TRUE;
@@ -194,21 +200,17 @@ void writeImg3Root(AbstractFile* file, Img3Element* element) {
 }
 
 void writeImg3Default(AbstractFile* file, Img3Element* element) {
+	const char zeros[0x10] = {0};
 	file->write(file, element->data, element->header->dataSize);
+	if((element->header->size - sizeof(AppleImg3Header)) > element->header->dataSize) {
+		file->write(file, zeros, (element->header->size - sizeof(AppleImg3Header)) - element->header->dataSize);
+	}
 }
 
 void writeImg3Element(AbstractFile* file, Img3Element* element) {
 	off_t curPos;
-	char zero;
-
-	zero = '\0';
 
 	curPos = file->tell(file);
-
-	file->seek(file, curPos + element->header->size - 1);
-	file->write(file, &zero, 1);
-
-	file->seek(file, curPos);
 
 	flipAppleImg3Header(element->header);
 	file->write(file, element->header, sizeof(AppleImg3Header));
@@ -267,6 +269,8 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	info->root = readImg3Element(file);
 
 	info->data = NULL;
+	info->cert = NULL;
+	info->kbag = NULL;
 	info->encrypted = FALSE;
 
 	current = (Img3Element*) info->root->data;
@@ -276,6 +280,9 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 		}
 		if(current->header->magic == IMG3_CERT_MAGIC) {
 			info->cert = current;
+		}
+		if(current->header->magic == IMG3_KBAG_MAGIC) {
+			info->kbag = current;
 		}
 		current = current->next;
 	}
@@ -296,6 +303,23 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 
 	AbstractFile2* abstractFile2 = (AbstractFile2*) toReturn;
 	abstractFile2->setKey = setKeyImg3;
+
+	if(info->kbag) {
+		uint8_t* keySeed;
+		uint32_t keySeedLen;
+		keySeedLen = 2 * (((AppleImg3KBAGHeader*)info->kbag->data)->key_bits)/8;
+		keySeed = (uint8_t*) malloc(keySeedLen);
+		memcpy(keySeed, (uint8_t*)((AppleImg3KBAGHeader*)info->kbag->data) + sizeof(AppleImg3KBAGHeader), keySeedLen);
+		printf("{");
+		int i = 0;
+		for(i = 0; i < keySeedLen; i++) {
+			if(i != 0)
+				printf(", ");
+
+			printf("0x%02x", keySeed[i]);
+		}
+		printf("}\n");
+	}
 
 	return toReturn;
 }

@@ -118,18 +118,19 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 		free(info);
 		return NULL;
 	}
-	
+
 	info->buffer = malloc(info->length);
 	compressed = malloc(info->compLength);
 	file->read(file, compressed, info->compLength);
 
 	int length = decompress_lzss(info->buffer, compressed, info->compLength);
 	if(length > info->length) {
-		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error, length == %d (%d + %d), should be == %d (%d x %d x %d)\n", length, info->compLength, sizeof(info->header), info->length, info->header.width, info->header.height, depth);
+		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error\n");
 		free(compressed);
 		free(info);
 		return NULL;
 	} else if(length < info->length) {
+		fprintf(stderr, "createAbstractFileFromIBootIM: (warning) uncompressed data shorter than expected: %d\n", length);
 		info->length = length;
 	}
 
@@ -192,7 +193,7 @@ void pngError(png_structp png_ptr, png_const_charp error_msg) {
 	exit(0);
 }
 
-void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fileSize) {
+void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, const unsigned int* iv, AbstractFile* png, size_t *fileSize) {
 	AbstractFile* imageFile;
 	unsigned char header[8];
 	InfoIBootIM* info;
@@ -252,7 +253,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fi
 		printf("notice: attempting to expand palette into full rgb\n");
 	}
 	
-  png_set_expand(png_ptr);
+	png_set_expand(png_ptr);
 	png_set_strip_16(png_ptr);
 	png_set_bgr(png_ptr);
 	png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
@@ -292,13 +293,17 @@ void* replaceBootImage(AbstractFile* imageWrapper, AbstractFile* png, size_t *fi
 		row_pointers[i] = imageBuffer + (info_ptr->rowbytes * i);
 	}
 
-  png_read_image(png_ptr, row_pointers);
+	png_read_image(png_ptr, row_pointers);
 	png_read_end(png_ptr, end_info);
 	
 	buffer = malloc(1);
 	*fileSize = 0;
-	
-	imageFile = duplicateAbstractFile(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize));
+
+	if(key != NULL) {
+		imageFile = duplicateAbstractFile2(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize), key, iv, NULL);
+	} else {	
+		imageFile = duplicateAbstractFile(imageWrapper, createAbstractFileFromMemoryFile((void**)&buffer, fileSize));
+	}
 	info = (InfoIBootIM*) (imageFile->data);
 	
 	info->header.width = (uint16_t) info_ptr->width;
