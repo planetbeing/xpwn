@@ -115,6 +115,25 @@ future.
 
 Told you it was a mess.
 
+## itunespwn
+
+This *Windows* utility will replace a file in your %APPDATA%\Apple Computer\
+Device Support folder. Subsequently, if you place your phone into DFU mode
+and iTunes recognizes it, Apple will automatically upload an exploit file onto
+your phone that will allow it to accept custom firmware (until it is turned
+off). This basically will allow you to restore any IPSW you want from that
+version of iTunes (provided you connect your phone in DFU mode).
+
+See the following section for detailed instructions on how to enter DFU mode.
+
+Usage:
+
+	itunespwn <custom.ipsw>
+
+The custom.ipsw is needed for the exploited WTF that was generated during
+IPSW generation.
+
+
 ## dfu-util
 
 dfu-util is an utility adapted from OpenMoko that satisfies the "pwning" stage

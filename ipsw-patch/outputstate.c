@@ -8,7 +8,7 @@
 #include <zip.h>
 #include <unzip.h>
 
-void addToOutputQueue(OutputState** state, char* fileName, void* buffer, size_t bufferSize) {
+void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize) {
 	OutputState* leftNeighbor;
 	OutputState* rightNeighbor;
 	OutputState* next;
@@ -58,7 +58,7 @@ void addToOutputQueue(OutputState** state, char* fileName, void* buffer, size_t 
 	newFile->bufferSize = bufferSize;
 }
 
-void addToOutput(OutputState** state, char* fileName, void* buffer, size_t bufferSize) {
+void addToOutput(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize) {
 	char* fileNamePath;
 	char* fileNameNoPath;
 

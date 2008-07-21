@@ -64,6 +64,12 @@ target_link_libraries(ipsw xpwn)
 add_executable(xpwntool xpwntool.c)
 target_link_libraries(xpwntool xpwn)
 
+IF(WIN32)
+	ADD_EXECUTABLE(itunespwn itunespwn.c)
+	TARGET_LINK_LIBRARIES(itunespwn xpwn gdi32)
+	install(TARGETS itunespwn RUNTIME DESTINATION .)
+ENDIF(WIN32)
+
 install(TARGETS ipsw xpwntool RUNTIME DESTINATION .)
 install(DIRECTORY FirmwareBundles/ DESTINATION FirmwareBundles)
 install(DIRECTORY bundles/ DESTINATION bundles)
