@@ -16,8 +16,8 @@ int main(int argc, char* argv[]) {
 
 	AbstractFile* template = NULL;
 	AbstractFile* certificate = NULL;
-	int key[16];
-	int iv[16];
+	unsigned int key[16];
+	unsigned int iv[16];
 	int hasKey = FALSE;
 	int hasIV = FALSE;
 

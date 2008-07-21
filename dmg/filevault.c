@@ -4,6 +4,7 @@
 
 #include <dmg/dmg.h>
 #include <dmg/filevault.h>
+#include <inttypes.h>
 
 #ifdef HAVE_CRYPT
 
@@ -207,7 +208,7 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	file->read(file, &signature, sizeof(uint64_t));
 	FLIPENDIAN(signature);
 	if(signature != FILEVAULT_V2_SIGNATURE) {
-		printf("Unknown signature: %x\n", signature);
+		printf("Unknown signature: %" PRId64 "\n", signature);
 		/* no FileVault v1 handling yet */
 		return NULL;
 	}
@@ -222,7 +223,9 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	flipFileVaultV2Header(&(info->header.v2));
 	
 	for(i = 0; i < 16; i++) {
-		sscanf(&(key[i * 2]), "%02hhx", &(aesKey[i]));
+		unsigned int curByte;
+		sscanf(&(key[i * 2]), "%02x", &curByte);
+		aesKey[i] = curByte;
 	}
 
 	for(i = 0; i < 20; i++) {

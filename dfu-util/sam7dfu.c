@@ -256,7 +256,6 @@ get_status:
 	printf("Done!\n");
 out_close:
 	file->close(file);
-out_free:
 	free(buf);
 
 	return ret;

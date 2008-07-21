@@ -48,7 +48,6 @@
 #endif
 
 int debug;
-static int verbose = 0;
 
 #define DFU_IFF_DFU		0x0001	/* DFU Mode, (not Runtime) */
 #define DFU_IFF_VENDOR		0x0100
@@ -294,52 +293,6 @@ static int count_dfu_devices(struct dfu_if *dif)
 	return num_found;
 }
 
-
-static int list_dfu_interfaces(void)
-{
-	struct usb_bus *usb_bus;
-	struct usb_device *dev;
-
-	/* Walk the tree and find our device. */
-	for (usb_bus = usb_get_busses(); NULL != usb_bus;
-	     usb_bus = usb_bus->next ) {
-		for (dev = usb_bus->devices; NULL != dev; dev = dev->next) {
-			find_dfu_if(dev, &print_dfu_if, NULL);
-		}
-	}
-	return 0;
-}
-
-static int parse_vendprod(struct usb_vendprod *vp, const char *str)
-{
-	unsigned long vend, prod;
-	const char *colon;
-
-	colon = strchr(str, ':');
-	if (!colon || strlen(colon) < 2)
-		return -EINVAL;
-
-	vend = strtoul(str, NULL, 16);
-	prod = strtoul(colon+1, NULL, 16);
-
-	if (vend > 0xffff || prod > 0xffff)
-		return -EINVAL;
-
-	vp->vendor = vend;
-	vp->product = prod;
-
-	return 0;
-}
-
-
-static int resolve_device_path(struct dfu_if *dif)
-{
-	fprintf(stderr,
-	    "USB device paths are not supported by this dfu-util.\n");
-	exit(1);
-}
-
-
 static void help(void)
 {
 	printf("Usage: dfu-util [options] ...\n"
@@ -359,25 +312,6 @@ static void help(void)
 		);
 }
 
-static struct option opts[] = {
-	{ "help", 0, 0, 'h' },
-	{ "version", 0, 0, 'V' },
-	{ "verbose", 0, 0, 'v' },
-	{ "list", 0, 0, 'l' },
-	{ "device", 1, 0, 'd' },
-	{ "path", 1, 0, 'p' },
-	{ "configuration", 1, 0, 'c' },
-	{ "cfg", 1, 0, 'c' },
-	{ "interface", 1, 0, 'i' },
-	{ "intf", 1, 0, 'i' },
-	{ "altsetting", 1, 0, 'a' },
-	{ "alt", 1, 0, 'a' },
-	{ "transfer-size", 1, 0, 't' },
-	{ "upload", 1, 0, 'U' },
-	{ "download", 1, 0, 'D' },
-	{ "reset", 0, 0, 'R' },
-};
-
 enum mode {
 	MODE_NONE,
 	MODE_UPLOAD,
@@ -386,7 +320,6 @@ enum mode {
 
 int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 {
-	struct usb_vendprod vendprod;
 	struct dfu_if _rt_dif, _dif, *dif = &_dif;
 	int num_devs;
 	int num_ifs;
@@ -394,7 +327,6 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 	struct dfu_status status;
 	struct usb_dfu_func_descriptor func_dfu;
 	char *alt_name = NULL; /* query alt name if non-NULL */
-	char *end;
 	int page_size = getpagesize();
 	int ret;
 	
@@ -455,7 +387,6 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 	if (!get_first_dfu_if(&_rt_dif))
 		exit(1);
 
-dfustate:
 	if (alt_name) {
 		int n;
 

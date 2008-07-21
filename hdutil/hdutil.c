@@ -18,7 +18,8 @@ void cmd_ls(Volume* volume, int argc, const char *argv[]) {
 	if(argc > 1)
 		hfs_ls(volume, argv[1]);
 	else
-		hfs_ls(volume, "/");}
+		hfs_ls(volume, "/");
+}
 
 void cmd_cat(Volume* volume, int argc, const char *argv[]) {
 	HFSPlusCatalogRecord* record;
