@@ -467,7 +467,7 @@ int copyAcrossVolumes(Volume* volume1, Volume* volume2, char* path1, char* path2
 	printf("retrieving... "); fflush(stdout);
 	get_hfs(volume1, path1, tmpFile);
 	tmpFile->seek(tmpFile, 0);
-	printf("writing (%ld)... ", tmpFile->getLength(tmpFile)); fflush(stdout);
+	printf("writing (%ld)... ", (long) tmpFile->getLength(tmpFile)); fflush(stdout);
 	ret = add_hfs(volume2, tmpFile, path2);
 	printf("done\n");
 	

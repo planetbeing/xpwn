@@ -327,7 +327,6 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 	struct dfu_status status;
 	struct usb_dfu_func_descriptor func_dfu;
 	char *alt_name = NULL; /* query alt name if non-NULL */
-	int page_size = getpagesize();
 	int ret;
 	
 	printf("dfu-util - (C) 2007 by OpenMoko Inc. Hacked by the iPhone Dev Team\n"
@@ -480,7 +479,7 @@ status_again:
 		if (ret < 0) {
 			fprintf(stderr, "Error obtaining DFU functional "
 				"descriptor: %s\n", usb_strerror());
-			transfer_size = page_size;
+			transfer_size = 0x800;
 		} else {
 			func_dfu.wTransferSize = LE2CPU16(func_dfu.wTransferSize);
 			transfer_size = func_dfu.wTransferSize;
