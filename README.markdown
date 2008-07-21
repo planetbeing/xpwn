@@ -222,17 +222,17 @@ reflashed with Apple's image that does have signature checking)
 
 Jailbreaking iPod 2.0:
 
-	./ipsw iPod1,1_2.0_5A347.bundle custom.ipsw \
+	./ipsw iPod1,1_2.0_5A347.ipsw custom.ipsw \
 		bundles/Cydia.tar
 
 Jailbreaking iPhone 3G:
 
-	./ipsw iPhone1,2_2.0_5A347.bundle custom.ipsw \
+	./ipsw iPhone1,2_2.0_5A347.ipsw custom.ipsw \
 		-e "Phone Activation" bundles/Cydia.tar
 
 Jailbreaking, activating, and unlocking iPhone 2.0:
 
-	./ipsw iPhone1,1_2.0_5A347.bundle custom.ipsw \
+	./ipsw iPhone1,1_2.0_5A347.ipsw custom.ipsw \
 		-unlock -cleanup -3 bl39.bin -4 bl46.bin \
 		bundles/Cydia.tar \
 		bundles/BootNeuter.tar \
