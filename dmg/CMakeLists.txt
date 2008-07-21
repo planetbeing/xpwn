@@ -34,3 +34,5 @@ target_link_libraries (dmg-bin dmg)
 
 set_target_properties(dmg-bin PROPERTIES OUTPUT_NAME "dmg")
 
+install(TARGETS dmg-bin DESTINATION .)
+
