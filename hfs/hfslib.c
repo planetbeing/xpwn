@@ -7,6 +7,7 @@
 #include <hfs/hfsplus.h>
 #include "abstractfile.h"
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #define BUFSIZE 1024*1024
 
@@ -499,7 +500,7 @@ void displayFolder(HFSCatalogNodeID folderID, Volume* volume) {
 			printf("%06o ", file->permissions.fileMode);
 			printf("%3d ", file->permissions.ownerID);
 			printf("%3d ", file->permissions.groupID);
-			printf("%12lld ", file->dataFork.logicalSize);
+			printf("%12" PRId64 " ", file->dataFork.logicalSize);
 			fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 		}
 			
@@ -526,7 +527,7 @@ void displayFileLSLine(HFSPlusCatalogFile* file, const char* name) {
 	printf("%06o ", file->permissions.fileMode);
 	printf("%3d ", file->permissions.ownerID);
 	printf("%3d ", file->permissions.groupID);
-	printf("%12lld ", file->dataFork.logicalSize);
+	printf("%12" PRId64 " ", file->dataFork.logicalSize);
 	fileTime = APPLE_TO_UNIX_TIME(file->contentModDate);
 	date = localtime(&fileTime);
 	if(date != NULL) {

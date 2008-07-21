@@ -119,8 +119,6 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 		return NULL;
 	}
 
-	printf("iBootIM: depth = %d, width = %d, height = %d, length = %d\n", depth, info->header.width, info->header.height, info->length);
-	
 	info->buffer = malloc(info->length);
 	compressed = malloc(info->compLength);
 	file->read(file, compressed, info->compLength);
