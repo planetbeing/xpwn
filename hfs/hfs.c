@@ -219,7 +219,7 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 
 	grow_hfs(volume, newSize);
 
-	printf("grew volume: %lld\n", newSize);
+	printf("grew volume: %" PRId64 "\n", newSize);
 }
 
 void TestByteOrder()
