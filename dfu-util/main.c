@@ -557,7 +557,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	char ibssName[100];
-	sprintf(wtfName, "Firmware/dfu/WTF.%s.RELEASE.dfu", argv[2]);
 	sprintf(ibssName, "Firmware/dfu/iBSS.%s.RELEASE.dfu", argv[2]);
 
 	OutputState* data = NULL;
