@@ -556,19 +556,15 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	char wtfName[100];
 	char ibssName[100];
 	sprintf(wtfName, "Firmware/dfu/WTF.%s.RELEASE.dfu", argv[2]);
 	sprintf(ibssName, "Firmware/dfu/iBSS.%s.RELEASE.dfu", argv[2]);
 
 	OutputState* data = NULL;
 	loadZipFile(argv[1], &data, "Firmware/dfu/WTF.s5l8900xall.RELEASE.dfu");
-	loadZipFile(argv[1], &data, wtfName);
 	loadZipFile(argv[1], &data, ibssName);
 
 	download(getFileFromOutputState(&data, "Firmware/dfu/WTF.s5l8900xall.RELEASE.dfu"), 2048, 1);
-	sleep(5);
-	download(getFileFromOutputState(&data, wtfName), 2048, 1);
 	sleep(5);
 	download(getFileFromOutputState(&data, ibssName), 2048, 1);
 
