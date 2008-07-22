@@ -13,6 +13,7 @@ extern "C" {
 	int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, unsigned int* key, unsigned int* iv);
 	void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath);
 	void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct, char use39, char use46);
+	void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBaseband);
 #ifdef __cplusplus
 }
 #endif

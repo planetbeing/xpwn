@@ -496,3 +496,25 @@ void addStringToArray(ArrayValue* array, char* str) {
 	array->values[array->size - 1] = curValue;
 }
 
+void addBoolToDictionary(Dictionary* dict, const char* key, int value) {
+	BoolValue* dValue = malloc(sizeof(BoolValue));
+	dValue->dValue.type = BoolType;
+	dValue->value = value;
+	addValueToDictionary(dict, key, (DictValue*) dValue);
+}
+
+void addIntegerToDictionary(Dictionary* dict, const char* key, int value) {
+	IntegerValue* dValue = malloc(sizeof(IntegerValue));
+	dValue->dValue.type = IntegerType;
+	dValue->value = value;
+	addValueToDictionary(dict, key, (DictValue*) dValue);
+}
+
+void addValueToDictionary(Dictionary* dict, const char* key, DictValue* value) {
+	value->key = (char*) malloc(sizeof(char) * (strlen(key) + 1));
+	strcpy(value->key, key);
+	value->next = dict->values;
+	value->prev = NULL;
+	dict->values = value;
+}
+

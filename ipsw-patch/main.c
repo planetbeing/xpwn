@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
 	char use39 = FALSE;
 	char use46 = FALSE;
 	char doBootNeuter = FALSE;
+	char updateBB = TRUE;
 
 	unsigned int key[16];
 	unsigned int iv[16];
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
 	unsigned int* pIV = NULL;
 
 	if(argc < 3) {
-		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
+		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -105,6 +106,10 @@ int main(int argc, char* argv[]) {
 
 		if(strcmp(argv[i], "-nowipe") == 0) {
 			noWipe = TRUE;
+		}
+
+		if(strcmp(argv[i], "-nobbupdate") == 0) {
+			updateBB = FALSE;
 		}
 
 		if(strcmp(argv[i], "-e") == 0) {
@@ -316,18 +321,19 @@ int main(int argc, char* argv[]) {
 		tarFile->close(tarFile);
 	}
 	
-	if(doBootNeuter) {
-		if(pRamdiskKey) {
-			printf("%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
-				pRamdiskKey, pRamdiskKey[0], pRamdiskKey[1], pRamdiskKey[2], pRamdiskKey[3], pRamdiskKey[4], pRamdiskKey[5], pRamdiskKey[6], pRamdiskKey[7],
-				pRamdiskKey[8], pRamdiskKey[9], pRamdiskKey[10], pRamdiskKey[11], pRamdiskKey[12], pRamdiskKey[13], pRamdiskKey[14], pRamdiskKey[15]);
+	if(pRamdiskKey) {
+		printf("%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
+			pRamdiskKey, pRamdiskKey[0], pRamdiskKey[1], pRamdiskKey[2], pRamdiskKey[3], pRamdiskKey[4], pRamdiskKey[5], pRamdiskKey[6], pRamdiskKey[7],
+			pRamdiskKey[8], pRamdiskKey[9], pRamdiskKey[10], pRamdiskKey[11], pRamdiskKey[12], pRamdiskKey[13], pRamdiskKey[14], pRamdiskKey[15]);
 
-			ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
-		} else {
-			printf("unencrypted ramdisk\n");
-			ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW)));
-		}
-		ramdiskVolume = openVolume(ramdiskFS);
+		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
+	} else {
+		printf("unencrypted ramdisk\n");
+		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW)));
+	}
+	ramdiskVolume = openVolume(ramdiskFS);
+
+	if(doBootNeuter) {
 		firmwarePatches = (Dictionary*)getValueByKey(info, "BasebandPatches");
 		if(firmwarePatches != NULL) {
 			patchDict = (Dictionary*) firmwarePatches->values;
@@ -362,11 +368,13 @@ int main(int argc, char* argv[]) {
 				patchDict = (Dictionary*) patchDict->dValue.next;
 			}
 		}
-		closeVolume(ramdiskVolume);
-		CLOSE(ramdiskFS);
 	
 		fixupBootNeuterArgs(rootVolume, unlockBaseband, selfDestruct, use39, use46);
 	}
+
+	createRestoreOptions(ramdiskVolume, 500, updateBB);
+	closeVolume(ramdiskVolume);
+	CLOSE(ramdiskFS);
 
 	closeVolume(rootVolume);
 	CLOSE(rootFS);

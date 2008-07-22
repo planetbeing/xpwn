@@ -233,6 +233,29 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 	printf("success\n"); fflush(stdout);
 }
 
+void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBaseband) {
+	const char optionsPlist[] = "/usr/local/share/restore/options.plist";
+	AbstractFile* plistFile;
+	Dictionary* info;
+	char* plist;
+
+	info = createRoot("<dict></dict>");
+	addBoolToDictionary(info, "WaitForStorageDevice", TRUE);
+	addBoolToDictionary(info, "CreateFilesystemPartitions", TRUE);
+	addIntegerToDictionary(info, "SystemPartitionSize", SystemPartitionSize);
+	addBoolToDictionary(info, "FlashNOR", TRUE);
+	addBoolToDictionary(info, "UpdateBaseband", UpdateBaseband);
+	addBoolToDictionary(info, "ForceBasebandUpdate", FALSE);
+
+	plist = getXmlFromRoot(info);
+	releaseDictionary(info);
+	
+	plistFile = createAbstractFileFromMemory((void**)&plist, sizeof(char) * strlen(plist));
+
+	add_hfs(volume, plistFile, optionsPlist);
+	free(plist);
+}
+
 void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct, char use39, char use46) {
 	const char bootNeuterPlist[] = "/System/Library/LaunchDaemons/com.devteam.bootneuter.auto.plist";
 	AbstractFile* plistFile;

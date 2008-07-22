@@ -62,6 +62,9 @@ extern "C" {
 	DictValue* getValueByKey(Dictionary* myself, const char* key);
 	void addStringToArray(ArrayValue* array, char* str);
 	void removeKey(Dictionary* dict, char* key);
+	void addBoolToDictionary(Dictionary* dict, const char* key, int value);
+	void addIntegerToDictionary(Dictionary* dict, const char* key, int value);
+	void addValueToDictionary(Dictionary* dict, const char* key, DictValue* value);
 #ifdef __cplusplus
 }
 #endif
