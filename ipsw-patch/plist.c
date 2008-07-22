@@ -430,6 +430,7 @@ Dictionary* createRoot(char* xml) {
 	dict->dValue.next = NULL;
 	dict->dValue.key = malloc(sizeof("root"));
 	strcpy(dict->dValue.key, "root");
+	dict->values = NULL;
 	createDictionary(dict, tag->xml);
 	releaseTag(tag);
 	return dict;
