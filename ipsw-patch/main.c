@@ -326,12 +326,14 @@ int main(int argc, char* argv[]) {
 			pRamdiskKey, pRamdiskKey[0], pRamdiskKey[1], pRamdiskKey[2], pRamdiskKey[3], pRamdiskKey[4], pRamdiskKey[5], pRamdiskKey[6], pRamdiskKey[7],
 			pRamdiskKey[8], pRamdiskKey[9], pRamdiskKey[10], pRamdiskKey[11], pRamdiskKey[12], pRamdiskKey[13], pRamdiskKey[14], pRamdiskKey[15]);
 
-		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
+		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputStateForOverwrite(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
 	} else {
 		printf("unencrypted ramdisk\n");
-		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputState(&outputState, ramdiskFSPathInIPSW)));
+		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputStateForOverwrite(&outputState, ramdiskFSPathInIPSW)));
 	}
 	ramdiskVolume = openVolume(ramdiskFS);
+	printf("growing ramdisk: %d -> %d\n", ramdiskVolume->volumeHeader->totalBlocks * ramdiskVolume->volumeHeader->blockSize, (ramdiskVolume->volumeHeader->totalBlocks + 4) * ramdiskVolume->volumeHeader->blockSize);
+	grow_hfs(ramdiskVolume, (ramdiskVolume->volumeHeader->totalBlocks + 4) * ramdiskVolume->volumeHeader->blockSize);
 
 	if(doBootNeuter) {
 		firmwarePatches = (Dictionary*)getValueByKey(info, "BasebandPatches");

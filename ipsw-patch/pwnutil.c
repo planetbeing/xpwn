@@ -239,17 +239,18 @@ void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBas
 	Dictionary* info;
 	char* plist;
 
+	printf("start create restore options\n");
+
 	info = createRoot("<dict></dict>");
-	addBoolToDictionary(info, "WaitForStorageDevice", TRUE);
 	addBoolToDictionary(info, "CreateFilesystemPartitions", TRUE);
 	addIntegerToDictionary(info, "SystemPartitionSize", SystemPartitionSize);
-	addBoolToDictionary(info, "FlashNOR", TRUE);
 	addBoolToDictionary(info, "UpdateBaseband", UpdateBaseband);
-	addBoolToDictionary(info, "ForceBasebandUpdate", FALSE);
 
 	plist = getXmlFromRoot(info);
 	releaseDictionary(info);
 	
+	printf("%s", plist);
+
 	plistFile = createAbstractFileFromMemory((void**)&plist, sizeof(char) * strlen(plist));
 
 	add_hfs(volume, plistFile, optionsPlist);

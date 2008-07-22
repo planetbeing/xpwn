@@ -76,7 +76,8 @@ after using xpwn (or any other pwnage-based utility). This is important, since
 that's how the jailbreak actually occurs.
 
 	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nowipe] \
-		[-r <recoveryimage.png>] [-e "<action to exclude>"] \
+		[-nobbupdate] [-r <recoveryimage.png>] \
+		[-e "<action to exclude>"] \
 		[[-unlock] [-use39] [-use46] [-cleanup] \
 		-3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] \
 		<package1.tar> <package2.tar>...
@@ -93,6 +94,8 @@ The most common use of the '-e' flag is to disable automatic activation, i.e.
 
 -nowipe disables Apple's wiping of the NAND (user data), before proceeding
 with the restore. This allows the restore to happen much, much more quickly.
+
+-nobbupdate tells the restore ramdisk not to attempt to upgrade your baseband.
 
 -unlock, -use39, -use46, -cleanup, -3, and -4 are valid only if you merge the
 BootNeuter package. These provide instructions to BootNeuter (which provides

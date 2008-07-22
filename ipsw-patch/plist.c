@@ -319,7 +319,7 @@ char* getXmlFromArrayValue(ArrayValue* myself, int tabsCount) {
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
 		} else if(curValue->type == IntegerType) {
-			sprintf(buffer, "%s\t<string>%d</string>\n", tabs, ((IntegerValue*)curValue)->value);
+			sprintf(buffer, "%s\t<integer>%d</integer>\n", tabs, ((IntegerValue*)curValue)->value);
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
@@ -388,7 +388,7 @@ char* getXmlFromDictionary(Dictionary* myself, int tabsCount) {
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
 		} else if(curValue->type == IntegerType) {
-			sprintf(buffer, "%s\t<string>%d</string>\n", tabs, ((IntegerValue*)curValue)->value);
+			sprintf(buffer, "%s\t<integer>%d</integer>\n", tabs, ((IntegerValue*)curValue)->value);
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
@@ -513,8 +513,20 @@ void addIntegerToDictionary(Dictionary* dict, const char* key, int value) {
 void addValueToDictionary(Dictionary* dict, const char* key, DictValue* value) {
 	value->key = (char*) malloc(sizeof(char) * (strlen(key) + 1));
 	strcpy(value->key, key);
-	value->next = dict->values;
-	value->prev = NULL;
-	dict->values = value;
+	DictValue* curValue = dict->values;
+	DictValue* prevValue = NULL;
+
+	while(curValue != NULL) {
+		prevValue = curValue;
+		curValue = curValue->next;
+	}
+
+	value->next = NULL;
+	value->prev = prevValue;
+
+	if(prevValue == NULL)
+		dict->values = value;
+	else
+		prevValue->next = value;
 }
 
