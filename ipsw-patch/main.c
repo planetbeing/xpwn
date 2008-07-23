@@ -12,8 +12,47 @@
 #include <hfs/hfslib.h>
 #include <dmg/dmglib.h>
 #include <xpwn/pwnutil.h>
+#include <stdio.h>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 char endianness;
+
+static char* tmpFile = NULL;
+
+static AbstractFile* openRoot(void** buffer, size_t* rootSize) {
+	static char tmpFileBuffer[512];
+
+	if((*buffer) != NULL) {
+		return createAbstractFileFromMemoryFile(buffer, rootSize);
+	} else {
+		if(tmpFile == NULL) {
+#ifdef WIN32
+			char tmpFilePath[512];
+			GetTempPath(512, tmpFilePath);
+			GetTempFileName(tmpFilePath, "root", 0, tmpFile);
+#else
+			strcpy(tmpFileBuffer, "/tmp/rootfs");
+#endif
+			tmpFile = tmpFileBuffer;
+			FILE* tFile = fopen(tmpFile, "w");
+			fclose(tFile);
+		}
+		return createAbstractFileFromFile(fopen(tmpFile, "r+"));
+	}
+}
+
+void closeRoot(void* buffer) {
+	if(buffer != NULL) {
+		free(buffer);
+	}
+
+	if(tmpFile != NULL) {
+		unlink(tmpFile);
+	}
+}
 
 int main(int argc, char* argv[]) {
 	init_libxpwn();
@@ -270,18 +309,17 @@ int main(int argc, char* argv[]) {
 	rootSize -= 47438 * 512;
 	buffer = malloc(rootSize);
 
-	XLOG(0, "allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
+	XLOG(2, "allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
 	if(buffer == NULL) {
-		XLOG(0, "out of memory. please close some applications and try again.\n");
-		return 1; 
+		XLOG(2, "cannot allocate rootfs. using filesystem backed temporary storage instead\n");
 	}
 
 	extractDmg(
 		createAbstractFileFromFileVault(getFileFromOutputState(&outputState, rootFSPathInIPSW), ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value),
-		createAbstractFileFromMemoryFile((void**)&buffer, &rootSize), -1);
+		openRoot((void**)&buffer, &rootSize), -1);
 
 	
-	rootFS = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &rootSize));
+	rootFS = IOFuncFromAbstractFile(openRoot((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
 	XLOG(0, "Growing root: %ld\n", (long) rootSize); fflush(stdout);
 	grow_hfs(rootVolume, rootSize);
@@ -377,9 +415,9 @@ int main(int argc, char* argv[]) {
 	closeVolume(rootVolume);
 	CLOSE(rootFS);
 
-	buildDmg(createAbstractFileFromMemoryFile((void**)&buffer, &rootSize), getFileFromOutputStateForOverwrite(&outputState, rootFSPathInIPSW));
-	free(buffer);
+	buildDmg(openRoot((void**)&buffer, &rootSize), getFileFromOutputStateForOverwrite(&outputState, rootFSPathInIPSW));
 
+	closeRoot(buffer);
 
 	writeOutput(&outputState, outputIPSW);
 	
