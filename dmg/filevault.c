@@ -229,7 +229,9 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 	}
 
 	for(i = 0; i < 20; i++) {
-		sscanf(&(key[(16 * 2) + i * 2]), "%02hhx", &(hmacKey[i]));
+		unsigned int curByte;
+		sscanf(&(key[(16 * 2) + i * 2]), "%02x", &curByte);
+		hmacKey[i] = curByte;
 	}
 
 	HMAC_CTX_init(&(info->hmacCTX));

@@ -27,7 +27,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 	DIR* dir;
 	struct dirent* ent;
 	StringValue* plistSHA1String;
-	unsigned char plistHash[20];
+	unsigned int plistHash[20];
 	int i;
 
 	*bundlePath = NULL;
@@ -48,7 +48,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 
 	fclose(inputIPSWFile);
 
-	printf("Matching IPSW... (%02hhx%02hhx%02hhx%02hhx...)\n", hash[0], hash[1], hash[2], hash[3]);
+	printf("Matching IPSW... (%02x%02x%02x%02x...)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
@@ -75,7 +75,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 
 			plistSHA1String = (StringValue*)getValueByKey(info, "SHA1");
 			if(plistSHA1String) {
-				sscanf(plistSHA1String->value, "%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx",
+				sscanf(plistSHA1String->value, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
 					&plistHash[0], &plistHash[1], &plistHash[2], &plistHash[3], &plistHash[4],
 					&plistHash[5], &plistHash[6], &plistHash[7], &plistHash[8], &plistHash[9],
 					&plistHash[10], &plistHash[11], &plistHash[12], &plistHash[13], &plistHash[14],
@@ -135,14 +135,6 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	patchFile = createAbstractFileFromFile(fopen(patchPath, "rb"));
 	
 	bufferSize = 0;
-
-	if(key != NULL) {
-		printf("\n%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
-			key, key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15]);
-
-		printf("%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
-			iv[0], iv[1], iv[2], iv[3], iv[4], iv[5], iv[6], iv[7], iv[8], iv[9], iv[10], iv[11], iv[12], iv[13], iv[14], iv[15]);
-	}
 
 	if(key != NULL) {
 		printf("encrypted input... ");

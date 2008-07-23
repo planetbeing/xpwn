@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
 		
 		patchDict = (Dictionary*) patchDict->dValue.next;
 	}
-	
+
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
 		
@@ -275,6 +275,12 @@ int main(int argc, char* argv[]) {
 	rootSize *= 1024 * 1024;
 	rootSize -= 47438 * 512;
 	buffer = malloc(rootSize);
+
+	printf("allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
+	if(buffer == NULL) {
+		fprintf(stderr, "out of memory. please close some applications and try again.\n");
+		return 1; 
+	}
 
 	extractDmg(
 		createAbstractFileFromFileVault(getFileFromOutputState(&outputState, rootFSPathInIPSW), ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value),
@@ -322,10 +328,6 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if(pRamdiskKey) {
-		printf("%p: %02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx\n",
-			pRamdiskKey, pRamdiskKey[0], pRamdiskKey[1], pRamdiskKey[2], pRamdiskKey[3], pRamdiskKey[4], pRamdiskKey[5], pRamdiskKey[6], pRamdiskKey[7],
-			pRamdiskKey[8], pRamdiskKey[9], pRamdiskKey[10], pRamdiskKey[11], pRamdiskKey[12], pRamdiskKey[13], pRamdiskKey[14], pRamdiskKey[15]);
-
 		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputStateForOverwrite(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
 	} else {
 		printf("unencrypted ramdisk\n");
