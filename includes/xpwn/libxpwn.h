@@ -18,10 +18,11 @@ extern LogMessageCallback logCallback;
 #ifdef __cplusplus
 extern "C" {
 #endif
-        void init_libxpwn();
-        void libxpwn_log(LogMessageCallback callback);
-        void Log(int level, const char* file, unsigned int line, const char* function, const char* format, ...);
-        void TestByteOrder();
+	void init_libxpwn();
+	void libxpwn_log(LogMessageCallback callback);
+	void libxpwn_loglevel(int logLevel);
+	void Log(int level, const char* file, unsigned int line, const char* function, const char* format, ...);
+	void TestByteOrder();
 #ifdef __cplusplus
 }
 #endif
