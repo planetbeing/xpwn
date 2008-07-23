@@ -90,7 +90,7 @@
 		<key>RecoveryMode</key>
 		<dict>
 			<key>File</key>
-			<string>Firmware/all_flash/all_flash.m68ap.production/recoverymode.s5l8900x.img3</string>
+			<string>Firmware/all_flash/all_flash.n45ap.production/recoverymode.s5l8900x.img3</string>
 			<key>IV</key>
 			<string>1007fd4b6d504082573ae48d96fa88e7</string>
 			<key>Key</key>
