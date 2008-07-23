@@ -3,6 +3,7 @@
 #include <string.h>
 #include "common.h"
 #include "abstractfile.h"
+#include <xpwn/libxpwn.h>
 #include <xpwn/ibootim.h>
 #include <xpwn/lzss.h>
 #include <png.h>
@@ -95,14 +96,14 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 	flipIBootIMHeader(&(info->header));
 	if(strcmp(info->header.signature, IBOOTIM_SIGNATURE) != 0) {
 		free(info);
-		fprintf(stderr, "createAbstractFileFromIBootIM: signature does not match\n");
+		XLOG(1, "createAbstractFileFromIBootIM: signature does not match\n");
 		return NULL;
 	}
 	
 	info->compLength = file->getLength(file) - sizeof(info->header);
 	if(info->header.compression_type != IBOOTIM_LZSS_TYPE) {
 		//free(info);
-		fprintf(stderr, "createAbstractFileFromIBootIM: (warning) unsupported compression type: %x\n", info->header.compression_type);
+		XLOG(1, "createAbstractFileFromIBootIM: (warning) unsupported compression type: %x\n", info->header.compression_type);
 		//return NULL;
 	}
 
@@ -114,7 +115,7 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 		info->length = 2 * info->header.width * info->header.height;
 		depth = 2;
 	} else {
-		fprintf(stderr, "createAbstractFileFromIBootIM: unsupported color type: %x\n", info->header.format);
+		XLOG(1, "createAbstractFileFromIBootIM: unsupported color type: %x\n", info->header.format);
 		free(info);
 		return NULL;
 	}
@@ -125,12 +126,12 @@ AbstractFile* createAbstractFileFromIBootIM(AbstractFile* file) {
 
 	int length = decompress_lzss(info->buffer, compressed, info->compLength);
 	if(length > info->length) {
-		fprintf(stderr, "createAbstractFileFromIBootIM: decompression error\n");
+		XLOG(1, "createAbstractFileFromIBootIM: decompression error\n");
 		free(compressed);
 		free(info);
 		return NULL;
 	} else if(length < info->length) {
-		fprintf(stderr, "createAbstractFileFromIBootIM: (warning) uncompressed data shorter than expected: %d\n", length);
+		XLOG(1, "createAbstractFileFromIBootIM: (warning) uncompressed data shorter than expected: %d\n", length);
 		info->length = length;
 	}
 
@@ -189,7 +190,7 @@ void pngRead(png_structp png_ptr, png_bytep data, png_size_t length) {
 }
 
 void pngError(png_structp png_ptr, png_const_charp error_msg) {
-	printf("error: %s\n", error_msg);
+	XLOG(0, "error: %s\n", error_msg);
 	exit(0);
 }
 
@@ -205,7 +206,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 
 	png->read(png, header, 8);
 	if(png_sig_cmp(header, 0, 8) != 0) {
-		printf("error: not a valid png file\n");
+		XLOG(0, "error: not a valid png file\n");
 		return NULL;
 	}
 	png->seek(png, 0);
@@ -231,7 +232,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 
 	if (setjmp(png_jmpbuf(png_ptr)))
 	{
-		printf("error reading png\n");
+		XLOG(0, "error reading png\n");
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		free(buffer);
 		return NULL;
@@ -242,15 +243,15 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	png_read_info(png_ptr, info_ptr);
 	
 	if(info_ptr->bit_depth > 8) {
-		printf("warning: bit depth per channel is greater than 8 (%d). Attempting to strip, but image quality will be degraded.\n", info_ptr->bit_depth);
+		XLOG(0, "warning: bit depth per channel is greater than 8 (%d). Attempting to strip, but image quality will be degraded.\n", info_ptr->bit_depth);
 	}
 	
 	if(info_ptr->color_type == PNG_COLOR_TYPE_GRAY || info_ptr->color_type == PNG_COLOR_TYPE_RGB) {
-		printf("notice: attempting to add dummy transparency channel\n");
+		XLOG(0, "notice: attempting to add dummy transparency channel\n");
 	}
 	
 	if(info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
-		printf("notice: attempting to expand palette into full rgb\n");
+		XLOG(0, "notice: attempting to expand palette into full rgb\n");
 	}
 	
 	png_set_expand(png_ptr);
@@ -263,24 +264,24 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	
 
 	if(info_ptr->width > 320 || info_ptr->height > 480) {
-		printf("error: dimensions out of range, must be within 320x480, not %lux%lu\n", info_ptr->width, info_ptr->height);
+		XLOG(0, "error: dimensions out of range, must be within 320x480, not %lux%lu\n", info_ptr->width, info_ptr->height);
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		return NULL;
 	}
 
 	if(info_ptr->bit_depth != 8) {
-		printf("error: bit depth per channel must be 8 not %d!\n", info_ptr->bit_depth);
+		XLOG(0, "error: bit depth per channel must be 8 not %d!\n", info_ptr->bit_depth);
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		return NULL;
 	}
 
 	if(info_ptr->color_type != PNG_COLOR_TYPE_GRAY_ALPHA && info_ptr->color_type != PNG_COLOR_TYPE_RGB_ALPHA) {
-		printf("error: incorrect color type, must be greyscale with alpha, or rgb with alpha\n");
+		XLOG(0, "error: incorrect color type, must be greyscale with alpha, or rgb with alpha\n");
 		if(info_ptr->color_type == PNG_COLOR_TYPE_GRAY || info_ptr->color_type == PNG_COLOR_TYPE_RGB) {
-			printf("It appears you're missing an alpha channel. Add transparency to your image\n");
+			XLOG(0, "It appears you're missing an alpha channel. Add transparency to your image\n");
 		}
 		if(info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
-			printf("This PNG is saved with the palette color type rather than ARGB.\n");
+			XLOG(0, "This PNG is saved with the palette color type rather than ARGB.\n");
 		}
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 

@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include "common.h"
+#include <xpwn/libxpwn.h>
 #include <xpwn/nor_files.h>
 #include <dmg/dmg.h>
 #include <dmg/filevault.h>
@@ -14,15 +15,8 @@
 
 char endianness;
 
-void TestByteOrder()
-{
-	short int word = 0x0001;
-	char *byte = (char *) &word;
-	endianness = byte[0] ? IS_LITTLE_ENDIAN : IS_BIG_ENDIAN;
-}
-
 int main(int argc, char* argv[]) {
-	TestByteOrder();
+	init_libxpwn();
 	
 	Dictionary* info;
 	Dictionary* firmwarePatches;
@@ -86,7 +80,7 @@ int main(int argc, char* argv[]) {
 	unsigned int* pIV = NULL;
 
 	if(argc < 3) {
-		printf("usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
+		XLOG(0, "usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -94,7 +88,7 @@ int main(int argc, char* argv[]) {
 
 	info = parseIPSW(argv[1], bundleRoot, &bundlePath, &outputState);
 	if(info == NULL) {
-		printf("error: Could not load IPSW\n");
+		XLOG(0, "error: Could not load IPSW\n");
 		exit(1);
 	}
 
@@ -130,7 +124,7 @@ int main(int argc, char* argv[]) {
 		
 		if(strcmp(argv[i], "-use39") == 0) {
 			if(use46) {
-				printf("error: select only one of -use39 and -use46\n");
+				XLOG(0, "error: select only one of -use39 and -use46\n");
 				exit(1);
 			}
 			use39 = TRUE;
@@ -139,7 +133,7 @@ int main(int argc, char* argv[]) {
 		
 		if(strcmp(argv[i], "-use46") == 0) {
 			if(use39) {
-				printf("error: select only one of -use39 and -use46\n");
+				XLOG(0, "error: select only one of -use39 and -use46\n");
 				exit(1);
 			}
 			use46 = TRUE;
@@ -149,7 +143,7 @@ int main(int argc, char* argv[]) {
 		if(strcmp(argv[i], "-b") == 0) {
 			applelogo = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
 			if(!applelogo) {
-				printf("cannot open %s\n", argv[i + 1]);
+				XLOG(0, "cannot open %s\n", argv[i + 1]);
 				exit(1);
 			}
 			i++;
@@ -159,7 +153,7 @@ int main(int argc, char* argv[]) {
 		if(strcmp(argv[i], "-r") == 0) {
 			recoverymode = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
 			if(!recoverymode) {
-				printf("cannot open %s\n", argv[i + 1]);
+				XLOG(0, "cannot open %s\n", argv[i + 1]);
 				exit(1);
 			}
 			i++;
@@ -169,7 +163,7 @@ int main(int argc, char* argv[]) {
 		if(strcmp(argv[i], "-3") == 0) {
 			bootloader39 = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
 			if(!bootloader39) {
-				printf("cannot open %s\n", argv[i + 1]);
+				XLOG(0, "cannot open %s\n", argv[i + 1]);
 				exit(1);
 			}
 			i++;
@@ -179,7 +173,7 @@ int main(int argc, char* argv[]) {
 		if(strcmp(argv[i], "-4") == 0) {
 			bootloader46 = createAbstractFileFromFile(fopen(argv[i + 1], "rb"));
 			if(!bootloader46) {
-				printf("cannot open %s\n", argv[i + 1]);
+				XLOG(0, "cannot open %s\n", argv[i + 1]);
 				exit(1);
 			}
 			i++;
@@ -189,7 +183,7 @@ int main(int argc, char* argv[]) {
 	
 	if(use39 || use46 || unlockBaseband || selfDestruct || bootloader39 || bootloader46) {
 		if(!(bootloader39) || !(bootloader46)) {
-			printf("error: you must specify both bootloader files.\n");
+			XLOG(0, "error: you must specify both bootloader files.\n");
 			exit(1);
 		} else {
 			doBootNeuter = TRUE;
@@ -240,7 +234,7 @@ int main(int argc, char* argv[]) {
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch2");
 		if(patchValue) {
 			if(noWipe) {
-				printf("%s: ", patchDict->dValue.key); fflush(stdout);
+				XLOG(0, "%s: ", patchDict->dValue.key); fflush(stdout);
 				doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 				patchDict = (Dictionary*) patchDict->dValue.next;
 				continue; /* skip over the normal Patch */
@@ -249,18 +243,18 @@ int main(int argc, char* argv[]) {
 
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
 		if(patchValue) {
-			printf("%s: ", patchDict->dValue.key); fflush(stdout);
+			XLOG(0, "%s: ", patchDict->dValue.key); fflush(stdout);
 			doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
 		}
 		
 		if(strcmp(patchDict->dValue.key, "AppleLogo") == 0 && applelogo) {
-			printf("replacing %s\n", fileValue->value); fflush(stdout);
+			XLOG(0, "replacing %s\n", fileValue->value); fflush(stdout);
 			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), pKey, pIV, applelogo, &imageSize)) != NULL, "failed to use new image");
 			addToOutput(&outputState, fileValue->value, imageBuffer, imageSize);
 		}
 
 		if(strcmp(patchDict->dValue.key, "RecoveryMode") == 0 && recoverymode) {
-			printf("replacing %s\n", fileValue->value); fflush(stdout);
+			XLOG(0, "replacing %s\n", fileValue->value); fflush(stdout);
 			ASSERT((imageBuffer = replaceBootImage(getFileFromOutputState(&outputState, fileValue->value), pKey, pIV, recoverymode, &imageSize)) != NULL, "failed to use new image");
 			addToOutput(&outputState, fileValue->value, imageBuffer, imageSize);
 		}
@@ -276,9 +270,9 @@ int main(int argc, char* argv[]) {
 	rootSize -= 47438 * 512;
 	buffer = malloc(rootSize);
 
-	printf("allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
+	XLOG(0, "allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
 	if(buffer == NULL) {
-		fprintf(stderr, "out of memory. please close some applications and try again.\n");
+		XLOG(0, "out of memory. please close some applications and try again.\n");
 		return 1; 
 	}
 
@@ -289,7 +283,7 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	printf("Growing root: %ld\n", (long) rootSize); fflush(stdout);
+	XLOG(0, "Growing root: %ld\n", (long) rootSize); fflush(stdout);
 	grow_hfs(rootVolume, rootSize);
 	
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
@@ -302,7 +296,7 @@ int main(int argc, char* argv[]) {
 			actionValue = (StringValue*) getValueByKey(patchDict, "Action"); 
 			if(strcmp(actionValue->value, "ReplaceKernel") == 0) {
 				pathValue = (StringValue*) getValueByKey(patchDict, "Path");
-				printf("replacing kernel... %s -> %s\n", fileValue->value, pathValue->value); fflush(stdout);
+				XLOG(0, "replacing kernel... %s -> %s\n", fileValue->value, pathValue->value); fflush(stdout);
 				add_hfs(rootVolume, getFileFromOutputState(&outputState, fileValue->value), pathValue->value);
 			} if(strcmp(actionValue->value, "Patch") == 0) {
 				patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
@@ -311,7 +305,7 @@ int main(int argc, char* argv[]) {
 				strcat(patchPath, "/");
 				strcat(patchPath, patchValue->value);
 				
-				printf("patching %s (%s)... ", fileValue->value, patchPath);
+				XLOG(0, "patching %s (%s)... ", fileValue->value, patchPath);
 				doPatchInPlace(rootVolume, fileValue->value, patchPath);
 				free(patchPath);
 			}
@@ -321,7 +315,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	for(; mergePaths < argc; mergePaths++) {
-		printf("merging %s\n", argv[mergePaths]);
+		XLOG(0, "merging %s\n", argv[mergePaths]);
 		AbstractFile* tarFile = createAbstractFileFromFile(fopen(argv[mergePaths], "rb"));
 		hfs_untar(rootVolume, tarFile);
 		tarFile->close(tarFile);
@@ -330,11 +324,11 @@ int main(int argc, char* argv[]) {
 	if(pRamdiskKey) {
 		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile2(getFileFromOutputStateForOverwrite(&outputState, ramdiskFSPathInIPSW), pRamdiskKey, pRamdiskIV));
 	} else {
-		printf("unencrypted ramdisk\n");
+		XLOG(0, "unencrypted ramdisk\n");
 		ramdiskFS = IOFuncFromAbstractFile(openAbstractFile(getFileFromOutputStateForOverwrite(&outputState, ramdiskFSPathInIPSW)));
 	}
 	ramdiskVolume = openVolume(ramdiskFS);
-	printf("growing ramdisk: %d -> %d\n", ramdiskVolume->volumeHeader->totalBlocks * ramdiskVolume->volumeHeader->blockSize, (ramdiskVolume->volumeHeader->totalBlocks + 4) * ramdiskVolume->volumeHeader->blockSize);
+	XLOG(0, "growing ramdisk: %d -> %d\n", ramdiskVolume->volumeHeader->totalBlocks * ramdiskVolume->volumeHeader->blockSize, (ramdiskVolume->volumeHeader->totalBlocks + 4) * ramdiskVolume->volumeHeader->blockSize);
 	grow_hfs(ramdiskVolume, (ramdiskVolume->volumeHeader->totalBlocks + 4) * ramdiskVolume->volumeHeader->blockSize);
 
 	if(doBootNeuter) {
@@ -346,7 +340,7 @@ int main(int argc, char* argv[]) {
 
 				fileValue = (StringValue*) getValueByKey(patchDict, "File");		
 				if(fileValue) {
-					printf("copying %s -> %s... ", fileValue->value, pathValue->value); fflush(stdout);
+					XLOG(0, "copying %s -> %s... ", fileValue->value, pathValue->value); fflush(stdout);
 					if(copyAcrossVolumes(ramdiskVolume, rootVolume, fileValue->value, pathValue->value)) {
 						patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
 						if(patchValue) {
@@ -354,7 +348,7 @@ int main(int argc, char* argv[]) {
 							strcpy(patchPath, bundlePath);
 							strcat(patchPath, "/");
 							strcat(patchPath, patchValue->value);
-							printf("patching %s (%s)... ", pathValue->value, patchPath); fflush(stdout);
+							XLOG(0, "patching %s (%s)... ", pathValue->value, patchPath); fflush(stdout);
 							doPatchInPlace(rootVolume, pathValue->value, patchPath);
 							free(patchPath);
 						}

@@ -13,7 +13,6 @@ extern "C" {
 	AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, const unsigned int* iv);
 	AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing);
 	AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const unsigned int* key, const unsigned int* iv, AbstractFile* certificate);
-	void init_libxpwn();
 #ifdef __cplusplus
 }
 #endif

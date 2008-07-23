@@ -3,6 +3,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <openssl/sha.h>
+#include <xpwn/libxpwn.h>
 #include <xpwn/plist.h>
 #include <xpwn/outputstate.h>
 #include <xpwn/pwnutil.h>
@@ -37,7 +38,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 		return NULL;
 	}
 
-	printf("Hashing IPSW...\n");
+	XLOG(0, "Hashing IPSW...\n");
 
 	SHA1_Init(&sha1_ctx);
 	while(!feof(inputIPSWFile)) {
@@ -48,7 +49,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 
 	fclose(inputIPSWFile);
 
-	printf("Matching IPSW... (%02x%02x%02x%02x...)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
+	XLOG(0, "Matching IPSW... (%02x%02x%02x%02x...)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
@@ -64,7 +65,7 @@ Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bund
 		strcpy(infoPath, bundleRoot);
 		strcat(infoPath, ent->d_name);
 		strcat(infoPath, "/Info.plist");
-		printf("checking: %s\n", infoPath);
+		XLOG(0, "checking: %s\n", infoPath);
 
 		if((plistFile = createAbstractFileFromFile(fopen(infoPath, "rb"))) != NULL) {
 			plist = (char*) malloc(plistFile->getLength(plistFile));
@@ -130,48 +131,48 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	strcat(patchPath, "/");
 	strcat(patchPath, patchValue->value);
 	
-	printf("%s (%s)... ", fileValue->value, patchPath); fflush(stdout);
+	XLOG(0, "%s (%s)... ", fileValue->value, patchPath); fflush(stdout);
 	
 	patchFile = createAbstractFileFromFile(fopen(patchPath, "rb"));
 	
 	bufferSize = 0;
 
 	if(key != NULL) {
-		printf("encrypted input... ");
+		XLOG(0, "encrypted input... ");
 		out = duplicateAbstractFile2(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), key, iv, NULL);
 	} else {
 		out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
 	}
 
 	if(key != NULL) {
-		printf("encrypted output... ");
+		XLOG(0, "encrypted output... ");
 		file = openAbstractFile2(getFileFromOutputState(state, fileValue->value), key, iv);
 	} else {
 		file = openAbstractFile(getFileFromOutputState(state, fileValue->value));
 	}
 	
 	if(!patchFile || !file || !out) {
-		printf("file error\n");
+		XLOG(0, "file error\n");
 		exit(0);
 	}
 
 	if(patch(file, out, patchFile) != 0) {
-		printf("patch failed\n");
+		XLOG(0, "patch failed\n");
 		exit(0);
 	}
 
 	if(strstr(fileValue->value, "WTF.s5l8900xall.RELEASE")) {
-		printf("Exploiting 8900 vulnerability... ;)\n");
+		XLOG(0, "Exploiting 8900 vulnerability... ;)\n");
 		AbstractFile* exploited = createAbstractFileFrom8900(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
 		exploit8900(exploited);
 		exploited->close(exploited);
 	}
 	
-	printf("writing... "); fflush(stdout);
+	XLOG(0, "writing... "); fflush(stdout);
 	
 	addToOutput(state, fileValue->value, buffer, bufferSize);
 
-	printf("success\n"); fflush(stdout);
+	XLOG(0, "success\n"); fflush(stdout);
 
 	free(patchPath);
 
@@ -192,11 +193,11 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 	bufferSize = 0;
 	bufferFile = createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize);
 
-	printf("retrieving..."); fflush(stdout);
+	XLOG(0, "retrieving..."); fflush(stdout);
 	get_hfs(volume, filePath, bufferFile);
 	bufferFile->close(bufferFile);
 	
-	printf("patching..."); fflush(stdout);
+	XLOG(0, "patching..."); fflush(stdout);
 				
 	patchFile = createAbstractFileFromFile(fopen(patchPath, "rb"));
 
@@ -208,21 +209,21 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 	bufferFile = openAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
 	
 	if(!patchFile || !bufferFile || !out) {
-		printf("file error\n");
+		XLOG(0, "file error\n");
 		exit(0);
 	}
 
 	if(patch(bufferFile, out, patchFile) != 0) {
-		printf("patch failed\n");
+		XLOG(0, "patch failed\n");
 		exit(0);
 	}
 	
-	printf("writing... "); fflush(stdout);
+	XLOG(0, "writing... "); fflush(stdout);
 	add_hfs(volume, createAbstractFileFromMemoryFile((void**)&buffer2, &bufferSize2), filePath);
 	free(buffer2);
 	free(buffer);
 
-	printf("success\n"); fflush(stdout);
+	XLOG(0, "success\n"); fflush(stdout);
 }
 
 void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBaseband) {
@@ -231,7 +232,7 @@ void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBas
 	Dictionary* info;
 	char* plist;
 
-	printf("start create restore options\n");
+	XLOG(0, "start create restore options\n");
 
 	info = createRoot("<dict></dict>");
 	addBoolToDictionary(info, "CreateFilesystemPartitions", TRUE);
@@ -241,7 +242,7 @@ void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBas
 	plist = getXmlFromRoot(info);
 	releaseDictionary(info);
 	
-	printf("%s", plist);
+	XLOG(0, "%s", plist);
 
 	plistFile = createAbstractFileFromMemory((void**)&plist, sizeof(char) * strlen(plist));
 
@@ -257,7 +258,7 @@ void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct,
 	size_t bufferSize;
 	ArrayValue* arguments;
 	
-	printf("fixing up BootNeuter arguments...\n");
+	XLOG(0, "fixing up BootNeuter arguments...\n");
 	
 	plist = malloc(1);
 	bufferSize = 0;
