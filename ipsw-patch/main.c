@@ -32,15 +32,15 @@ static AbstractFile* openRoot(void** buffer, size_t* rootSize) {
 #ifdef WIN32
 			char tmpFilePath[512];
 			GetTempPath(512, tmpFilePath);
-			GetTempFileName(tmpFilePath, "root", 0, tmpFile);
+			GetTempFileName(tmpFilePath, "root", 0, tmpFileBuffer);
 #else
 			strcpy(tmpFileBuffer, "/tmp/rootfs");
 #endif
 			tmpFile = tmpFileBuffer;
-			FILE* tFile = fopen(tmpFile, "w");
+			FILE* tFile = fopen(tmpFile, "wb");
 			fclose(tFile);
 		}
-		return createAbstractFileFromFile(fopen(tmpFile, "r+"));
+		return createAbstractFileFromFile(fopen(tmpFile, "r+b"));
 	}
 }
 
@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
 	io_func* rootFS;
 	Volume* rootVolume;
 	size_t rootSize;
+	size_t preferredRootSize = 0;
 	
 	char* ramdiskFSPathInIPSW;
 	unsigned int ramdiskKey[16];
@@ -111,6 +112,7 @@ int main(int argc, char* argv[]) {
 	char use46 = FALSE;
 	char doBootNeuter = FALSE;
 	char updateBB = TRUE;
+	char useMemory = FALSE;
 
 	unsigned int key[16];
 	unsigned int iv[16];
@@ -119,7 +121,7 @@ int main(int argc, char* argv[]) {
 	unsigned int* pIV = NULL;
 
 	if(argc < 3) {
-		XLOG(0, "usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
+		XLOG(0, "usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-s <system partition size>] [-memory] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -137,12 +139,25 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 
+		if(strcmp(argv[i], "-memory") == 0) {
+			useMemory = TRUE;
+			continue;
+		}
+
+		if(strcmp(argv[i], "-s") == 0) {
+			sscanf(argv[i + 1], "%d", &preferredRootSize);
+			i++;
+			continue;
+		}
+
 		if(strcmp(argv[i], "-nowipe") == 0) {
 			noWipe = TRUE;
+			continue;
 		}
 
 		if(strcmp(argv[i], "-nobbupdate") == 0) {
 			updateBB = FALSE;
+			continue;
 		}
 
 		if(strcmp(argv[i], "-e") == 0) {
@@ -303,15 +318,22 @@ int main(int argc, char* argv[]) {
 
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
-		
-	rootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
-	rootSize *= 1024 * 1024;
-	rootSize -= 47438 * 512;
-	buffer = malloc(rootSize);
+	
+	if(preferredRootSize == 0) {	
+		preferredRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
+	}
 
-	XLOG(2, "allocating rootfs: %p %s %s %d\n", buffer, rootFSPathInIPSW, ((StringValue*)getValueByKey(info, "RootFilesystemKey"))->value, rootSize); fflush(stdout);
+	rootSize = preferredRootSize * 1000 * 1000;
+	rootSize -= (rootSize % 512);
+
+	if(useMemory) {
+		buffer = malloc(rootSize);
+	} else {
+		buffer = NULL;
+	}
+
 	if(buffer == NULL) {
-		XLOG(2, "cannot allocate rootfs. using filesystem backed temporary storage instead\n");
+		XLOG(2, "using filesystem backed temporary storage\n");
 	}
 
 	extractDmg(
@@ -408,7 +430,7 @@ int main(int argc, char* argv[]) {
 		fixupBootNeuterArgs(rootVolume, unlockBaseband, selfDestruct, use39, use46);
 	}
 
-	createRestoreOptions(ramdiskVolume, 500, updateBB);
+	createRestoreOptions(ramdiskVolume, preferredRootSize, updateBB);
 	closeVolume(ramdiskVolume);
 	CLOSE(ramdiskFS);
 
