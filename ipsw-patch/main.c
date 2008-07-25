@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
 	Volume* rootVolume;
 	size_t rootSize;
 	size_t preferredRootSize = 0;
+	size_t minimumRootSize = 0;
 	
 	char* ramdiskFSPathInIPSW;
 	unsigned int ramdiskKey[16];
@@ -145,7 +146,11 @@ int main(int argc, char* argv[]) {
 		}
 
 		if(strcmp(argv[i], "-s") == 0) {
-			sscanf(argv[i + 1], "%d", &preferredRootSize);
+			int size;
+			sscanf(argv[i + 1], "%d", &size);
+			preferredRootSize = size;
+			preferredRootSize *= 1000 * 1000;
+			preferredRootSize -= preferredRootSize % 512;
 			i++;
 			continue;
 		}
@@ -318,13 +323,16 @@ int main(int argc, char* argv[]) {
 
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
-	
+
+	minimumRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
+	minimumRootSize *= 1000 * 1000;
+	minimumRootSize -= minimumRootSize % 512;
+
 	if(preferredRootSize == 0) {	
-		preferredRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
+		preferredRootSize = minimumRootSize;
 	}
 
-	rootSize = preferredRootSize * 1000 * 1000;
-	rootSize -= (rootSize % 512);
+	rootSize = preferredRootSize;
 
 	if(useMemory) {
 		buffer = malloc(rootSize);
@@ -343,8 +351,12 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(openRoot((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	XLOG(0, "Growing root: %ld\n", (long) rootSize); fflush(stdout);
-	grow_hfs(rootVolume, rootSize);
+	XLOG(0, "Growing root to minimum: %ld\n", (long) minimumRootSize); fflush(stdout);
+	grow_hfs(rootVolume, minimumRootSize);
+	if(rootSize > minimumRootSize) {
+		XLOG(0, "Growing root: %ld\n", (long) rootSize); fflush(stdout);
+		grow_hfs(rootVolume, rootSize);
+	}
 	
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
 	patchArray = (ArrayValue*) firmwarePatches->values;
