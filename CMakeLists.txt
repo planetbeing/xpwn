@@ -23,6 +23,7 @@ add_subdirectory (hfs)
 add_subdirectory (ipsw-patch)
 add_subdirectory (dfu-util)
 add_subdirectory (xpwn)
+add_subdirectory (idevice)
 
 install(FILES README.markdown DESTINATION . RENAME README.txt)
 install(FILES LICENSE DESTINATION . RENAME LICENSE.txt)
