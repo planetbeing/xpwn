@@ -64,6 +64,9 @@ target_link_libraries(ipsw xpwn)
 add_executable(xpwntool xpwntool.c)
 target_link_libraries(xpwntool xpwn)
 
+add_executable(imagetool imagetool.c)
+target_link_libraries(imagetool xpwn)
+
 IF(WIN32)
 	ADD_EXECUTABLE(itunespwn itunespwn.c)
 	TARGET_LINK_LIBRARIES(itunespwn xpwn gdi32)
