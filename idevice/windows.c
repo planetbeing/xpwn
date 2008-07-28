@@ -8,6 +8,7 @@
 
 #include "idevice.h"
 #include "mobiledevice.h"
+#include <xpwn/libxpwn.h>
 
 #define SHGFP_TYPE_CURRENT 0
 
