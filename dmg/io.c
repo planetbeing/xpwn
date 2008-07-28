@@ -137,6 +137,8 @@ BLKXTable* insertBLKX(AbstractFile* out, AbstractFile* in, uint32_t firstSectorN
 	return blkx;
 }
 
+#define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
+
 void extractBLKX(AbstractFile* in, AbstractFile* out, BLKXTable* blkx) {
 	unsigned char* inBuffer;
 	unsigned char* outBuffer;
@@ -206,8 +208,25 @@ void extractBLKX(AbstractFile* in, AbstractFile* out, BLKXTable* blkx) {
 				ASSERT(inflateEnd(&strm) == Z_OK, "inflateEnd");
 				break;
 			case BLOCK_RAW:
-				ASSERT((have = in->read(in, inBuffer, blkx->runs[i].compLength)) == blkx->runs[i].compLength, "fread");
-				ASSERT(out->write(out, inBuffer, have) == have, "mWrite");
+				if(blkx->runs[i].compLength > bufferSize) {
+					uint64_t left = blkx->runs[i].compLength;
+					void* pageBuffer = malloc(DEFAULT_BUFFER_SIZE);
+					while(left > 0) {
+						size_t thisRead;
+						if(left > DEFAULT_BUFFER_SIZE) {
+							thisRead = DEFAULT_BUFFER_SIZE;
+						} else {
+							thisRead = left;
+						}
+						ASSERT((have = in->read(in, pageBuffer, thisRead)) == thisRead, "fread");
+						ASSERT(out->write(out, pageBuffer, have) == have, "mWrite");
+						left -= have;
+					}
+					free(pageBuffer);
+				} else {
+					ASSERT((have = in->read(in, inBuffer, blkx->runs[i].compLength)) == blkx->runs[i].compLength, "fread");
+					ASSERT(out->write(out, inBuffer, have) == have, "mWrite");
+				}
 				break;
 			case BLOCK_IGNORE:
 				break;
