@@ -41,9 +41,12 @@ void notification(struct am_device_notification_callback_info *info)
 void recovery_connect_callback(am_recovery_device *rdev)
 {
 	XLOG(3, "device connected in recovery mode");
-	XLOG(3, "sendFileToDevice returned: %d", sendFileToDevice(rdev, CFStringCreateWithCString(NULL, bootImagePath, kCFStringEncodingASCII)));
-	XLOG(3, "sendCommandToDevice returned: %d", sendCommandToDevice(rdev, CFSTR("setpicture 0"), 0));
-	XLOG(3, "sendCommandToDevice returned: %d", sendCommandToDevice(rdev, CFSTR("bgcolor 0 0 0"), 0));
+	XLOG(3, "sendCommandToDevice(setenv auto-boot) returned: %d", sendCommandToDevice(rdev, CFSTR("setenv auto-boot true"), 0));
+	XLOG(3, "sendCommandToDevice(saveenv) returned: %d", sendCommandToDevice(rdev, CFSTR("saveenv"), 0));
+	XLOG(3, "sendCommandToDevice(setenv idle-off) returned: %d", sendCommandToDevice(rdev, CFSTR("setenv idle-off false"), 0));
+	XLOG(3, "sendFileToDevice(bootimage) returned: %d", sendFileToDevice(rdev, CFStringCreateWithCString(NULL, bootImagePath, kCFStringEncodingASCII)));
+	XLOG(3, "sendCommandToDevice(setpicture) returned: %d", sendCommandToDevice(rdev, CFSTR("setpicture 0"), 0));
+	XLOG(3, "sendCommandToDevice(bgcolor) returned: %d", sendCommandToDevice(rdev, CFSTR("bgcolor 0 0 0"), 0));
 }
 
 void recovery_disconnect_callback(am_recovery_device *rdev)
