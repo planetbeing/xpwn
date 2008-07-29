@@ -146,6 +146,8 @@ void logCB(const char* Message) {
 
 int main(int argc, char* argv[])
 {
+	struct stat st;
+
 	init_libxpwn();
 	libxpwn_log(logCB);
 	libxpwn_loglevel(0);
@@ -155,10 +157,15 @@ int main(int argc, char* argv[])
 	printf("at this time (use Task Manager, etc. to end them).\n");
 	printf("---------------------------PLEASE READ THIS---------------------------\n\n\n");
 
-	if(argc < 4) {
-		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap> <image-to-display.img3>\n", argv[0]);
+	if(argc < 3) {
+		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap>\n", argv[0]);
 		printf("n82ap = 3G iPhone, m68ap = First-generation iPhone, n45ap = iPod touch\n");
 		return 0;
+	}
+
+	if(stat("restore.img3", &st) < 0) {
+		fprintf(stderr, "missing restore.img3\n");
+		return 1;
 	}
 
 	Stage = 0;
@@ -180,7 +187,6 @@ int main(int argc, char* argv[])
 	AbstractFile* ibssFile = getFileFromOutputState(&data, ibssName);
 	AbstractFile* restoreFile = getFileFromOutputState(&data, "Restore.plist");
 
-	struct stat st;
 	GetTempPath(MAX_PATH, tmpFilePath);
 
 	strcat(tmpFilePath, "/restore");
@@ -258,7 +264,7 @@ int main(int argc, char* argv[])
 	restoreFile->close(restoreFile);
 
 	extractedIPSWPath = tmpFilePath;
-	bootImagePath = argv[3];
+	bootImagePath = "restore.img3";
 	
 
 	fprintf(stdout, "\nGetting iPhone/iPod status...\n");
@@ -304,7 +310,7 @@ connectDevice:
 		fflush(stdout);
 		fgets(responseBuffer, 10, stdin);
 		if(responseBuffer[0] == 'y' || responseBuffer[0] == 'Y') {
-			goto beginDFU;
+			goto isPoweringOn;
 		} else if(responseBuffer[0] == 'n' || responseBuffer[0] == 'N') {
 			fprintf(stdout, "Please connect your iPhone/iPod to your computer\n");
 			fprintf(stdout, "Press enter when you have connected your iPhone/iPod... ");
@@ -350,6 +356,8 @@ turnOffDevice:
 	}
 
 beginDFU:
+	fprintf(stdout, "\n!!! Your device should now be off. If it is not, please make sure it is before proceeding !!!\n\n");
+
 	fprintf(stdout, "Timing is crucial for the following tasks. I will ask you to do the following:\n");
 	fprintf(stdout, "\t1. Press and hold down the power button for five seconds\n");
 	fprintf(stdout, "\t2. Without letting go of the power button, press and hold down the power AND home buttons for ten seconds\n");
