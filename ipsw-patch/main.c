@@ -442,7 +442,7 @@ int main(int argc, char* argv[]) {
 		fixupBootNeuterArgs(rootVolume, unlockBaseband, selfDestruct, use39, use46);
 	}
 
-	createRestoreOptions(ramdiskVolume, preferredRootSize, updateBB);
+	createRestoreOptions(ramdiskVolume, preferredRootSize / 1000 / 1000, updateBB);
 	closeVolume(ramdiskVolume);
 	CLOSE(ramdiskFS);
 

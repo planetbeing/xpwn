@@ -371,8 +371,6 @@ beginDFU:
 	if(responseBuffer[0] != 'y' && responseBuffer[0] != 'Y')
 		goto beginDFU;
 
-	Stage = 2;
-
 	for(countdown = 5; countdown > 0; countdown--) {
 		fprintf(stdout, "Beginning process in %d seconds...\n", countdown);
 		fflush(stdout);
@@ -400,6 +398,8 @@ beginDFU:
 
 	fprintf(stdout, "\n\nRelease the POWER button, DO NOT LET GO OF THE HOME BUTTON (you should now be just holding the home button)... ");
 	fflush(stdout);
+
+	Stage = 2;
 
 	for(countdown = 30; countdown > 0; countdown--) {
 		if(Status != Disconnected)
