@@ -149,8 +149,6 @@ int main(int argc, char* argv[]) {
 			int size;
 			sscanf(argv[i + 1], "%d", &size);
 			preferredRootSize = size;
-			preferredRootSize *= 1000 * 1000;
-			preferredRootSize -= preferredRootSize % 512;
 			i++;
 			continue;
 		}
@@ -324,15 +322,16 @@ int main(int argc, char* argv[]) {
 	fileValue = (StringValue*) getValueByKey(info, "RootFilesystem");
 	rootFSPathInIPSW = fileValue->value;
 
-	minimumRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
-	minimumRootSize *= 1000 * 1000;
+	size_t defaultRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
+	minimumRootSize = defaultRootSize * 1000 * 1000;
 	minimumRootSize -= minimumRootSize % 512;
 
 	if(preferredRootSize == 0) {	
-		preferredRootSize = minimumRootSize;
+		preferredRootSize = defaultRootSize;
 	}
 
-	rootSize = preferredRootSize;
+	rootSize =  preferredRootSize * 1000 * 1000;
+	rootSize -= rootSize % 512;
 
 	if(useMemory) {
 		buffer = malloc(rootSize);
@@ -442,7 +441,7 @@ int main(int argc, char* argv[]) {
 		fixupBootNeuterArgs(rootVolume, unlockBaseband, selfDestruct, use39, use46);
 	}
 
-	createRestoreOptions(ramdiskVolume, preferredRootSize / 1000 / 1000, updateBB);
+	createRestoreOptions(ramdiskVolume, preferredRootSize, updateBB);
 	closeVolume(ramdiskVolume);
 	CLOSE(ramdiskFS);
 
