@@ -358,12 +358,13 @@ turnOffDevice:
 beginDFU:
 	fprintf(stdout, "\n!!! Your device should now be off. If it is not, please make sure it is before proceeding !!!\n\n");
 
-	fprintf(stdout, "Timing is crucial for the following tasks. I will ask you to do the following:\n");
+	fprintf(stdout, "Timing is crucial for the following tasks. I will ask you to do the following (DON'T START YET):\n");
 	fprintf(stdout, "\t1. Press and hold down the power button for five seconds\n");
 	fprintf(stdout, "\t2. Without letting go of the power button, press and hold down the power AND home buttons for ten seconds\n");
 	fprintf(stdout, "\t3. Without letting go of the home button, release the power button\n");
 	fprintf(stdout, "\t4. Wait 30 seconds while holding down the home button\n");
-	fprintf(stdout, "It is crucial that you follow instructions to the letter. Are you ready to begin?\n");
+	fprintf(stdout, "\nTry to get the timing as correct as possible, but don't fret if you miss it by a few seconds. It might still work, and if it doesn't, you can always try again. If you fail, you can always just turn the phone completely off by holding power and home for ten seconds, then pushing power to turn it back on.\n");
+	fprintf(stdout, "\nAre you ready to begin?\n");
 	fprintf(stdout, "Please answer (y/n): ");
 	fflush(stdout);
 	fgets(responseBuffer, 10, stdin);
