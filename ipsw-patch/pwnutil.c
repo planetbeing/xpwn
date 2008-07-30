@@ -13,7 +13,7 @@
 #define BUFFERSIZE (1024*1024)
 
 Dictionary* parseIPSW(const char* inputIPSW, const char* bundleRoot, char** bundlePath, OutputState** state) {
-	parseIPSW2(inputIPSW, bundleRoot, bundlePath, state, FALSE);
+	return parseIPSW2(inputIPSW, bundleRoot, bundlePath, state, FALSE);
 }
 
 Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bundlePath, OutputState** state, int useMemory) {

@@ -255,6 +255,8 @@ int convertToPNG(AbstractFile* imageWrapper, const unsigned int* key, const unsi
 	png_write_image(png_ptr, row_pointers);
 
 	png_write_end(png_ptr, NULL);
+
+	return 0;
 }
 
 void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, const unsigned int* iv, AbstractFile* png, size_t *fileSize) {

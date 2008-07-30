@@ -251,7 +251,7 @@ char* createTempFile() {
 }
 
 OutputState* loadZip(const char* ipsw) {
-	loadZip2(ipsw, FALSE);
+	return loadZip2(ipsw, FALSE);
 }
 
 OutputState* loadZip2(const char* ipsw, int useMemory) {
