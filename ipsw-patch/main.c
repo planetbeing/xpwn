@@ -34,7 +34,8 @@ static AbstractFile* openRoot(void** buffer, size_t* rootSize) {
 			GetTempPath(512, tmpFilePath);
 			GetTempFileName(tmpFilePath, "root", 0, tmpFileBuffer);
 #else
-			strcpy(tmpFileBuffer, "/tmp/rootfs");
+			strcpy(tmpFileBuffer, "/tmp/rootXXXXXX");
+			close(mkstemp(tmpFileBuffer));
 #endif
 			tmpFile = tmpFileBuffer;
 			FILE* tFile = fopen(tmpFile, "wb");
@@ -128,13 +129,9 @@ int main(int argc, char* argv[]) {
 
 	outputIPSW = argv[2];
 
-	info = parseIPSW(argv[1], bundleRoot, &bundlePath, &outputState);
-	if(info == NULL) {
-		XLOG(0, "error: Could not load IPSW\n");
-		exit(1);
-	}
+	int* toRemove = NULL;
+	int numToRemove = 0;
 
-	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
 	for(i = 3; i < argc; i++) {
 		if(argv[i][0] != '-') {
 			break;
@@ -164,7 +161,9 @@ int main(int argc, char* argv[]) {
 		}
 
 		if(strcmp(argv[i], "-e") == 0) {
-			removeKey(firmwarePatches, argv[i + 1]);
+			numToRemove++;
+			toRemove = realloc(toRemove, numToRemove * sizeof(int));
+			toRemove[numToRemove - 1] = i + 1;
 			i++;
 			continue;
 		}
@@ -237,7 +236,9 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 	}
-	
+
+	mergePaths = i;
+
 	if(use39 || use46 || unlockBaseband || selfDestruct || bootloader39 || bootloader46) {
 		if(!(bootloader39) || !(bootloader46)) {
 			XLOG(0, "error: you must specify both bootloader files.\n");
@@ -247,9 +248,20 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	mergePaths = i;
+	info = parseIPSW2(argv[1], bundleRoot, &bundlePath, &outputState, useMemory);
+	if(info == NULL) {
+		XLOG(0, "error: Could not load IPSW\n");
+		exit(1);
+	}
 
-	
+	firmwarePatches = (Dictionary*)getValueByKey(info, "FilesystemPatches");
+
+	int j;
+	for(j = 0; j < numToRemove; j++) {
+		removeKey(firmwarePatches, argv[toRemove[j]]);
+	}
+	free(toRemove);
+
 	firmwarePatches = (Dictionary*)getValueByKey(info, "FirmwarePatches");
 	patchDict = (Dictionary*) firmwarePatches->values;
 	while(patchDict != NULL) {

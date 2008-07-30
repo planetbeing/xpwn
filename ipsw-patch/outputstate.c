@@ -8,7 +8,13 @@
 #include <zip.h>
 #include <unzip.h>
 
-void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize) {
+#ifdef WIN32
+#include <windows.h>
+#endif
+
+#define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
+
+void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize, char* tmpFileName) {
 	OutputState* leftNeighbor;
 	OutputState* rightNeighbor;
 	OutputState* next;
@@ -37,8 +43,15 @@ void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, c
 
 	if(leftNeighbor != NULL && strcasecmp(leftNeighbor->fileName, myName) == 0) {
 		newFile = leftNeighbor;
+		if(newFile->tmpFileName) {
+			unlink(newFile->tmpFileName);
+			free(newFile->tmpFileName);
+		}
 		free(newFile->fileName);
-		free(newFile->buffer);
+
+		if(newFile->buffer) {
+			free(newFile->buffer);
+		}
 	} else {
 		newFile = (OutputState*) malloc(sizeof(OutputState));
 		newFile->next = rightNeighbor;
@@ -54,11 +67,12 @@ void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, c
 	}
 
 	newFile->fileName = myName;
+	newFile->tmpFileName = tmpFileName;
 	newFile->buffer = buffer;
 	newFile->bufferSize = bufferSize;
 }
 
-void addToOutput(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize) {
+void addToOutput2(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize, char* tmpFileName) {
 	char* fileNamePath;
 	char* fileNameNoPath;
 
@@ -70,7 +84,7 @@ void addToOutput(OutputState** state, const char* fileName, void* buffer, const 
 		while(fileNameNoPath > fileNamePath) {
 			if(*fileNameNoPath == '/') {
 				*(fileNameNoPath + 1) = '\0';
-				addToOutputQueue(state, fileNamePath, malloc(1), 0);
+				addToOutputQueue(state, fileNamePath, malloc(1), 0, NULL);
 			}
 
 			fileNameNoPath--;
@@ -79,7 +93,11 @@ void addToOutput(OutputState** state, const char* fileName, void* buffer, const 
 
 	free(fileNamePath);
 
-	addToOutputQueue(state, fileName, buffer, bufferSize);
+	addToOutputQueue(state, fileName, buffer, bufferSize, tmpFileName);
+}
+
+void addToOutput(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize) {
+	addToOutput2(state, fileName, buffer, bufferSize, NULL);
 }
 
 AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName) {
@@ -88,7 +106,10 @@ AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName) 
 	curFile = *state;
 	while(curFile != NULL) {
 		if(strcmp(curFile->fileName, fileName) == 0) {
-			return createAbstractFileFromMemory(&(curFile->buffer), curFile->bufferSize);
+			if(curFile->tmpFileName == NULL) 
+				return createAbstractFileFromMemory(&(curFile->buffer), curFile->bufferSize);
+			else
+				return createAbstractFileFromFile(fopen(curFile->tmpFileName, "rb"));
 		}
 		curFile = curFile->next;
 	}
@@ -103,9 +124,13 @@ AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char
 	curFile = *state;
 	while(curFile != NULL) {
 		if(strcmp(curFile->fileName, fileName) == 0) {
-			bufSize = curFile->bufferSize;
-			curFile->bufferSize = 0;
-			return createAbstractFileFromMemoryFileBuffer(&(curFile->buffer), &curFile->bufferSize, bufSize);
+			if(curFile->tmpFileName == NULL) {
+				bufSize = curFile->bufferSize;
+				curFile->bufferSize = 0;
+				return createAbstractFileFromMemoryFileBuffer(&(curFile->buffer), &curFile->bufferSize, bufSize);
+			} else {
+				return createAbstractFileFromFile(fopen(curFile->tmpFileName, "wb"));
+			}
 		}
 		curFile = curFile->next;
 	}
@@ -145,13 +170,39 @@ void writeOutput(OutputState** state, char* ipsw) {
 		
 		if(curFile->bufferSize > 0) {
 			ASSERT(zipOpenNewFileInZip(zip, curFile->fileName, &info, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION) == 0, "error adding to zip");
-			ASSERT(zipWriteInFileInZip(zip, curFile->buffer, curFile->bufferSize) == 0, "error writing to zip");
+			if(curFile->tmpFileName == NULL) {
+				ASSERT(zipWriteInFileInZip(zip, curFile->buffer, curFile->bufferSize) == 0, "error writing to zip");
+			} else {
+				FILE* tmpFile = fopen(curFile->tmpFileName, "wb");
+				char* buffer = malloc(DEFAULT_BUFFER_SIZE);
+				size_t left = curFile->bufferSize;
+				while(left > 0) {
+					size_t toRead;
+					if(left > DEFAULT_BUFFER_SIZE)
+						toRead = DEFAULT_BUFFER_SIZE;
+					else
+						toRead = left;
+					fread(buffer, toRead, 1, tmpFile);
+					ASSERT(zipWriteInFileInZip(zip, buffer, toRead) == 0, "error writing to zip");
+					left -= toRead;
+				}
+				fclose(tmpFile);
+				free(buffer);
+			}
 		} else {
 			ASSERT(zipOpenNewFileInZip(zip, curFile->fileName, &info, NULL, 0, NULL, 0, NULL, 0, 0) == 0, "error adding to zip");
 		}
 		ASSERT(zipCloseFileInZip(zip) == 0, "error closing file in zip");
+		if(curFile->tmpFileName) {
+			unlink(curFile->tmpFileName);
+			free(curFile->tmpFileName);
+		}
 		free(curFile->fileName);
-		free(curFile->buffer);
+
+		if(curFile->buffer) {
+			free(curFile->buffer);
+		}
+
 		free(curFile);
 	}
 
@@ -167,46 +218,55 @@ void releaseOutput(OutputState** state) {
 		curFile = next;
 		next = next->next;
 
+		if(curFile->tmpFileName) {
+			unlink(curFile->tmpFileName);
+			free(curFile->tmpFileName);
+		}
+
 		free(curFile->fileName);
-		free(curFile->buffer);
+
+		if(curFile->buffer) {
+			free(curFile->buffer);
+		}
+
 		free(curFile);
 	}
 	*state = NULL;
 }
 
+char* createTempFile() {
+	char tmpFileBuffer[512];
+#ifdef WIN32
+	char tmpFilePath[512];
+	GetTempPath(512, tmpFilePath);
+	GetTempFileName(tmpFilePath, "zip", 0, tmpFileBuffer);
+#else
+	strcpy(tmpFileBuffer, "/tmp/zipXXXXXX");
+	close(mkstemp(tmpFileBuffer));
+#endif
+	FILE* tFile = fopen(tmpFileBuffer, "wb");
+	fclose(tFile);
+
+	return strdup(tmpFileBuffer);
+}
+
 OutputState* loadZip(const char* ipsw) {
-	OutputState* toReturn;
-	char* fileName;
-	void* buffer;
-	unzFile zip;
-	unz_file_info pfile_info;
+	loadZip2(ipsw, FALSE);
+}
 
-	toReturn = NULL;
+OutputState* loadZip2(const char* ipsw, int useMemory) {
+	OutputState* toReturn = NULL;
 
-	ASSERT(zip = unzOpen(ipsw), "cannot open input ipsw");
-	ASSERT(unzGoToFirstFile(zip) == UNZ_OK, "cannot seek to first file in input ipsw");
-
-	do {
-		ASSERT(unzGetCurrentFileInfo(zip, &pfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file info from ipsw");
-		fileName = (char*) malloc(pfile_info.size_filename + 1);
-		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
-		if(fileName[strlen(fileName) - 1] != '/') {
-			buffer = malloc((pfile_info.uncompressed_size > 0) ? pfile_info.uncompressed_size : 1);
-			printf("loading: %s (%ld)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
-			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
-			ASSERT(unzReadCurrentFile(zip, buffer, pfile_info.uncompressed_size) == pfile_info.uncompressed_size, "cannot read file from ipsw");
-			ASSERT(unzCloseCurrentFile(zip) == UNZ_OK, "cannot close compressed file in IPSW");
-			addToOutput(&toReturn, fileName, buffer, pfile_info.uncompressed_size);
-		}
-		free(fileName);
-	} while(unzGoToNextFile(zip) == UNZ_OK);
-
-	ASSERT(unzClose(zip) == UNZ_OK, "cannot close input ipsw file");
+	loadZipFile2(ipsw, &toReturn, NULL, useMemory);
 
 	return toReturn;
 }
 
 void loadZipFile(const char* ipsw, OutputState** output, const char* file) {
+	loadZipFile2(ipsw, output, file, TRUE);
+}
+
+void loadZipFile2(const char* ipsw, OutputState** output, const char* file, int useMemory) {
 	char* fileName;
 	void* buffer;
 	unzFile zip;
@@ -219,13 +279,33 @@ void loadZipFile(const char* ipsw, OutputState** output, const char* file) {
 		ASSERT(unzGetCurrentFileInfo(zip, &pfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file info from ipsw");
 		fileName = (char*) malloc(pfile_info.size_filename + 1);
 		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
-		if(strcmp(fileName, file) == 0) {
-			buffer = malloc((pfile_info.uncompressed_size > 0) ? pfile_info.uncompressed_size : 1);
+		if((file == NULL && fileName[strlen(fileName) - 1] != '/') || (file != NULL && strcmp(fileName, file)) == 0) {
 			printf("loading: %s (%ld)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
 			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
-			ASSERT(unzReadCurrentFile(zip, buffer, pfile_info.uncompressed_size) == pfile_info.uncompressed_size, "cannot read file from ipsw");
+			if(useMemory) {
+				buffer = malloc((pfile_info.uncompressed_size > 0) ? pfile_info.uncompressed_size : 1);
+				ASSERT(unzReadCurrentFile(zip, buffer, pfile_info.uncompressed_size) == pfile_info.uncompressed_size, "cannot read file from ipsw");
+				addToOutput(output, fileName, buffer, pfile_info.uncompressed_size);
+			} else {
+				char* tmpFileName = createTempFile();
+				FILE* tmpFile = fopen(tmpFileName, "wb");
+				buffer = malloc(DEFAULT_BUFFER_SIZE);
+				size_t left = pfile_info.uncompressed_size;
+				while(left > 0) {
+					size_t toRead;
+					if(left > DEFAULT_BUFFER_SIZE)
+						toRead = DEFAULT_BUFFER_SIZE;
+					else
+						toRead = left;
+					ASSERT(unzReadCurrentFile(zip, buffer, toRead) == toRead, "cannot read file from ipsw");
+					fwrite(buffer, toRead, 1, tmpFile);
+					left -= toRead;
+				}
+				fclose(tmpFile);
+				free(buffer);
+				addToOutput2(output, fileName, NULL, pfile_info.uncompressed_size, tmpFileName);
+			}
 			ASSERT(unzCloseCurrentFile(zip) == UNZ_OK, "cannot close compressed file in IPSW");
-			addToOutput(output, fileName, buffer, pfile_info.uncompressed_size);
 		}
 		free(fileName);
 	} while(unzGoToNextFile(zip) == UNZ_OK);

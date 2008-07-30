@@ -7,6 +7,7 @@ typedef struct OutputState {
 	char* fileName;
 	void* buffer;
 	size_t bufferSize;
+	char* tmpFileName;
 	struct OutputState* next;
 	struct OutputState* prev;
 } OutputState;
@@ -19,6 +20,8 @@ extern "C" {
 	AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char* fileName);
 	void writeOutput(OutputState** state, char* ipsw);
 	void releaseOutput(OutputState** state);
+	OutputState* loadZip2(const char* ipsw, int useMemory);
+	void loadZipFile2(const char* ipsw, OutputState** output, const char* file, int useMemory);
 	OutputState* loadZip(const char* ipsw);
 	void loadZipFile(const char* ipsw, OutputState** output, const char* file);
 #ifdef __cplusplus

@@ -542,6 +542,7 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
 		return record;
 	} else {
 		free(origPath);
+		free(record);
 		return NULL;
 	}
     }

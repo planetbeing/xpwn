@@ -615,6 +615,7 @@ void hfs_untar(Volume* volume, AbstractFile* tarFile) {
 			tarFile->read(tarFile, buffer, size);
 			AbstractFile* inFile = createAbstractFileFromMemory(&buffer, size);
 			add_hfs(volume, inFile, fileName);
+			free(buffer);
 		} else if(type == 5) {
 			printf("directory: %s (%04o)\n", fileName, mode);
 			newFolder(fileName, volume);
