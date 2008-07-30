@@ -319,6 +319,7 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 			printf("0x%02x", keySeed[i]);
 		}
 		printf("}\n");
+		free(keySeed);
 	}
 
 	return toReturn;

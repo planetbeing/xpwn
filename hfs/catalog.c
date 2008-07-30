@@ -518,6 +518,9 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
 
     if(record == NULL || exact == FALSE) {
       free(origPath);
+      if(record != NULL) {
+	      free(record);
+      }
       return NULL;
     }
 
@@ -829,6 +832,7 @@ int makeSymlink(const char* pathName, const char* target, Volume* volume) {
 	io = openRawFile(record->fileID, &record->dataFork, (HFSPlusCatalogRecord*) record, volume);
 	WRITE(io, 0, strlen(target), (void*) target);
 	CLOSE(io);
+	free(record);
 
 	return TRUE;
 }
