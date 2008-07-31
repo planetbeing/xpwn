@@ -25,7 +25,7 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 	FILE* inputIPSWFile;
 
 	SHA_CTX sha1_ctx;
-	char buffer[BUFFERSIZE];
+	char* buffer;
 	int read;
 	unsigned char hash[20];
 
@@ -44,12 +44,14 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 
 	XLOG(0, "Hashing IPSW...\n");
 
+	buffer = malloc(BUFFERSIZE);
 	SHA1_Init(&sha1_ctx);
 	while(!feof(inputIPSWFile)) {
 		read = fread(buffer, 1, BUFFERSIZE, inputIPSWFile);
 		SHA1_Update(&sha1_ctx, buffer, read);
 	}
 	SHA1_Final(hash, &sha1_ctx);
+	free(buffer);
 
 	fclose(inputIPSWFile);
 

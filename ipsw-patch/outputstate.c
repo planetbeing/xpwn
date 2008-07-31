@@ -173,20 +173,20 @@ void writeOutput(OutputState** state, char* ipsw) {
 			if(curFile->tmpFileName == NULL) {
 				ASSERT(zipWriteInFileInZip(zip, curFile->buffer, curFile->bufferSize) == 0, "error writing to zip");
 			} else {
-				FILE* tmpFile = fopen(curFile->tmpFileName, "wb");
+				AbstractFile* tmpFile = createAbstractFileFromFile(fopen(curFile->tmpFileName, "rb"));
 				char* buffer = malloc(DEFAULT_BUFFER_SIZE);
-				size_t left = curFile->bufferSize;
+				size_t left = tmpFile->getLength(tmpFile);
 				while(left > 0) {
 					size_t toRead;
 					if(left > DEFAULT_BUFFER_SIZE)
 						toRead = DEFAULT_BUFFER_SIZE;
 					else
 						toRead = left;
-					fread(buffer, toRead, 1, tmpFile);
+					ASSERT(tmpFile->read(tmpFile, buffer, toRead) == toRead, "error reading data");
 					ASSERT(zipWriteInFileInZip(zip, buffer, toRead) == 0, "error writing to zip");
 					left -= toRead;
 				}
-				fclose(tmpFile);
+				tmpFile->close(tmpFile);
 				free(buffer);
 			}
 		} else {

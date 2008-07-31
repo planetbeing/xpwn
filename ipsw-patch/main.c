@@ -400,6 +400,12 @@ int main(int argc, char* argv[]) {
 	for(; mergePaths < argc; mergePaths++) {
 		XLOG(0, "merging %s\n", argv[mergePaths]);
 		AbstractFile* tarFile = createAbstractFileFromFile(fopen(argv[mergePaths], "rb"));
+		if(tarFile == NULL) {
+			XLOG(1, "cannot find %s, make sure your slashes are in the right direction\n", argv[mergePaths]);
+			releaseOutput(&outputState);
+			closeRoot(buffer);
+			exit(0);
+		}
 		hfs_untar(rootVolume, tarFile);
 		tarFile->close(tarFile);
 	}
