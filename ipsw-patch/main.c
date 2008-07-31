@@ -362,10 +362,10 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(openRoot((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	XLOG(0, "Growing root to minimum: %ld\n", (long) minimumRootSize); fflush(stdout);
+	XLOG(0, "Growing root to minimum: %ld\n", (long) defaultRootSize); fflush(stdout);
 	grow_hfs(rootVolume, minimumRootSize);
 	if(rootSize > minimumRootSize) {
-		XLOG(0, "Growing root: %ld\n", (long) rootSize); fflush(stdout);
+		XLOG(0, "Growing root: %ld\n", (long) preferredRootSize); fflush(stdout);
 		grow_hfs(rootVolume, rootSize);
 	}
 	
