@@ -11,6 +11,10 @@ add_executable(dfu-util dfu.c sam7dfu.c main.c)
 
 link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJECT_BINARY_DIR}/ipsw-patch)
 
+IF(APPLE)
+SET_TARGET_PROPERTIES(dfu-util PROPERTIES LINK_FLAGS "-framework CoreFoundation -framework IOKit")
+ENDIF(APPLE)
+
 target_link_libraries(dfu-util xpwn)
 target_link_libraries(dfu-util ${USB_LIBRARIES})
 

@@ -19,5 +19,9 @@ target_link_libraries(xpwn-bin xpwn)
 
 set_target_properties(xpwn-bin PROPERTIES OUTPUT_NAME "xpwn")
 
+IF(APPLE)
+SET_TARGET_PROPERTIES(xpwn-bin PROPERTIES LINK_FLAGS "-framework CoreFoundation -framework IOKit")
+ENDIF(APPLE)
+
 install(FILES ramdisk.dmg DESTINATION .)
 install(TARGETS xpwn-bin DESTINATION .)
