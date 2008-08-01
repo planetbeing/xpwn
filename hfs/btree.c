@@ -127,7 +127,7 @@ off_t getRecordOffset(int num, uint32_t nodeNum, BTree* tree) {
   nodeOffset = nodeNum * tree->headerRec->nodeSize;
   
   if(!READ(tree->io, nodeOffset + tree->headerRec->nodeSize - (sizeof(uint16_t) * (num + 1)), sizeof(uint16_t), &offset)) {
-    panic("cannot get record offset!");
+    hfs_panic("cannot get record offset!");
   }
   
   FLIPENDIAN(offset);
@@ -150,7 +150,7 @@ static off_t getFreeSpace(uint32_t nodeNum, BTNodeDescriptor* descriptor, BTree*
   freespaceOffsetOffset = nodeOffset + tree->headerRec->nodeSize - (sizeof(uint16_t) * (num + 1));
   
   if(!READ(tree->io, freespaceOffsetOffset, sizeof(uint16_t), &offset)) {
-    panic("cannot get record offset!");
+    hfs_panic("cannot get record offset!");
   }
   
   FLIPENDIAN(offset);
@@ -164,7 +164,7 @@ off_t getNodeNumberFromPointerRecord(off_t offset, io_func* io) {
   uint32_t nodeNum;
   
   if(!READ(io, offset, sizeof(uint32_t), &nodeNum)) {
-    panic("cannot get node number from pointer record!");
+    hfs_panic("cannot get node number from pointer record!");
   }
   
   FLIPENDIAN(nodeNum);
@@ -223,7 +223,7 @@ static void* searchNode(BTree* tree, uint32_t root, BTKey* searchKey, int *exact
   }
 
   if(lastRecordDataOffset == 0) {
-    panic("BTree inconsistent!");
+    hfs_panic("BTree inconsistent!");
     return NULL;
   }
   
@@ -841,7 +841,7 @@ static uint32_t removeNode(BTree* tree, uint32_t node) {
     free(descriptor);
     
     if(mapNode == 0) {
-      panic("Cannot remove node because I can't map it!");
+      hfs_panic("Cannot remove node because I can't map it!");
       return 0;
     }
     
@@ -1167,7 +1167,7 @@ static int addRecord(BTree* tree, uint32_t root, BTKey* searchKey, size_t length
   } else {  
     if(lastRecordDataOffset == 0) {
       if(descriptor->numRecords == 0) {
-        panic("empty index node in btree");
+        hfs_panic("empty index node in btree");
         return 0;
       }
       

@@ -19,7 +19,7 @@ void writeToFile(HFSPlusCatalogFile* file, AbstractFile* output, Volume* volume)
 	
 	io = openRawFile(file->fileID, &file->dataFork, (HFSPlusCatalogRecord*)file, volume);
 	if(io == NULL) {
-		panic("error opening file");
+		hfs_panic("error opening file");
 		return;
 	}
 	
@@ -29,19 +29,19 @@ void writeToFile(HFSPlusCatalogFile* file, AbstractFile* output, Volume* volume)
 	while(bytesLeft > 0) {
 		if(bytesLeft > BUFSIZE) {
 			if(!READ(io, curPosition, BUFSIZE, buffer)) {
-				panic("error reading");
+				hfs_panic("error reading");
 			}
 			if(output->write(output, buffer, BUFSIZE) != BUFSIZE) {
-				panic("error writing");
+				hfs_panic("error writing");
 			}
 			curPosition += BUFSIZE;
 			bytesLeft -= BUFSIZE;
 		} else {
 			if(!READ(io, curPosition, bytesLeft, buffer)) {
-				panic("error reading");
+				hfs_panic("error reading");
 			}
 			if(output->write(output, buffer, bytesLeft) != bytesLeft) {
-				panic("error writing");
+				hfs_panic("error writing");
 			}
 			curPosition += bytesLeft;
 			bytesLeft -= bytesLeft;
@@ -60,7 +60,7 @@ void writeToHFSFile(HFSPlusCatalogFile* file, AbstractFile* input, Volume* volum
 
 	io = openRawFile(file->fileID, &file->dataFork, (HFSPlusCatalogRecord*)file, volume);
 	if(io == NULL) {
-		panic("error opening file");
+		hfs_panic("error opening file");
 		return;
 	}
 	
@@ -71,19 +71,19 @@ void writeToHFSFile(HFSPlusCatalogFile* file, AbstractFile* input, Volume* volum
 	while(bytesLeft > 0) {
 		if(bytesLeft > BUFSIZE) {
 			if(input->read(input, buffer, BUFSIZE) != BUFSIZE) {
-				panic("error reading");
+				hfs_panic("error reading");
 			}
 			if(!WRITE(io, curPosition, BUFSIZE, buffer)) {
-				panic("error writing");
+				hfs_panic("error writing");
 			}
 			curPosition += BUFSIZE;
 			bytesLeft -= BUFSIZE;
 		} else {
 			if(input->read(input, buffer, (size_t)bytesLeft) != (size_t)bytesLeft) {
-				panic("error reading");
+				hfs_panic("error reading");
 			}
 			if(!WRITE(io, curPosition, (size_t)bytesLeft, buffer)) {
-				panic("error reading");
+				hfs_panic("error reading");
 			}
 			curPosition += bytesLeft;
 			bytesLeft -= bytesLeft;
