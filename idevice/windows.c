@@ -32,25 +32,27 @@ typedef mach_error_t (*AMRestorePerformDFURestoreFunctionType)(struct am_recover
 
 typedef int (__cdecl * cmdsend)  (am_recovery_device *, am_recovery_device *, CFStringRef, int block) __attribute__ ((cdecl));
 
-static AMDeviceNotificationSubscribeFunctionType AMDeviceNotificationSubscribeFunction;
-static AMRestoreRegisterForDeviceNotificationsFunctionType AMRestoreRegisterForDeviceNotificationsFunction;
-static AMRestoreCreateDefaultOptionsFunctionType AMRestoreCreateDefaultOptionsFunction;
-static AMRestoreEnableFileLoggingFunctionType AMRestoreEnableFileLoggingFunction;
-static AMRestorePerformDFURestoreFunctionType AMRestorePerformDFURestoreFunction;
-static cmdsend   priv_sendCommandToDevice;
-static cmdsend   priv_sendFileToDevice;
+static AMDeviceNotificationSubscribeFunctionType AMDeviceNotificationSubscribeFunction = NULL;
+static AMRestoreRegisterForDeviceNotificationsFunctionType AMRestoreRegisterForDeviceNotificationsFunction = NULL;
+static AMRestoreCreateDefaultOptionsFunctionType AMRestoreCreateDefaultOptionsFunction = NULL;
+static AMRestoreEnableFileLoggingFunctionType AMRestoreEnableFileLoggingFunction = NULL;
+static AMRestorePerformDFURestoreFunctionType AMRestorePerformDFURestoreFunction = NULL;
+static cmdsend   priv_sendCommandToDevice = NULL;
+static cmdsend   priv_sendFileToDevice = NULL;
 
 typedef struct tagDLLOFFSET {
 	DWORD VerMS;
 	DWORD VerLS;
+	DWORD GetProductType;
 	DWORD SendCmdO;
 	DWORD SendFileO;
 } DLLOFFSET;
 
 DLLOFFSET OffSetTable[]= {
-//	VerMS		VerLS		SendCmdO	SendFileO
-	{0x0070008,	0x00760000,	0x00010290,	0x00010630},
-	{0x0000000,	0x00000000,	0x00000000,	0x00000000}
+//	VerMS		VerLS		GetProductType,	SendCmdO	SendFileO
+	{0x0070008,	0x00760000,	0x0000FDA0,	0x00010290,	0x00010630},
+	{0x0070008,	0x00B00000,	0x0000FDF0,	0x000102E0,	0x00010680},
+	{0x0000000,	0x00000000,	0x00000000,	0x00000000,	0x00000000}
         };
 
 void SetDeviceDLLPath(char* path) {
@@ -78,13 +80,10 @@ int initWindowsPrivateFunctions(HANDLE deviceDLL) {
 	
 	SetDeviceDLLPath(path);
 
-	XLOG(4, "AMRecoveryModeDeviceGetProductType at: %p, expected: %p", GetProcAddress(deviceDLL, "AMRecoveryModeDeviceGetProductType"), 0xFDA0);
-
 	DWORD why;
 	BYTE *pBuffer;
 	char Major[1024];
 	char Minor[1024];
-	char* fromOffset = ((char*)GetProcAddress(deviceDLL, "AMRecoveryModeDeviceGetProductType")) - 0xFDA0;
 	unsigned int sLen;
 	VS_FIXEDFILEINFO *DLLFileInfo = NULL;
 	DWORD dwLen = GetFileVersionInfoSize(path, &why);
@@ -111,6 +110,8 @@ int initWindowsPrivateFunctions(HANDLE deviceDLL) {
 			{
 				if ((OffSetTable[i].VerLS == 0x00000000) || (OffSetTable[i].VerLS == DLLFileInfo->dwFileVersionLS))
 				{
+					char* fromOffset =
+						((char*)GetProcAddress(deviceDLL, "AMRecoveryModeDeviceGetProductType")) - OffSetTable[i].GetProductType;
 					priv_sendCommandToDevice = (cmdsend)   (fromOffset + OffSetTable[i].SendCmdO);
 					priv_sendFileToDevice = (cmdsend) (fromOffset + OffSetTable[i].SendFileO );
 				}
@@ -121,7 +122,7 @@ int initWindowsPrivateFunctions(HANDLE deviceDLL) {
 	if(pBuffer) free(pBuffer);
 	
 	if(!priv_sendCommandToDevice) {
-		XLOG(2, "Unsupported iTunesMobileDevice.dll Version Major %s Minor %s", Major, Minor);
+		XLOG(1, "Unsupported iTunesMobileDevice.dll Version Major %s Minor %s", Major, Minor);
 	}
 	
 	return 0;
@@ -242,8 +243,7 @@ int sendCommandToDevice(am_recovery_device *rdev, CFStringRef cfs, int block)
 	XLOG(3, "calling Windows sendCommandToDevice %p %p %p %d", priv_sendCommandToDevice, rdev, cfs, block);
 	int retval;
 	asm(
-		"movl %4, %%esi\n"
-		"movl %%esi, %%ecx\n"
+		"movl %4, %%ecx\n"
 		"movl %2, %%edi\n"
 		"push %1\n"
 		"call *%0\n"
@@ -251,7 +251,7 @@ int sendCommandToDevice(am_recovery_device *rdev, CFStringRef cfs, int block)
 		"addl $4, %%esp\n"
 		:
 		: "m"(priv_sendCommandToDevice), "m"(block), "m"(cfs), "m"(retval), "m"(rdev)
-		: "esi", "edi", "eax", "ecx", "edx"
+		: "edi", "eax", "ecx", "edx"
 		);
 	return retval;
 }
