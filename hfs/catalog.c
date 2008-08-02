@@ -551,7 +551,7 @@ HFSPlusCatalogRecord* getRecordFromPath3(const char* path, Volume* volume, char 
     }
     
     if(record->recordType != kHFSPlusFolderRecord)
-      panic("inconsistent catalog tree!");
+      hfs_panic("inconsistent catalog tree!");
     
     realParent = key.parentID;
     key.parentID = ((HFSPlusCatalogFolder*)record)->folderID;

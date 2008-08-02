@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
 
 	init_libxpwn();
 	libxpwn_log(logCB);
-	libxpwn_loglevel(0);
+	libxpwn_loglevel(2);
 
 	printf("---------------------------PLEASE READ THIS---------------------------\n");
 	printf("Please make certain that all iTunes related processes are not running\n");
@@ -158,9 +158,15 @@ int main(int argc, char* argv[])
 	printf("---------------------------PLEASE READ THIS---------------------------\n\n\n");
 
 	if(argc < 3) {
-		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap>\n", argv[0]);
+		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap> [loglevel]\n", argv[0]);
 		printf("n82ap = 3G iPhone, m68ap = First-generation iPhone, n45ap = iPod touch\n");
 		return 0;
+	}
+
+	if(argc >= 4) {
+		int logLevel;
+		sscanf(argv[3], "%d", &logLevel);
+		libxpwn_loglevel(logLevel);
 	}
 
 	if(stat("restore.img3", &st) < 0) {

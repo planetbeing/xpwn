@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <hfs/hfsplus.h>
 
-void panic(const char* panicString) {
-  fprintf(stderr, "%s\n", panicString);
+void hfs_panic(const char* hfs_panicString) {
+  fprintf(stderr, "%s\n", hfs_panicString);
   exit(1);
 }
 

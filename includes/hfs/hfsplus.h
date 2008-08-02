@@ -430,7 +430,7 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-	void panic(const char* panicString);
+	void hfs_panic(const char* panicString);
 
 	void printUnicode(HFSUniStr255* str);
 	char* unicodeToAscii(HFSUniStr255* str);

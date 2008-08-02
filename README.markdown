@@ -48,6 +48,8 @@ of Cydia, included within. bugout was the lucky guy who did our first 3G tests.
 Thanks to chris for his hardware wisdom, Zf for his French humor, and pytey
 for the support on the serial stuff.
 
+idevice's "ready for custom IPSW" art was graciously contributed by KinetiX
+
 XPwn attempts to use all the same data files and patches as PwnageTool to
 avoid duplication of present and future labor. I believe that wizdaz probably
 put the most sweat into PwnageTool, and the pwnage ramdisk is the work of
@@ -63,8 +65,20 @@ the initial exploratory work with the undocumented DMG format.
 Usage
 -----
 
-There are two utilities in this package, as well as the bundles and
+There are three utilities in this package, as well as the bundles and
 FirmwareBundles folders from PwnageTool, and Turbo's autopwn ramdisk.
+
+## Overview
+
+The general series of steps should be to use ipsw to create a custom IPSW with
+the user's preferences (done once per custom ipsw required), then itunespwn
+(done once per computer) so that future DFU restores will be made easier.
+Finally, either dfu-util (Mac or Linux) or idevice (Windows) should be used as
+necessary on the iPhone to perform the actual exploit necessary to allow it to
+accept our code.
+
+It is technically possible to skip itunespwn and just use idevice or skip
+idevice and just use itunespwn, but I recommend doing both.
 
 ## ipsw
 
@@ -142,8 +156,26 @@ Usage:
 The custom.ipsw is needed for the exploited WTF that was generated during
 IPSW generation.
 
+## idevice
 
-## dfu-util
+This utility replaces dfu-util for Windows, sidestepping the libusb
+requirement and provides a more user-friendly way of guiding them through
+DFU mode. Its arguments are analogous to dfu-util and more details can be
+read in that section. The difference is that iTunes' libraries are used
+rather than the non-proprietary dfu-util. Also, a user-friendly logo is
+made to appear on the iPhone upon successful completion, so an unambiguous
+cue can be given to the user that they are ready to use the IPSW they created.
+
+Obviously, a CLI is by its very nature not very newbie friendly, so the
+primary purpose of this utility is to serve a mock-up for GUI implementors.
+All GUI implementors are *strongly encouraged* to reproduce this in their
+applications.
+
+Usage:
+	idevice <custom.ipsw> <n82ap|m68ap|n45ap>
+
+
+## dfu-util (Not recommended on Windows)
 
 dfu-util is an utility adapted from OpenMoko that satisfies the "pwning" stage
 of the process, that is, allowing the execution of our unsigned code. It
