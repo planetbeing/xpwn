@@ -114,7 +114,6 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	off_t oldsize, newsize;
 	off_t bzctrllen, bzdatalen;
 	off_t oldpos, newpos;
-	unsigned char *old, *newBuffer;
 	int i;
 	int cbz2err, dbz2err, ebz2err;
 	off_t ctrl[3];
@@ -146,12 +145,6 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	epfbz2 = openBZStream(patch, 32 + bzctrllen + bzdatalen, 1024);
 	
 	oldsize = in->getLength(in);
-	old = malloc(oldsize + 1);
-	in->seek(in, 0);
-	in->read(in, old, oldsize);
-	in->close(in);
-	
-	newBuffer = malloc(newsize + 1);
 	
 	oldpos = 0;
 	newpos = 0;
@@ -170,18 +163,26 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 			return -5;
 
 		/* Read diff string */
-		memset(newBuffer + newpos, 0, ctrl[0]);
-		lenread = bzRead(&dbz2err, dpfbz2, newBuffer + newpos, ctrl[0]);
+		unsigned char* writeBuffer = (unsigned char*) malloc(ctrl[0]);
+		memset(writeBuffer, 0, ctrl[0]);
+		lenread = bzRead(&dbz2err, dpfbz2, writeBuffer, ctrl[0]);
 		if ((lenread < ctrl[0]) ||
 		    ((dbz2err != BZ_OK) && (dbz2err != BZ_STREAM_END)))
 			return -6;
 
 		/* Add old data to diff string */
+		in->seek(in, oldpos);
 		for(i = 0; i < ctrl[0]; i++) {
 			if(((oldpos + i)>=0) && ((oldpos + i)<oldsize)) {
-				newBuffer[newpos + i] += old[oldpos + i];
+				unsigned char curByte;
+				in->read(in, &curByte, 1);
+				writeBuffer[i] += curByte;
 			}
 		}
+
+		out->seek(out, newpos);
+		out->write(out, writeBuffer, ctrl[0]);
+		free(writeBuffer);
 				
 		/* Adjust pointers */
 		newpos += ctrl[0];
@@ -191,11 +192,16 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 		if((newpos + ctrl[1]) > newsize)
 			return -7;
 
+		writeBuffer = (unsigned char*) malloc(ctrl[1]);
 		/* Read extra string */
-		lenread = bzRead(&ebz2err, epfbz2, newBuffer + newpos, ctrl[1]);
+		lenread = bzRead(&ebz2err, epfbz2, writeBuffer, ctrl[1]);
 		if ((lenread < ctrl[1]) ||
 		    ((ebz2err != BZ_OK) && (ebz2err != BZ_STREAM_END)))
 			return -8;
+
+		out->seek(out, newpos);
+		out->write(out, writeBuffer, ctrl[1]);
+		free(writeBuffer);
 			
 		/* Adjust pointers */
 		newpos += ctrl[1];
@@ -205,13 +211,8 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	closeBZStream(cpfbz2);
 	closeBZStream(dpfbz2);
 	closeBZStream(epfbz2);
-	out->seek(out, 0);
 
-	if(out->write(out, newBuffer, newsize) != newsize)
-		return -9;
 	out->close(out);
-	free(newBuffer);
-	free(old);
 
 	patch->close(patch);
 	return 0;
