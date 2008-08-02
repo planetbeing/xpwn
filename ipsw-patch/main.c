@@ -304,7 +304,7 @@ int main(int argc, char* argv[]) {
 		if(patchValue) {
 			if(noWipe) {
 				XLOG(0, "%s: ", patchDict->dValue.key); fflush(stdout);
-				doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
+				doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV, useMemory);
 				patchDict = (Dictionary*) patchDict->dValue.next;
 				continue; /* skip over the normal Patch */
 			}
@@ -313,7 +313,7 @@ int main(int argc, char* argv[]) {
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch");
 		if(patchValue) {
 			XLOG(0, "%s: ", patchDict->dValue.key); fflush(stdout);
-			doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV);
+			doPatch(patchValue, fileValue, bundlePath, &outputState, pKey, pIV, useMemory);
 		}
 		
 		if(strcmp(patchDict->dValue.key, "AppleLogo") == 0 && applelogo) {

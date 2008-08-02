@@ -121,7 +121,7 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 	return info;
 }
 
-int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, unsigned int* key, unsigned int* iv) {
+int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundlePath, OutputState** state, unsigned int* key, unsigned int* iv, int useMemory) {
 	char* patchPath;
 	size_t bufferSize;
 	void* buffer;
@@ -129,8 +129,18 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	AbstractFile* patchFile;
 	AbstractFile* file;
 	AbstractFile* out;
+	AbstractFile* outRaw;
 
-	buffer = malloc(1);
+	char* tmpFileName;
+
+	if(useMemory) {
+		bufferSize = 0;
+		buffer = malloc(1);
+		outRaw = createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize);
+	} else {
+		tmpFileName = createTempFile();
+		outRaw = createAbstractFileFromFile(fopen(tmpFileName, "wb"));
+	}
 			
 	patchPath = malloc(sizeof(char) * (strlen(bundlePath) + strlen(patchValue->value) + 2));
 	strcpy(patchPath, bundlePath);
@@ -140,14 +150,12 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 	XLOG(0, "%s (%s)... ", fileValue->value, patchPath); fflush(stdout);
 	
 	patchFile = createAbstractFileFromFile(fopen(patchPath, "rb"));
-	
-	bufferSize = 0;
 
 	if(key != NULL) {
 		XLOG(0, "encrypted input... ");
-		out = duplicateAbstractFile2(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), key, iv, NULL);
+		out = duplicateAbstractFile2(getFileFromOutputState(state, fileValue->value), outRaw, key, iv, NULL);
 	} else {
-		out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+		out = duplicateAbstractFile(getFileFromOutputState(state, fileValue->value), outRaw);
 	}
 
 	if(key != NULL) {
@@ -169,14 +177,26 @@ int doPatch(StringValue* patchValue, StringValue* fileValue, const char* bundleP
 
 	if(strstr(fileValue->value, "WTF.s5l8900xall.RELEASE")) {
 		XLOG(0, "Exploiting 8900 vulnerability... ;)\n");
-		AbstractFile* exploited = createAbstractFileFrom8900(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+		AbstractFile* exploited;
+		if(useMemory) {
+			exploited = createAbstractFileFrom8900(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+		} else {
+			exploited = createAbstractFileFrom8900(createAbstractFileFromFile(fopen(tmpFileName, "r+b")));
+		}
 		exploit8900(exploited);
 		exploited->close(exploited);
 	}
 	
 	XLOG(0, "writing... "); fflush(stdout);
 	
-	addToOutput(state, fileValue->value, buffer, bufferSize);
+	if(useMemory) {
+		addToOutput(state, fileValue->value, buffer, bufferSize);
+	} else {
+		outRaw = createAbstractFileFromFile(fopen(tmpFileName, "rb"));
+		size_t length = outRaw->getLength(outRaw);
+		outRaw->close(outRaw);
+		addToOutput2(state, fileValue->value, NULL, length, tmpFileName);
+	}
 
 	XLOG(0, "success\n"); fflush(stdout);
 

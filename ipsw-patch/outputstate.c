@@ -129,7 +129,7 @@ AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char
 				curFile->bufferSize = 0;
 				return createAbstractFileFromMemoryFileBuffer(&(curFile->buffer), &curFile->bufferSize, bufSize);
 			} else {
-				return createAbstractFileFromFile(fopen(curFile->tmpFileName, "wb"));
+				return createAbstractFileFromFile(fopen(curFile->tmpFileName, "r+b"));
 			}
 		}
 		curFile = curFile->next;

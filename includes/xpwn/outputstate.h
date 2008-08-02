@@ -15,6 +15,8 @@ typedef struct OutputState {
 #ifdef __cplusplus
 extern "C" {
 #endif
+	char* createTempFile();
+	void addToOutput2(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize, char* tmpFileName);
 	void addToOutput(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize);
 	AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName);
 	AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char* fileName);
