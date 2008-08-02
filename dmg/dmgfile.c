@@ -21,7 +21,7 @@ static void cacheRun(DMG* dmg, BLKXTable* blkx, int run) {
 		free(dmg->runData);
 	}
 	
-	bufferSize = SECTOR_SIZE * blkx->decompressBufferRequested;
+	bufferSize = SECTOR_SIZE * blkx->runs[run].sectorCount;
 	
 	dmg->runData = (void*) malloc(bufferSize);
 	inBuffer = (void*) malloc(bufferSize);
@@ -204,8 +204,11 @@ io_func* openDmgFile(AbstractFile* abstractIn) {
 io_func* openDmgFilePartition(AbstractFile* abstractIn, int partition) {
 	io_func* toReturn;
 	Partition* partitions;
+	uint8_t ddmBuffer[SECTOR_SIZE];
+	DriverDescriptorRecord* ddm;
 	int numPartitions;
 	int i;
+	unsigned int BlockSize;
 
 	toReturn = openDmgFile(abstractIn);
 
@@ -213,22 +216,28 @@ io_func* openDmgFilePartition(AbstractFile* abstractIn, int partition) {
 		return NULL;
 	}
 
-	partitions = (Partition*) malloc(sizeof(Partition));
-	toReturn->read(toReturn, SECTOR_SIZE, SECTOR_SIZE, partitions);
-	flipPartitionMultiple(partitions, FALSE, FALSE);
+	toReturn->read(toReturn, 0, SECTOR_SIZE, ddmBuffer);
+	ddm = (DriverDescriptorRecord*) ddmBuffer;
+	flipDriverDescriptorRecord(ddm, FALSE);
+	BlockSize = ddm->sbBlkSize;
+
+	partitions = (Partition*) malloc(BlockSize);
+	toReturn->read(toReturn, BlockSize, BlockSize, partitions);
+	flipPartitionMultiple(partitions, FALSE, FALSE, BlockSize);
 	numPartitions = partitions->pmMapBlkCnt;
-	partitions = (Partition*) realloc(partitions, numPartitions * SECTOR_SIZE);
-	toReturn->read(toReturn, SECTOR_SIZE, numPartitions * SECTOR_SIZE, partitions);	
-	flipPartition(partitions, FALSE);
+	partitions = (Partition*) realloc(partitions, numPartitions * BlockSize);
+	toReturn->read(toReturn, BlockSize, numPartitions * BlockSize, partitions);	
+	flipPartition(partitions, FALSE, BlockSize);
 
 	if(partition >= 0) {
-		((DMG*)toReturn->data)->offset = partitions[partition].pmPyPartStart * SECTOR_SIZE;
+		((DMG*)toReturn->data)->offset = partitions[partition].pmPyPartStart * BlockSize;
 	} else {
 		for(i = 0; i < numPartitions; i++) {
-			if(strcmp((char*)partitions[i].pmParType, "Apple_HFSX") == 0 || strcmp((char*)partitions[i].pmParType, "Apple_HFS") == 0) {
-				((DMG*)toReturn->data)->offset = partitions[i].pmPyPartStart * SECTOR_SIZE;
+			if(strcmp((char*)partitions->pmParType, "Apple_HFSX") == 0 || strcmp((char*)partitions->pmParType, "Apple_HFS") == 0) {
+				((DMG*)toReturn->data)->offset = partitions->pmPyPartStart * BlockSize;
 				break;
 			}
+			partitions = (Partition*)((uint8_t*)partitions + BlockSize);
 		}
 	}
 

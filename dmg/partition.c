@@ -384,7 +384,7 @@ void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out) {
   }
 }
 
-void flipPartitionMultiple(Partition* partition, char multiple, char out) {
+void flipPartitionMultiple(Partition* partition, char multiple, char out, unsigned int BlockSize) {
 	int i;
 	int numPartitions;
 	
@@ -397,40 +397,42 @@ void flipPartitionMultiple(Partition* partition, char multiple, char out) {
 	
 	for(i = 0; i < numPartitions; i++) {
 		if(out) {
-			if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
+			if(partition->pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
 				break;
 			}
-			FLIPENDIAN(partition[i].pmSig);
+			FLIPENDIAN(partition->pmSig);
 		} else {
-			FLIPENDIAN(partition[i].pmSig);
-			if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
+			FLIPENDIAN(partition->pmSig);
+			if(partition->pmSig != APPLE_PARTITION_MAP_SIGNATURE) {
 				break;
 			}
 		}
 		
-		FLIPENDIAN(partition[i].pmMapBlkCnt);
-		FLIPENDIAN(partition[i].pmPyPartStart);
-		FLIPENDIAN(partition[i].pmPartBlkCnt);
-		FLIPENDIAN(partition[i].pmLgDataStart);
-		FLIPENDIAN(partition[i].pmDataCnt);
-		FLIPENDIAN(partition[i].pmPartStatus);
-		FLIPENDIAN(partition[i].pmLgBootStart);
-		FLIPENDIAN(partition[i].pmBootSize);
-		FLIPENDIAN(partition[i].pmBootAddr);
-		FLIPENDIAN(partition[i].pmBootAddr2);
-		FLIPENDIAN(partition[i].pmBootEntry);
-		FLIPENDIAN(partition[i].pmBootEntry2);
-		FLIPENDIAN(partition[i].pmBootCksum);
-		FLIPENDIAN(partition[i].bootCode);
+		FLIPENDIAN(partition->pmMapBlkCnt);
+		FLIPENDIAN(partition->pmPyPartStart);
+		FLIPENDIAN(partition->pmPartBlkCnt);
+		FLIPENDIAN(partition->pmLgDataStart);
+		FLIPENDIAN(partition->pmDataCnt);
+		FLIPENDIAN(partition->pmPartStatus);
+		FLIPENDIAN(partition->pmLgBootStart);
+		FLIPENDIAN(partition->pmBootSize);
+		FLIPENDIAN(partition->pmBootAddr);
+		FLIPENDIAN(partition->pmBootAddr2);
+		FLIPENDIAN(partition->pmBootEntry);
+		FLIPENDIAN(partition->pmBootEntry2);
+		FLIPENDIAN(partition->pmBootCksum);
+		FLIPENDIAN(partition->bootCode);
 		
 		if(!multiple) {
 			break;
 		}
+
+		partition = (Partition*)((uint8_t*)partition + BlockSize);
 	}
 }
 
-void flipPartition(Partition* partition, char out) {
-  flipPartitionMultiple(partition, TRUE, out);
+void flipPartition(Partition* partition, char out, unsigned int BlockSize) {
+  flipPartitionMultiple(partition, TRUE, out, BlockSize);
 }
 
 
@@ -529,7 +531,7 @@ void writeApplePartitionMap(AbstractFile* file, Partition* partitions, ChecksumF
   memcpy(buffer, partitions, PARTITION_SIZE  * SECTOR_SIZE);
   memset(&uncompressedToken, 0, sizeof(uncompressedToken));
    
-  flipPartition(buffer, TRUE);
+  flipPartition(buffer, TRUE, SECTOR_SIZE);
 
   bufferFile = createAbstractFileFromMemory((void**)&buffer, PARTITION_SIZE * SECTOR_SIZE);
    
@@ -615,7 +617,7 @@ void writeATAPI(AbstractFile* file, ChecksumFunc dataForkChecksum, void* dataFor
 }
 
 
-void readApplePartitionMap(AbstractFile* file, ResourceKey* resources) {
+void readApplePartitionMap(AbstractFile* file, ResourceKey* resources, unsigned int BlockSize) {
   AbstractFile* bufferFile;
   BLKXTable* blkx;
   Partition* partition;
@@ -628,7 +630,7 @@ void readApplePartitionMap(AbstractFile* file, ResourceKey* resources) {
   extractBLKX(file, bufferFile, blkx);
   bufferFile->close(bufferFile);
 
-  flipPartition(partition, FALSE);
+  flipPartition(partition, FALSE, BlockSize);
   
   for(i = 0; i < partition->pmMapBlkCnt; i++) {
     if(partition[i].pmSig != APPLE_PARTITION_MAP_SIGNATURE) {

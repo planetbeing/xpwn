@@ -314,13 +314,13 @@ extern "C" {
 	ResourceKey* makeSize(HFSPlusVolumeHeader* volumeHeader);
 
 	void flipDriverDescriptorRecord(DriverDescriptorRecord* record, char out);
-	void flipPartition(Partition* partition, char out);
-	void flipPartitionMultiple(Partition* partition, char multiple, char out);
+	void flipPartition(Partition* partition, char out, unsigned int BlockSize);
+	void flipPartitionMultiple(Partition* partition, char multiple, char out, unsigned int BlockSize);
 
 	void readDriverDescriptorMap(AbstractFile* file, ResourceKey* resources);
 	DriverDescriptorRecord* createDriverDescriptorMap(uint32_t numSectors);
 	void writeDriverDescriptorMap(AbstractFile* file, DriverDescriptorRecord* DDM, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources);
-	void readApplePartitionMap(AbstractFile* file, ResourceKey* resources);
+	void readApplePartitionMap(AbstractFile* file, ResourceKey* resources, unsigned int BlockSize);
 	Partition* createApplePartitionMap(uint32_t numSectors, const char* volumeType);
 	void writeApplePartitionMap(AbstractFile* file, Partition* partitions, ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);
 	void writeATAPI(AbstractFile* file,  ChecksumFunc dataForkChecksum, void* dataForkToken, ResourceKey **resources, NSizResource** nsizIn);

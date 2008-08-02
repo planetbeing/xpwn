@@ -288,6 +288,7 @@ int convertToDMG(AbstractFile* abstractIn, AbstractFile* abstractOut) {
 	off_t fileLength;
 	size_t partitionTableSize;
 	
+	unsigned int BlockSize;
 	
 	numSectors = 0;
 	
@@ -305,21 +306,22 @@ int convertToDMG(AbstractFile* abstractIn, AbstractFile* abstractOut) {
 	flipDriverDescriptorRecord(DDM, FALSE);
 	
 	if(DDM->sbSig == DRIVER_DESCRIPTOR_SIGNATURE) {
+		BlockSize = DDM->sbBlkSize;
 		writeDriverDescriptorMap(abstractOut, DDM, &CRCProxy, (void*) (&dataForkToken), &resources);
 		free(DDM);
 		
 		printf("Processing partition map...\n"); fflush(stdout);
 		
-		abstractIn->seek(abstractIn, SECTOR_SIZE);
-		ASSERT(abstractIn->read(abstractIn, partitions, SECTOR_SIZE) == SECTOR_SIZE, "fread");
-		flipPartitionMultiple(partitions, FALSE, FALSE);
+		abstractIn->seek(abstractIn, BlockSize);
+		ASSERT(abstractIn->read(abstractIn, partitions, BlockSize) == BlockSize, "fread");
+		flipPartitionMultiple(partitions, FALSE, FALSE, BlockSize);
 		
-		partitionTableSize = SECTOR_SIZE * partitions->pmMapBlkCnt;
+		partitionTableSize = BlockSize * partitions->pmMapBlkCnt;
 		partitions = (Partition*) realloc(partitions, partitionTableSize);
 		
-		abstractIn->seek(abstractIn, SECTOR_SIZE);
+		abstractIn->seek(abstractIn, BlockSize);
 		ASSERT(abstractIn->read(abstractIn, partitions, partitionTableSize) == partitionTableSize, "fread");
-		flipPartition(partitions, FALSE);
+		flipPartition(partitions, FALSE, BlockSize);
 		
 		printf("Writing blkx (%d)...\n", partitions->pmMapBlkCnt); fflush(stdout);
 		
@@ -334,7 +336,7 @@ int convertToDMG(AbstractFile* abstractIn, AbstractFile* abstractOut) {
 			
 			memset(&uncompressedToken, 0, sizeof(uncompressedToken));
 			
-			abstractIn->seek(abstractIn, partitions[i].pmPyPartStart * SECTOR_SIZE);
+			abstractIn->seek(abstractIn, partitions[i].pmPyPartStart * BlockSize);
 			blkx = insertBLKX(abstractOut, abstractIn, partitions[i].pmPyPartStart, partitions[i].pmPartBlkCnt, i, CHECKSUM_CRC32,
 						&BlockCRC, &uncompressedToken, &CRCProxy, &dataForkToken, NULL);
 			
