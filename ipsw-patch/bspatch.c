@@ -213,6 +213,7 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	closeBZStream(epfbz2);
 
 	out->close(out);
+	in->close(in);
 
 	patch->close(patch);
 	return 0;
