@@ -4,7 +4,7 @@
 #include <bzlib.h>
 #include "abstractfile.h"
 
-#define BUFFERSIZE (512 * 1024)
+#define BUFFERSIZE (256 * 1024)
 
 static off_t offtin(unsigned char *buf)
 {
