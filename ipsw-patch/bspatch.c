@@ -4,7 +4,7 @@
 #include <bzlib.h>
 #include "abstractfile.h"
 
-#define BUFFERSIZE (1 * 1024 * 1024)
+#define BUFFERSIZE (512 * 1024)
 
 static off_t offtin(unsigned char *buf)
 {
@@ -151,6 +151,7 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	oldpos = 0;
 	newpos = 0;
 	unsigned char* writeBuffer = (unsigned char*) malloc(BUFFERSIZE);
+	unsigned char* readBuffer = (unsigned char*) malloc(BUFFERSIZE);
 
 	while(newpos < newsize) {
 		/* Read control data */
@@ -183,12 +184,15 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 
 			/* Add old data to diff string */
 			in->seek(in, oldpos);
-			for(i = 0; i < toRead; i++) {
-				if(((oldpos + i)>=0) && ((oldpos + i)<oldsize)) {
-					unsigned char curByte;
-					in->read(in, &curByte, 1);
-					writeBuffer[i] += curByte;
-				}
+			unsigned int maxRead;
+			if((oldpos + toRead) > oldsize)
+				maxRead = oldsize - oldpos;
+			else
+				maxRead = toRead;
+
+			in->read(in, readBuffer, maxRead);
+			for(i = 0; i < maxRead; i++) {
+				writeBuffer[i] += readBuffer[i];
 			}
 
 			out->seek(out, newpos);
@@ -230,6 +234,7 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	};
 	
 	free(writeBuffer);
+	free(readBuffer);
 
 	closeBZStream(cpfbz2);
 	closeBZStream(dpfbz2);
