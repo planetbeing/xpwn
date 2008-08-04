@@ -220,7 +220,6 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 
 			out->seek(out, newpos);
 			out->write(out, writeBuffer, toRead);
-			free(writeBuffer);
 			
 			/* Adjust pointers */
 			newpos += toRead;
