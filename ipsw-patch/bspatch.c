@@ -4,6 +4,8 @@
 #include <bzlib.h>
 #include "abstractfile.h"
 
+#define BUFFERSIZE (1 * 1024 * 1024)
+
 static off_t offtin(unsigned char *buf)
 {
 	off_t y;
@@ -148,6 +150,8 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 	
 	oldpos = 0;
 	newpos = 0;
+	unsigned char* writeBuffer = (unsigned char*) malloc(BUFFERSIZE);
+
 	while(newpos < newsize) {
 		/* Read control data */
 		for(i=0;i<=2;i++) {
@@ -163,51 +167,71 @@ int patch(AbstractFile* in, AbstractFile* out, AbstractFile* patch) {
 			return -5;
 
 		/* Read diff string */
-		unsigned char* writeBuffer = (unsigned char*) malloc(ctrl[0]);
-		memset(writeBuffer, 0, ctrl[0]);
-		lenread = bzRead(&dbz2err, dpfbz2, writeBuffer, ctrl[0]);
-		if ((lenread < ctrl[0]) ||
-		    ((dbz2err != BZ_OK) && (dbz2err != BZ_STREAM_END)))
-			return -6;
+		unsigned int toRead;
+		unsigned int total = ctrl[0];
+		while(total > 0) {
+			if(total > BUFFERSIZE)
+				toRead = BUFFERSIZE;
+			else
+				toRead = total;
 
-		/* Add old data to diff string */
-		in->seek(in, oldpos);
-		for(i = 0; i < ctrl[0]; i++) {
-			if(((oldpos + i)>=0) && ((oldpos + i)<oldsize)) {
-				unsigned char curByte;
-				in->read(in, &curByte, 1);
-				writeBuffer[i] += curByte;
+			memset(writeBuffer, 0, toRead);
+			lenread = bzRead(&dbz2err, dpfbz2, writeBuffer, toRead);
+			if ((lenread < toRead) ||
+			    ((dbz2err != BZ_OK) && (dbz2err != BZ_STREAM_END)))
+				return -6;
+
+			/* Add old data to diff string */
+			in->seek(in, oldpos);
+			for(i = 0; i < toRead; i++) {
+				if(((oldpos + i)>=0) && ((oldpos + i)<oldsize)) {
+					unsigned char curByte;
+					in->read(in, &curByte, 1);
+					writeBuffer[i] += curByte;
+				}
 			}
-		}
 
-		out->seek(out, newpos);
-		out->write(out, writeBuffer, ctrl[0]);
-		free(writeBuffer);
-				
-		/* Adjust pointers */
-		newpos += ctrl[0];
-		oldpos += ctrl[0];
+			out->seek(out, newpos);
+			out->write(out, writeBuffer, toRead);
+
+			/* Adjust pointers */
+			newpos += toRead;
+			oldpos += toRead;
+			total -= toRead;
+		}
 
 		/* Sanity-check */
 		if((newpos + ctrl[1]) > newsize)
 			return -7;
 
-		writeBuffer = (unsigned char*) malloc(ctrl[1]);
-		/* Read extra string */
-		lenread = bzRead(&ebz2err, epfbz2, writeBuffer, ctrl[1]);
-		if ((lenread < ctrl[1]) ||
-		    ((ebz2err != BZ_OK) && (ebz2err != BZ_STREAM_END)))
-			return -8;
+		total = ctrl[1];
 
-		out->seek(out, newpos);
-		out->write(out, writeBuffer, ctrl[1]);
-		free(writeBuffer);
+		while(total > 0){ 
+			if(total > BUFFERSIZE)
+				toRead = BUFFERSIZE;
+			else
+				toRead = total;
+
+			/* Read extra string */
+			lenread = bzRead(&ebz2err, epfbz2, writeBuffer, toRead);
+			if ((lenread < toRead) ||
+			    ((ebz2err != BZ_OK) && (ebz2err != BZ_STREAM_END)))
+				return -8;
+
+			out->seek(out, newpos);
+			out->write(out, writeBuffer, toRead);
+			free(writeBuffer);
 			
-		/* Adjust pointers */
-		newpos += ctrl[1];
+			/* Adjust pointers */
+			newpos += toRead;
+			total -= toRead;
+		}
+
 		oldpos += ctrl[2];
 	};
 	
+	free(writeBuffer);
+
 	closeBZStream(cpfbz2);
 	closeBZStream(dpfbz2);
 	closeBZStream(epfbz2);
