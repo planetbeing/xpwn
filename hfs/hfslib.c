@@ -12,14 +12,17 @@
 #define BUFSIZE 1024*1024
 
 void writeToFile(HFSPlusCatalogFile* file, AbstractFile* output, Volume* volume) {
-	unsigned char buffer[BUFSIZE];
+	unsigned char* buffer;
 	io_func* io;
 	off_t curPosition;
 	size_t bytesLeft;
 	
+	buffer = (unsigned char*) malloc(BUFSIZE);
+
 	io = openRawFile(file->fileID, &file->dataFork, (HFSPlusCatalogRecord*)file, volume);
 	if(io == NULL) {
 		hfs_panic("error opening file");
+		free(buffer);
 		return;
 	}
 	
@@ -48,19 +51,24 @@ void writeToFile(HFSPlusCatalogFile* file, AbstractFile* output, Volume* volume)
 		}
 	}
 	CLOSE(io);
+
+	free(buffer);
 }
 
 void writeToHFSFile(HFSPlusCatalogFile* file, AbstractFile* input, Volume* volume) {
-	unsigned char buffer[BUFSIZE];
+	unsigned char *buffer;
 	io_func* io;
 	off_t curPosition;
 	off_t bytesLeft;
+
+	buffer = (unsigned char*) malloc(BUFSIZE);
 	
 	bytesLeft = input->getLength(input);
 
 	io = openRawFile(file->fileID, &file->dataFork, (HFSPlusCatalogRecord*)file, volume);
 	if(io == NULL) {
 		hfs_panic("error opening file");
+		free(buffer);
 		return;
 	}
 	
@@ -91,6 +99,8 @@ void writeToHFSFile(HFSPlusCatalogFile* file, AbstractFile* input, Volume* volum
 	}
 
 	CLOSE(io);
+
+	free(buffer);
 }
 
 void get_hfs(Volume* volume, const char* inFileName, AbstractFile* output) {
