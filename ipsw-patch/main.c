@@ -33,13 +33,14 @@ static AbstractFile* openRoot(void** buffer, size_t* rootSize) {
 			char tmpFilePath[512];
 			GetTempPath(512, tmpFilePath);
 			GetTempFileName(tmpFilePath, "root", 0, tmpFileBuffer);
+			CloseHandle(CreateFile(tmpFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, NULL));
 #else
 			strcpy(tmpFileBuffer, "/tmp/rootXXXXXX");
 			close(mkstemp(tmpFileBuffer));
+			FILE* tFile = fopen(tmpFileBuffer, "wb");
+			fclose(tFile);
 #endif
 			tmpFile = tmpFileBuffer;
-			FILE* tFile = fopen(tmpFile, "wb");
-			fclose(tFile);
 		}
 		return createAbstractFileFromFile(fopen(tmpFile, "r+b"));
 	}

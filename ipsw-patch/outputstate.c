@@ -240,12 +240,13 @@ char* createTempFile() {
 	char tmpFilePath[512];
 	GetTempPath(512, tmpFilePath);
 	GetTempFileName(tmpFilePath, "zip", 0, tmpFileBuffer);
+	CloseHandle(CreateFile(tmpFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, NULL));
 #else
 	strcpy(tmpFileBuffer, "/tmp/zipXXXXXX");
 	close(mkstemp(tmpFileBuffer));
-#endif
 	FILE* tFile = fopen(tmpFileBuffer, "wb");
 	fclose(tFile);
+#endif
 
 	return strdup(tmpFileBuffer);
 }
