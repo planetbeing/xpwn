@@ -310,15 +310,11 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 		keySeedLen = 2 * (((AppleImg3KBAGHeader*)info->kbag->data)->key_bits)/8;
 		keySeed = (uint8_t*) malloc(keySeedLen);
 		memcpy(keySeed, (uint8_t*)((AppleImg3KBAGHeader*)info->kbag->data) + sizeof(AppleImg3KBAGHeader), keySeedLen);
-		printf("{");
 		int i = 0;
 		for(i = 0; i < keySeedLen; i++) {
-			if(i != 0)
-				printf(", ");
-
-			printf("0x%02x", keySeed[i]);
+			printf("%02x", keySeed[i]);
 		}
-		printf("}\n");
+		printf("\n");
 		free(keySeed);
 	}
 

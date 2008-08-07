@@ -40,6 +40,19 @@
 				<string>Services.plist.patch</string>
 			</dict>
 		</array>
+		<key>Phone Activation</key>
+		<array>
+			<dict>
+				<key>Action</key>
+				<string>Patch</string>
+				<key>File</key>
+				<string>usr/libexec/lockdownd</string>
+				<key>Name</key>
+				<string>Lockdownd Patch</string>
+				<key>Patch</key>
+				<string>lockdownd.patch</string>
+			</dict>
+		</array>
 	</dict>
 	<key>FirmwarePatches</key>
 	<dict>
@@ -108,6 +121,19 @@
 			<string>024fdbba71ebf34df5b525cd975aefe8</string>
 			<key>Key</key>
 			<string>219eac3e01276c7ec50432123f50971a</string>
+			<key>TypeFlag</key>
+			<integer>8</integer>
+		</dict>
+		<key>Update Ramdisk</key>
+		<dict>
+			<key>File</key>
+			<string>018-3881-4.dmg</string>
+			<key>Patch</key>
+			<string>018-3881-4.dmg.patch</string>
+			<key>IV</key>
+			<string>e33d5c7af40422bb32a9e522cb0448b0</string>
+			<key>Key</key>
+			<string>fc0dfb4d99bfb020621f28f3d6ed774b</string>
 			<key>TypeFlag</key>
 			<integer>8</integer>
 		</dict>
@@ -184,7 +210,7 @@
 	<key>Filename</key>
 	<string>iPhone1,2_2.0.1_5B108_Restore.ipsw</string>
 	<key>Name</key>
-	<string>iPhone1,2_2.0.1_5B108_Restore</string>
+	<string>iPhone1,2_2.0.1_5B108</string>
 	<key>Platform</key>
 	<integer>3</integer>
 </dict>
