@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
 	char use39 = FALSE;
 	char use46 = FALSE;
 	char doBootNeuter = FALSE;
-	char updateBB = TRUE;
+	char updateBB = FALSE;
 	char useMemory = FALSE;
 
 	unsigned int key[16];
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
 	unsigned int* pIV = NULL;
 
 	if(argc < 3) {
-		XLOG(0, "usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-s <system partition size>] [-memory] [-nobbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
+		XLOG(0, "usage %s <input.ipsw> <target.ipsw> [-b <bootimage.png>] [-r <recoveryimage.png>] [-s <system partition size>] [-memory] [-bbupdate] [-nowipe] [-e \"<action to exclude>\"] [[-unlock] [-use39] [-use46] [-cleanup] -3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] <package1.tar> <package2.tar>...\n", argv[0]);
 		return 0;
 	}
 
@@ -156,8 +156,8 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		if(strcmp(argv[i], "-nobbupdate") == 0) {
-			updateBB = FALSE;
+		if(strcmp(argv[i], "-bbupdate") == 0) {
+			updateBB = TRUE;
 			continue;
 		}
 

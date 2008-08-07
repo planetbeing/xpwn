@@ -90,7 +90,7 @@ after using xpwn (or any other pwnage-based utility). This is important, since
 that's how the jailbreak actually occurs.
 
 	./ipsw <input.ipsw> <output.ipsw> [-b <bootimage.png>] [-nowipe] \
-		[-nobbupdate] [-s <disk0s1 size>]  [-r <recoveryimage.png>] \
+		[-bbupdate] [-s <disk0s1 size>]  [-r <recoveryimage.png>] \
 		[-memory] [-e "<action to exclude>"] \
 		[[-unlock] [-use39] [-use46] [-cleanup] \
 		-3 <bootloader 3.9 file> -4 <bootloader 4.6 file>] \
@@ -115,7 +115,8 @@ used whenever possible (no longer the default).
 -nowipe disables Apple's wiping of the NAND (user data), before proceeding
 with the restore. This allows the restore to happen much, much more quickly.
 
--nobbupdate tells the restore ramdisk not to attempt to upgrade your baseband.
+-bbupdate tells the restore ramdisk to attempt to upgrade your baseband. This
+is disabled by default for unlock safety reasons.
 
 -unlock, -use39, -use46, -cleanup, -3, and -4 are valid only if you merge the
 BootNeuter package. These provide instructions to BootNeuter (which provides
