@@ -196,17 +196,20 @@ Only AFTERWARDS do you put your device into DFU mode. If you switch the order
 of these steps, iTunes will be able to load software onto your device without
 this vulnerability, rendering dfu-util useless.
 
-AFTER you have disabled iTunes, iTunesHelper, etc., plug your device into the
-computer. Shut down the device in the normal way if necessary (Slide to
-shutdown). Hold down the Power and Home buttons simultaneously and count
-slowly to ten. (You may need to push down on power an instant before you
-push down on home). The iPhone will start. At around the time you count to 6,
-the iPhone will shut down again. KEEP HOLDING BOTH BUTTONS. Hold down both
-buttons until you reach 10. At this point, release the power button ONLY.
-Keep holding the stand-by button forever (this may take up to two minutes).
-You will know when you can stop holding the button when Windows notifies you
-via an audible cue that a USB device has connected. This is your device in
-DFU mode. The screen of the device will remain completely powered off.
+AFTER you have disabled iTunes, iTunesHelper, etc., plug your device
+into the computer. Shut down the device in the normal way if necessary
+(Slide to shutdown). Hold down the Power and Home buttons simultaneously
+and count slowly to ten. (You may need to push down on power an instant
+before you push down on home). The iPhone will start. At around the time
+you count to 6, the iPhone will shut down again. KEEP HOLDING BOTH
+BUTTONS. Hold down both buttons until you reach 10. At this point,
+release the power button ONLY.  Keep holding the stand-by button forever
+(this may take up to two minutes). Note Windows: You will know when you
+can stop holding the button when Windows notifies you via an audible
+cue that a USB device has connected. Note Linux: In terms of Linux you
+could do lsusb until it's seen. dfu-util is gradually being phased out
+anyway. This is your device in DFU mode. The screen of the device will
+remain completely powered off.
 
 THEN, run dfu-util with the following syntax:
 
@@ -315,3 +318,12 @@ me if this functionality is desired.
 
 These are all statically compiled in, but it should give you a good idea of
 the program's dependencies.
+
+Linux Notes:
+------------
+Question: Is there a way to restore the iPhone from Linux?
+
+Answer: There is currently no way to restore an IPSW directly from
+Linux. The necessary reverse-engineering has already been done by
+pumpkin, bushing and c1de0x, so that functionality will come in the
+medium-term future.
