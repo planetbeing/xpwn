@@ -100,6 +100,28 @@ void addToOutput(OutputState** state, const char* fileName, void* buffer, const 
 	addToOutput2(state, fileName, buffer, bufferSize, NULL);
 }
 
+void removeFileFromOutputState(OutputState** state, const char* fileName) {
+	OutputState* curFile;
+
+	curFile = *state;
+	while(curFile != NULL) {
+		if(strcmp(curFile->fileName, fileName) == 0) {
+			if(curFile->prev == NULL) {
+				*state = curFile->next;
+				(*state)->next->prev = NULL;
+			} else {
+				curFile->prev->next = curFile->next;
+				curFile->next->prev = curFile->prev;
+			}
+			curFile->prev = NULL;
+			curFile->next = NULL;
+			releaseOutput(&curFile);
+			return;
+		}
+		curFile = curFile->next;
+	}
+}
+
 AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName) {
 	OutputState* curFile;
 

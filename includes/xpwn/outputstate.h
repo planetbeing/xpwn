@@ -18,6 +18,7 @@ extern "C" {
 	char* createTempFile();
 	void addToOutput2(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize, char* tmpFileName);
 	void addToOutput(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize);
+	void removeFileFromOutputState(OutputState** state, const char* fileName);
 	AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName);
 	AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char* fileName);
 	void writeOutput(OutputState** state, char* ipsw);

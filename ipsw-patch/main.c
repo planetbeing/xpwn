@@ -88,7 +88,9 @@ int main(int argc, char* argv[]) {
 	unsigned int* pRamdiskIV = NULL;
 	io_func* ramdiskFS;
 	Volume* ramdiskVolume;
-	
+
+	char* updateRamdiskFSPathInIPSW = NULL; 
+
 	int i;
 
 	OutputState* outputState;
@@ -301,6 +303,10 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
+		if(strcmp(patchDict->dValue.key, "Update Ramdisk") == 0) {
+			updateRamdiskFSPathInIPSW = fileValue->value;
+		}
+
 		patchValue = (StringValue*) getValueByKey(patchDict, "Patch2");
 		if(patchValue) {
 			if(noWipe) {
@@ -463,6 +469,9 @@ int main(int argc, char* argv[]) {
 	createRestoreOptions(ramdiskVolume, preferredRootSize, updateBB);
 	closeVolume(ramdiskVolume);
 	CLOSE(ramdiskFS);
+
+	if(updateRamdiskFSPathInIPSW);
+		removeFileFromOutputState(&outputState, updateRamdiskFSPathInIPSW);
 
 	closeVolume(rootVolume);
 	CLOSE(rootFS);
