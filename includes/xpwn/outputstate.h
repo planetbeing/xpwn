@@ -21,6 +21,7 @@ extern "C" {
 	void removeFileFromOutputState(OutputState** state, const char* fileName);
 	AbstractFile* getFileFromOutputState(OutputState** state, const char* fileName);
 	AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char* fileName);
+	AbstractFile* getFileFromOutputStateForReplace(OutputState** state, const char* fileName);
 	void writeOutput(OutputState** state, char* ipsw);
 	void releaseOutput(OutputState** state);
 	OutputState* loadZip2(const char* ipsw, int useMemory);

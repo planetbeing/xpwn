@@ -476,7 +476,7 @@ int main(int argc, char* argv[]) {
 	closeVolume(rootVolume);
 	CLOSE(rootFS);
 
-	buildDmg(openRoot((void**)&buffer, &rootSize), getFileFromOutputStateForOverwrite(&outputState, rootFSPathInIPSW));
+	buildDmg(openRoot((void**)&buffer, &rootSize), getFileFromOutputStateForReplace(&outputState, rootFSPathInIPSW));
 
 	closeRoot(buffer);
 

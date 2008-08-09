@@ -160,6 +160,27 @@ AbstractFile* getFileFromOutputStateForOverwrite(OutputState** state, const char
 	return NULL;
 }
 
+AbstractFile* getFileFromOutputStateForReplace(OutputState** state, const char* fileName) {
+	OutputState* curFile;
+	size_t bufSize;
+
+	curFile = *state;
+	while(curFile != NULL) {
+		if(strcmp(curFile->fileName, fileName) == 0) {
+			if(curFile->tmpFileName == NULL) {
+				bufSize = curFile->bufferSize;
+				curFile->bufferSize = 0;
+				return createAbstractFileFromMemoryFileBuffer(&(curFile->buffer), &curFile->bufferSize, bufSize);
+			} else {
+				return createAbstractFileFromFile(fopen(curFile->tmpFileName, "wb"));
+			}
+		}
+		curFile = curFile->next;
+	}
+
+	return NULL;
+}
+
 void writeOutput(OutputState** state, char* ipsw) {
 	OutputState* curFile;
 	OutputState* next;
