@@ -87,15 +87,19 @@ void setKeyImg3(AbstractFile2* file, const unsigned int* key, const unsigned int
 	Img3Info* info = (Img3Info*) file->super.data;
 
 	int i;
-	uint8_t bKey[16];
+	uint8_t bKey[32];
+	int keyBits = ((AppleImg3KBAGHeader*)info->kbag->data)->key_bits;
 
 	for(i = 0; i < 16; i++) {
-		bKey[i] = key[i] & 0xff;
 		info->iv[i] = iv[i] & 0xff;
 	}
 
-	AES_set_encrypt_key(bKey, 128, &(info->encryptKey));
-	AES_set_decrypt_key(bKey, 128, &(info->decryptKey));
+	for(i = 0; i < (keyBits / 8); i++) {
+		bKey[i] = key[i] & 0xff;
+	}
+
+	AES_set_encrypt_key(bKey, keyBits, &(info->encryptKey));
+	AES_set_decrypt_key(bKey, keyBits, &(info->decryptKey));
 
 	if(!info->encrypted) {
 		uint8_t ivec[16];
@@ -281,7 +285,7 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 		if(current->header->magic == IMG3_CERT_MAGIC) {
 			info->cert = current;
 		}
-		if(current->header->magic == IMG3_KBAG_MAGIC) {
+		if(current->header->magic == IMG3_KBAG_MAGIC && ((AppleImg3KBAGHeader*)current->data)->key_modifier == 2) {
 			info->kbag = current;
 		}
 		current = current->next;
@@ -307,7 +311,7 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 	if(info->kbag) {
 		uint8_t* keySeed;
 		uint32_t keySeedLen;
-		keySeedLen = 2 * (((AppleImg3KBAGHeader*)info->kbag->data)->key_bits)/8;
+		keySeedLen = 16 + (((AppleImg3KBAGHeader*)info->kbag->data)->key_bits)/8;
 		keySeed = (uint8_t*) malloc(keySeedLen);
 		memcpy(keySeed, (uint8_t*)((AppleImg3KBAGHeader*)info->kbag->data) + sizeof(AppleImg3KBAGHeader), keySeedLen);
 		int i = 0;

@@ -470,7 +470,7 @@ int main(int argc, char* argv[]) {
 	closeVolume(ramdiskVolume);
 	CLOSE(ramdiskFS);
 
-	if(updateRamdiskFSPathInIPSW);
+	if(updateRamdiskFSPathInIPSW)
 		removeFileFromOutputState(&outputState, updateRamdiskFSPathInIPSW);
 
 	closeVolume(rootVolume);

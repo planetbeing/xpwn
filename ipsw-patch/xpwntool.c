@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include <xpwn/libxpwn.h>
-#include <xpwn/nor_files.h>
+#include "xpwn/libxpwn.h"
+#include "xpwn/nor_files.h"
 
 #define BUFFERSIZE (1024*1024)
 
@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
 
 	AbstractFile* template = NULL;
 	AbstractFile* certificate = NULL;
-	unsigned int key[16];
-	unsigned int iv[16];
+	unsigned int* key = NULL;
+	unsigned int* iv = NULL;
 	int hasKey = FALSE;
 	int hasIV = FALSE;
 
@@ -41,16 +41,14 @@ int main(int argc, char* argv[]) {
 		}
 
 		if(strcmp(argv[argNo], "-k") == 0 && (argNo + 1) < argc) {
-			sscanf(argv[argNo + 1], "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
-				&key[0], &key[1], &key[2], &key[3], &key[4], &key[5], &key[6], &key[7], &key[8],
-				&key[9], &key[10], &key[11], &key[12], &key[13], &key[14], &key[15]);
+			size_t bytes;
+			hexToInts(argv[argNo + 1], &key, &bytes);
 			hasKey = TRUE;
 		}
 
 		if(strcmp(argv[argNo], "-iv") == 0 && (argNo + 1) < argc) {
-			sscanf(argv[argNo + 1], "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
-				&iv[0], &iv[1], &iv[2], &iv[3], &iv[4], &iv[5], &iv[6], &iv[7], &iv[8],
-				&iv[9], &iv[10], &iv[11], &iv[12], &iv[13], &iv[14], &iv[15]);
+			size_t bytes;
+			hexToInts(argv[argNo + 1], &iv, &bytes);
 			hasIV = TRUE;
 		}
 
@@ -107,6 +105,12 @@ int main(int argc, char* argv[]) {
 	newFile->close(newFile);
 
 	free(inData);
+
+	if(key)
+		free(key);
+
+	if(iv)
+		free(iv);
 
 	return 0;
 }
