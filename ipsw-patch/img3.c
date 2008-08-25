@@ -285,7 +285,7 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 		if(current->header->magic == IMG3_CERT_MAGIC) {
 			info->cert = current;
 		}
-		if(current->header->magic == IMG3_KBAG_MAGIC && ((AppleImg3KBAGHeader*)current->data)->key_modifier == 2) {
+		if(current->header->magic == IMG3_KBAG_MAGIC && ((AppleImg3KBAGHeader*)current->data)->key_modifier == 1) {
 			info->kbag = current;
 		}
 		current = current->next;
