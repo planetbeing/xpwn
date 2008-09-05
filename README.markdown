@@ -5,7 +5,7 @@ The X is for "cross", because unlike PwnageTool, this utility has no
 dependencies on proprietary, closed-source software and can potentially be
 compiled and used on any platform.
 
-This is a special proof-of-concept version available only on Linux,
+This is a special proof-of-concept version available on any platform,
 compiled with static libraries to minimize potential issues (which is why the
 executables are a bit on the heavy side).
 
