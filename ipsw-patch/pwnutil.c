@@ -55,7 +55,7 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 
 	fclose(inputIPSWFile);
 
-	XLOG(0, "Matching IPSW... (%02x%02x%02x%02x...)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
+	XLOG(0, "Matching IPSW... (%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
