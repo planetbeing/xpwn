@@ -5,6 +5,8 @@
 #include <xpwn/outputstate.h>
 #include <hfs/hfsplus.h>
 
+typedef int (*PatchFunction)(AbstractFile* file);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,6 +17,10 @@ extern "C" {
 	void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath);
 	void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct, char use39, char use46);
 	void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBaseband);
+
+	int patchSigCheck(AbstractFile* file);
+	int patchKernel(AbstractFile* file);
+	int patchDeviceTree(AbstractFile* file);
 #ifdef __cplusplus
 }
 #endif

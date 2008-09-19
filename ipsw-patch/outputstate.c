@@ -14,6 +14,8 @@
 
 #define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
 
+uint64_t MaxLoadZipSize = UINT64_MAX;
+
 void addToOutputQueue(OutputState** state, const char* fileName, void* buffer, const size_t bufferSize, char* tmpFileName) {
 	OutputState* leftNeighbor;
 	OutputState* rightNeighbor;
@@ -282,10 +284,10 @@ char* createTempFile() {
 #ifdef WIN32
 	char tmpFilePath[512];
 	GetTempPath(512, tmpFilePath);
-	GetTempFileName(tmpFilePath, "zip", 0, tmpFileBuffer);
+	GetTempFileName(tmpFilePath, "pwn", 0, tmpFileBuffer);
 	CloseHandle(CreateFile(tmpFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_TEMPORARY, NULL));
 #else
-	strcpy(tmpFileBuffer, "/tmp/zipXXXXXX");
+	strcpy(tmpFileBuffer, "/tmp/pwnXXXXXX");
 	close(mkstemp(tmpFileBuffer));
 	FILE* tFile = fopen(tmpFileBuffer, "wb");
 	fclose(tFile);
@@ -323,7 +325,7 @@ void loadZipFile2(const char* ipsw, OutputState** output, const char* file, int 
 		ASSERT(unzGetCurrentFileInfo(zip, &pfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file info from ipsw");
 		fileName = (char*) malloc(pfile_info.size_filename + 1);
 		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
-		if((file == NULL && fileName[strlen(fileName) - 1] != '/') || (file != NULL && strcmp(fileName, file)) == 0) {
+		if(((file == NULL && fileName[strlen(fileName) - 1] != '/') || (file != NULL && strcmp(fileName, file)) == 0) && pfile_info.uncompressed_size <= MaxLoadZipSize) {
 			printf("loading: %s (%ld)\n", fileName, pfile_info.uncompressed_size); fflush(stdout);
 			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
 			if(useMemory) {

@@ -3,6 +3,76 @@
 #include "common.h"
 #include <xpwn/img3.h>
 
+#ifdef HAVE_HW_CRYPTO
+#include <stdint.h>
+#include <IOKit/IOKitLib.h>
+
+typedef struct 
+{
+	void*		inbuf;
+	void*		outbuf;
+	uint32_t	size;
+	uint8_t		iv[16];
+	uint32_t	mode;
+	uint32_t	bits;
+	uint8_t		keybuf[32];
+	uint32_t	mask;
+} IOAESStruct;
+
+#define kIOAESAcceleratorInfo 0
+#define kIOAESAcceleratorTask 1
+#define kIOAESAcceleratorTest 2
+
+#define kIOAESAcceleratorEncrypt 0
+#define kIOAESAcceleratorDecrypt 1
+
+#define kIOAESAcceleratorGIDMask 0x3E8
+#define kIOAESAcceleratorUIDMask 0x7D0
+#define kIOAESAcceleratorCustomMask 0
+
+typedef enum {
+	UID,
+	GID,
+	Custom
+} IOAESKeyType;
+
+IOReturn doAES(io_connect_t conn, void* inbuf, void *outbuf, uint32_t size, IOAESKeyType keyType, void* key, void* iv, int mode) {
+	IOAESStruct in;
+
+	in.mode = mode;
+	in.bits = 128;
+	in.inbuf = inbuf;
+	in.outbuf = outbuf;
+	in.size = size;
+
+	switch(keyType) {
+		case UID:
+			in.mask = kIOAESAcceleratorUIDMask;
+			break;
+		case GID:
+			in.mask = kIOAESAcceleratorGIDMask;
+			break;
+		case Custom:
+			in.mask = kIOAESAcceleratorCustomMask;
+			break;
+	}
+	memset(in.keybuf, 0, sizeof(in.keybuf));
+
+	if(key)
+		memcpy(in.keybuf, key, in.bits / 8);
+
+	if(iv)
+		memcpy(in.iv, iv, 16);
+	else
+		memset(in.iv, 0, 16);
+
+	IOByteCount inSize = sizeof(in);
+
+	return IOConnectCallStructMethod(conn, kIOAESAcceleratorTask, &in, inSize, &in, &inSize);
+}
+
+#endif
+
 void writeImg3Element(AbstractFile* file, Img3Element* element);
 
 void writeImg3Root(AbstractFile* file, Img3Element* element);
@@ -314,11 +384,33 @@ AbstractFile* createAbstractFileFromImg3(AbstractFile* file) {
 		keySeedLen = 16 + (((AppleImg3KBAGHeader*)info->kbag->data)->key_bits)/8;
 		keySeed = (uint8_t*) malloc(keySeedLen);
 		memcpy(keySeed, (uint8_t*)((AppleImg3KBAGHeader*)info->kbag->data) + sizeof(AppleImg3KBAGHeader), keySeedLen);
+#ifdef HAVE_HW_CRYPTO
+		CFMutableDictionaryRef dict = IOServiceMatching("IOAESAccelerator");
+		io_service_t dev = IOServiceGetMatchingService(kIOMasterPortDefault, dict);
+		io_connect_t conn = 0;
+		IOServiceOpen(dev, mach_task_self(), 0, &conn);
+		doAES(conn, keySeed, keySeed, keySeedLen, GID, NULL, NULL, kIOAESAcceleratorDecrypt);
+		IOServiceClose(conn);
+		IOObjectRelease(dev);
+
+		unsigned int key[keySeedLen - 16];
+		unsigned int iv[16];
+
+		int i;
+		for(i = 0; i < 16; i++)
+			iv[i] = keySeed[i];
+
+		for(i = 0; i < (keySeedLen - 16); i++)
+			key[i] = keySeed[i + 16];
+
+		setKeyImg3(abstractFile2, key, iv);
+#else
 		int i = 0;
 		for(i = 0; i < keySeedLen; i++) {
 			printf("%02x", keySeed[i]);
 		}
 		printf("\n");
+#endif
 		free(keySeed);
 	}
 

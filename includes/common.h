@@ -12,6 +12,9 @@
 #define ftello ftello64
 #define off_t off64_t
 #define mkdir(x, y) mkdir(x)
+#define PATH_SEPARATOR "\\"
+#else
+#define PATH_SEPARATOR "/"
 #endif
 
 #define TRUE 1

@@ -33,6 +33,10 @@ void libxpwn_loglevel(int logLevel) {
 }
 
 void Log(int level, const char* file, unsigned int line, const char* function, const char* format, ...) {
+	static FILE* logFile = NULL;
+	if(logFile == NULL)
+		logFile = fopen("log.txt", "w");
+
 	char mainBuffer[1024];
 	char buffer[1024];
 
@@ -54,5 +58,8 @@ void Log(int level, const char* file, unsigned int line, const char* function, c
 			snprintf(mainBuffer, sizeof(mainBuffer), "%s:%s:%d: %s", file, function, line, buffer);
 	}
 	logCallback(mainBuffer);
+	strcat(mainBuffer, "\n");
+	fwrite(mainBuffer, 1, strlen(mainBuffer), logFile);
+	fflush(logFile);
 }
 

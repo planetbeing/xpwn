@@ -161,6 +161,7 @@ struct HFSPlusCatalogKey {
 } __attribute__((__packed__));
 typedef struct HFSPlusCatalogKey HFSPlusCatalogKey;
 
+#ifndef __MACTYPES__
 struct Point {
   int16_t              v;
   int16_t              h;
@@ -179,6 +180,8 @@ typedef struct Rect   Rect;
    together. */
 typedef uint32_t        FourCharCode;
 typedef FourCharCode  OSType;
+
+#endif
 
 /* Finder flags (finderFlags, fdFlags and frFlags) */
 enum {

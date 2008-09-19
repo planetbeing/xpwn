@@ -55,7 +55,7 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 
 	fclose(inputIPSWFile);
 
-	XLOG(0, "Matching IPSW... (%02x%02x%02x%02x...)\n", (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
+	XLOG(0, "Matching IPSW in %s... (%02x%02x%02x%02x...)\n", bundleRoot, (int) hash[0], (int) hash[1], (int) hash[2], (int) hash[3]);
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
@@ -67,10 +67,8 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 			continue;
 		}
 
-		infoPath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + strlen(ent->d_name) + sizeof("/Info.plist")));
-		strcpy(infoPath, bundleRoot);
-		strcat(infoPath, ent->d_name);
-		strcat(infoPath, "/Info.plist");
+		infoPath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + sizeof(PATH_SEPARATOR) + strlen(ent->d_name) + sizeof(PATH_SEPARATOR "Info.plist")));
+		sprintf(infoPath, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "Info.plist", bundleRoot, ent->d_name);
 		XLOG(0, "checking: %s\n", infoPath);
 
 		if((plistFile = createAbstractFileFromFile(fopen(infoPath, "rb"))) != NULL) {
@@ -95,9 +93,8 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 				}
 
 				if(i == 20) {
-					*bundlePath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + strlen(ent->d_name) + 1));
-					strcpy(*bundlePath, bundleRoot);
-					strcat(*bundlePath, ent->d_name);
+					*bundlePath = (char*) malloc(sizeof(char) * (strlen(bundleRoot) + sizeof(PATH_SEPARATOR) + strlen(ent->d_name)));
+					sprintf(*bundlePath, "%s" PATH_SEPARATOR "%s", bundleRoot, ent->d_name);
 
 					free(infoPath);
 					break;
@@ -325,3 +322,124 @@ void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct,
 	add_hfs(volume, plistFile, bootNeuterPlist);
 	free(plist);
 }
+
+int patchSigCheck(AbstractFile* file) {
+	const uint8_t patch[] = {0x01, 0xE0, 0x01, 0x20, 0x40, 0x42, 0x88, 0x23};
+	
+	size_t length = file->getLength(file);
+	uint8_t* buffer = (uint8_t*)malloc(length);
+	file->seek(file, 0);
+	file->read(file, buffer, length);
+	
+	int retval = FALSE;
+	int i;
+	for(i = 0; i < length; i++) {
+		uint8_t* candidate = &buffer[i];
+		if(memcmp(candidate, patch, sizeof(patch)) == 0) {
+			candidate[4] = 0;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch));
+			retval = TRUE;
+			continue;
+		}
+	}
+	
+	free(buffer);
+	return retval;
+}
+
+int patchKernel(AbstractFile* file) {
+	const char patch[] = {0x00, 0x00, 0x00, 0x0A, 0x00, 0x40, 0xA0, 0xE3, 0x04, 0x00, 0xA0, 0xE1, 0x90, 0x80, 0xBD, 0xE8};
+
+	const char patch2[] = {0xFF, 0x50, 0xA0, 0xE3, 0x04, 0x00, 0xA0, 0xE1, 0x0A, 0x10, 0xA0, 0xE1};
+
+	const char patch3[] = {0x99, 0x91, 0x43, 0x2B, 0x91, 0xCD, 0xE7, 0x04, 0x24, 0x1D, 0xB0};
+	
+	size_t length = file->getLength(file);
+	uint8_t* buffer = (uint8_t*)malloc(length);
+	file->seek(file, 0);
+	file->read(file, buffer, length);
+	
+	int retval = 0;
+	int i;
+	for(i = 0; i < length; i++) {
+		uint8_t* candidate = &buffer[i];
+		if(memcmp(candidate, patch, sizeof(patch)) == 0) {
+			candidate[4] = 0x01;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch));
+			retval = TRUE;
+			continue;
+		}
+		if(memcmp(candidate, patch2, sizeof(patch2)) == 0) {
+			candidate[0] = 0x00;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch2));
+			retval = TRUE;
+			continue;
+		}
+		if(memcmp(candidate, patch3, sizeof(patch3)) == 0) {
+			candidate[0] = 0x2B;
+			candidate[1] = 0x99;
+			candidate[2] = 0x00;
+			candidate[3] = 0x00;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch3));
+			retval = TRUE;
+			continue;
+		}
+	}
+	
+	free(buffer);
+	return retval;
+}
+
+int patchDeviceTree(AbstractFile* file) {
+	const char patch[] = "secure-root-prefix";
+	const char patch2[] = "function-disable_keys";
+	
+	size_t length = file->getLength(file);
+	uint8_t* buffer = (uint8_t*)malloc(length);
+	file->seek(file, 0);
+	file->read(file, buffer, length);
+	
+	int retval = 0;
+	int i;
+	for(i = 0; i < length; i++) {
+		uint8_t* candidate = &buffer[i];
+		if(memcmp(candidate, patch, sizeof(patch) - 1) == 0) {
+			candidate[0] = 'x';
+			candidate[1] = 'x';
+			candidate[2] = 'x';
+			candidate[3] = 'x';
+			candidate[4] = 'x';
+			candidate[5] = 'x';
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch) - 1);
+			retval++;
+			continue;
+		}
+		if(memcmp(candidate, patch2, sizeof(patch2) - 1) == 0) {
+			candidate[0] = 'x';
+			candidate[1] = 'x';
+			candidate[2] = 'x';
+			candidate[3] = 'x';
+			candidate[4] = 'x';
+			candidate[5] = 'x';
+			candidate[6] = 'x';
+			candidate[7] = 'x';
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch) - 1);
+			retval++;
+			continue;
+		}
+	}
+	
+	free(buffer);
+	if(retval == 2)
+		return TRUE;
+	else
+		return FALSE;
+}
+
