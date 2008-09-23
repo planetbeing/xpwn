@@ -2,7 +2,11 @@
 #define MOBILEDEVICE_H
 
 #define CF_BUILDING_CF_AS_LIB
+#if __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#else
 #include <CoreFoundation.h>
+#endif
 typedef unsigned int mach_error_t;
 
 /* Error codes */
@@ -149,6 +153,26 @@ CFMutableDictionaryRef AMRestoreCreateDefaultOptions(CFAllocatorRef allocator);
 mach_error_t AMRestoreEnableFileLogging(char *path);
 
 mach_error_t AMRestorePerformDFURestore(struct am_recovery_device *rdev, CFDictionaryRef opts, void *callback, void *user_info);
+
+mach_error_t AMRestorePerformRecoveryModeRestore(struct am_recovery_device *rdev, CFDictionaryRef opts, void *callback, void *user_info);
+
+unsigned int* AMRecoveryModeDeviceGetProgress(struct am_recovery_device *rdev, unsigned int* progress, unsigned int* total);
+
+mach_error_t AMRecoveryModeDeviceSetAutoBoot(struct am_recovery_device *rdev, char autoboot);
+
+mach_error_t AMDeviceEnterRecovery(struct am_device *rdev);
+
+mach_error_t AMDeviceConnect(struct am_device *device);
+
+mach_error_t AMDeviceIsPaired(struct am_device *device);
+
+mach_error_t AMDevicePair(struct am_device *device);
+
+mach_error_t AMDeviceValidatePairing(struct am_device *device);
+
+mach_error_t AMDeviceStartSession(struct am_device *device);
+
+CFStringRef AMDeviceCopyValue(struct am_device *device, unsigned int, const CFStringRef cfstring);
 
 int sendCommandToDevice(am_recovery_device *rdev, CFStringRef cfs, int block);
 int sendFileToDevice(am_recovery_device *rdev, CFStringRef filename);

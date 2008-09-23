@@ -30,13 +30,39 @@ typedef mach_error_t (*AMRestoreEnableFileLoggingFunctionType)(char *path);
 
 typedef mach_error_t (*AMRestorePerformDFURestoreFunctionType)(struct am_recovery_device *rdev, CFDictionaryRef opts, void *callback, void *user_info);
 
+typedef mach_error_t (*AMRestorePerformRecoveryModeRestoreFunctionType)(struct am_recovery_device *rdev, CFDictionaryRef opts, void *callback, void *user_info);
+
 typedef int (__cdecl * cmdsend)  (am_recovery_device *, am_recovery_device *, CFStringRef, int block) __attribute__ ((cdecl));
+
+typedef unsigned int* (*AMRecoveryModeDeviceGetProgressFunctionType)(struct am_recovery_device *rdev, unsigned int* progress, unsigned int* total);
+
+typedef mach_error_t (*AMRecoveryModeDeviceSetAutoBootFunctionType)(struct am_recovery_device *rdev, char autoboot);
+
+typedef mach_error_t (*AMDeviceEnterRecoveryFunctionType)(struct am_device *rdev);
+
+typedef mach_error_t (*AMDeviceConnectFunctionType)(struct am_device *device);
+typedef mach_error_t (*AMDeviceIsPairedFunctionType)(struct am_device *device);
+typedef mach_error_t (*AMDevicePairFunctionType)(struct am_device *device);
+typedef mach_error_t (*AMDeviceValidatePairingFunctionType)(struct am_device *device);
+typedef mach_error_t (*AMDeviceStartSessionFunctionType)(struct am_device *device);
+
+typedef CFStringRef (*AMDeviceCopyValueFunctionType)(struct am_device *device, unsigned int, const CFStringRef cfstring);
 
 static AMDeviceNotificationSubscribeFunctionType AMDeviceNotificationSubscribeFunction = NULL;
 static AMRestoreRegisterForDeviceNotificationsFunctionType AMRestoreRegisterForDeviceNotificationsFunction = NULL;
 static AMRestoreCreateDefaultOptionsFunctionType AMRestoreCreateDefaultOptionsFunction = NULL;
 static AMRestoreEnableFileLoggingFunctionType AMRestoreEnableFileLoggingFunction = NULL;
 static AMRestorePerformDFURestoreFunctionType AMRestorePerformDFURestoreFunction = NULL;
+static AMRestorePerformRecoveryModeRestoreFunctionType AMRestorePerformRecoveryModeRestoreFunction = NULL;
+static AMRecoveryModeDeviceGetProgressFunctionType AMRecoveryModeDeviceGetProgressFunction = NULL;
+static AMRecoveryModeDeviceSetAutoBootFunctionType AMRecoveryModeDeviceSetAutoBootFunction = NULL;
+static AMDeviceEnterRecoveryFunctionType AMDeviceEnterRecoveryFunction = NULL;
+static AMDeviceConnectFunctionType AMDeviceConnectFunction = NULL;
+static AMDeviceIsPairedFunctionType AMDeviceIsPairedFunction = NULL;
+static AMDevicePairFunctionType AMDevicePairFunction = NULL;
+static AMDeviceValidatePairingFunctionType AMDeviceValidatePairingFunction = NULL;
+static AMDeviceStartSessionFunctionType AMDeviceStartSessionFunction = NULL;
+static AMDeviceCopyValueFunctionType AMDeviceCopyValueFunction = NULL;
 static cmdsend   priv_sendCommandToDevice = NULL;
 static cmdsend   priv_sendFileToDevice = NULL;
 
@@ -50,6 +76,7 @@ typedef struct tagDLLOFFSET {
 
 DLLOFFSET OffSetTable[]= {
 //	VerMS		VerLS		GetProductType,	SendCmdO	SendFileO
+	{0x0B90002,	0x00000004,	0x0000ED90,	0x0000F2C0,	0x0000F6F0},
 	{0x0070008,	0x00760000,	0x0000FDA0,	0x00010290,	0x00010630},
 	{0x0070008,	0x00B00000,	0x0000FDF0,	0x000102E0,	0x00010680},
 	{0x0000000,	0x00000000,	0x00000000,	0x00000000,	0x00000000}
@@ -184,6 +211,15 @@ int LoadWindowsDLL() {
 		return -1;
 	}
 	
+	AMRestorePerformRecoveryModeRestoreFunction =
+		(AMRestorePerformRecoveryModeRestoreFunctionType) GetProcAddress(deviceDLL, "AMRestorePerformRecoveryModeRestore");
+		
+	if(!AMRestorePerformRecoveryModeRestoreFunction	)
+	{
+		XLOG(2, "failed to load AMRestorePerformRecoveryModeRestore");
+		return -1;
+	}
+
 	AMRestoreEnableFileLoggingFunction =
 		(AMRestoreEnableFileLoggingFunctionType) GetProcAddress(deviceDLL, "AMRestoreEnableFileLogging");
 		
@@ -193,7 +229,87 @@ int LoadWindowsDLL() {
 		return -1;
 	}
 	
+	AMRecoveryModeDeviceGetProgressFunction =
+		(AMRecoveryModeDeviceGetProgressFunctionType) GetProcAddress(deviceDLL, "AMRecoveryModeDeviceGetProgress");
+		
+	if(!AMRecoveryModeDeviceGetProgressFunction	)
+	{
+		XLOG(2, "failed to load AMRecoveryModeDeviceGetProgress");
+		return -1;
+	}
 	
+	AMRecoveryModeDeviceSetAutoBootFunction =
+		(AMRecoveryModeDeviceSetAutoBootFunctionType) GetProcAddress(deviceDLL, "AMRecoveryModeDeviceSetAutoBoot");
+		
+	if(!AMRecoveryModeDeviceSetAutoBootFunction	)
+	{
+		XLOG(2, "failed to load AMRecoveryModeDeviceSetAutoBoot");
+		return -1;
+	}
+
+	AMDeviceEnterRecoveryFunction =
+		(AMDeviceEnterRecoveryFunctionType) GetProcAddress(deviceDLL, "AMDeviceEnterRecovery");
+		
+	if(!AMDeviceEnterRecoveryFunction	)
+	{
+		XLOG(2, "failed to load AMDeviceEnterRecovery");
+		return -1;
+	}
+
+	AMDeviceConnectFunction =
+		(AMDeviceConnectFunctionType) GetProcAddress(deviceDLL, "AMDeviceConnect");
+		
+	if(!AMDeviceConnectFunction)
+	{
+		XLOG(2, "failed to load AMDeviceConnect");
+		return -1;
+	}
+
+	AMDeviceIsPairedFunction =
+		(AMDeviceIsPairedFunctionType) GetProcAddress(deviceDLL, "AMDeviceIsPaired");
+		
+	if(!AMDeviceIsPairedFunction)
+	{
+		XLOG(2, "failed to load AMDeviceIsPaired");
+		return -1;
+	}
+
+	AMDevicePairFunction =
+		(AMDevicePairFunctionType) GetProcAddress(deviceDLL, "AMDevicePair");
+		
+	if(!AMDevicePairFunction)
+	{
+		XLOG(2, "failed to load AMDevicePair");
+		return -1;
+	}
+
+	AMDeviceValidatePairingFunction =
+		(AMDeviceValidatePairingFunctionType) GetProcAddress(deviceDLL, "AMDeviceValidatePairing");
+		
+	if(!AMDeviceValidatePairingFunction)
+	{
+		XLOG(2, "failed to load AMDeviceValidatePairing");
+		return -1;
+	}
+
+	AMDeviceStartSessionFunction =
+		(AMDeviceStartSessionFunctionType) GetProcAddress(deviceDLL, "AMDeviceStartSession");
+		
+	if(!AMDeviceStartSessionFunction)
+	{
+		XLOG(2, "failed to load AMDeviceStartSession");
+		return -1;
+	}
+
+	AMDeviceCopyValueFunction =
+		(AMDeviceCopyValueFunctionType) GetProcAddress(deviceDLL, "AMDeviceCopyValue");
+		
+	if(!AMDeviceCopyValueFunction)
+	{
+		XLOG(2, "failed to load AMDeviceCopyValue");
+		return -1;
+	}
+
 	initWindowsPrivateFunctions(deviceDLL);
 			
 	return 0;
@@ -236,6 +352,65 @@ mach_error_t AMRestorePerformDFURestore(struct am_recovery_device *rdev, CFDicti
 {
 	XLOG(3, "calling Windows AMRestorePerformDFURestore");
 	return AMRestorePerformDFURestoreFunction(rdev, opts, callback, user_info);
+}
+
+mach_error_t AMRestorePerformRecoveryModeRestore(struct am_recovery_device *rdev, CFDictionaryRef opts, void *callback, void *user_info)
+{
+	XLOG(3, "calling Windows AMRestorePerformRecoveryModeRestore");
+	return AMRestorePerformRecoveryModeRestoreFunction(rdev, opts, callback, user_info);
+}
+
+mach_error_t AMRecoveryModeDeviceSetAutoBoot(struct am_recovery_device *rdev, char autoboot)
+{
+	XLOG(3, "calling Windows AMRecoveryModeDeviceSetAutoBoot");
+	return AMRecoveryModeDeviceSetAutoBootFunction(rdev, autoboot);
+}
+
+mach_error_t AMDeviceEnterRecovery(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDeviceEnterRecovery");
+	return AMDeviceEnterRecoveryFunction(rdev);
+}
+
+mach_error_t AMDeviceConnect(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDeviceConnect");
+	return AMDeviceConnectFunction(rdev);
+}
+
+mach_error_t AMDeviceIsPaired(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDeviceIsPaired");
+	return AMDeviceIsPairedFunction(rdev);
+}
+
+mach_error_t AMDevicePair(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDevicePair");
+	return AMDevicePairFunction(rdev);
+}
+
+mach_error_t AMDeviceValidatePairing(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDeviceValidatePairing");
+	return AMDeviceValidatePairingFunction(rdev);
+}
+
+mach_error_t AMDeviceStartSession(struct am_device *rdev)
+{
+	XLOG(3, "calling Windows AMDeviceStartSession");
+	return AMDeviceStartSessionFunction(rdev);
+}
+
+CFStringRef AMDeviceCopyValue(struct am_device *device, unsigned int should_be_zero, const CFStringRef cfstring)
+{
+	XLOG(3, "calling Windows AMDeviceCopyValue");
+	return AMDeviceCopyValueFunction(device, should_be_zero, cfstring);
+}
+
+unsigned int* AMRecoveryModeDeviceGetProgress(struct am_recovery_device *rdev, unsigned int* progress, unsigned int* total)
+{
+	return AMRecoveryModeDeviceGetProgressFunction(rdev, progress, total);
 }
 
 int sendCommandToDevice(am_recovery_device *rdev, CFStringRef cfs, int block)
