@@ -1,0 +1,89 @@
+Hardware AES utilities
+(C) The iPhone Dev Team
+
+README BEFORE DOING ANYTHING
+
+If you don't read this document before attempting to use the software, you are
+a fool. One of the utilities included herein attempts to patch your kernel,
+which can potentially render your iPhone/iPod unbootable.
+
+This package allows you to directly access the iPhone's AES engine from
+userland. You may encrypt and decrypt with the UID and GID keys, as well as
+any custom keys you provide.
+
+These tools are designed to run on an iPhone with firmare >= 2.0.
+
+In order to enable encryption/decryption with the UID and GID keys, a kernel
+patch is required. This can be done with the following command:
+
+	sudo ./patch-kernel.sh <iv> <key>
+
+The IV and key must have been previously unwrapped from the kernel's KBAG. You
+can find the ones the Dev Team have unwrapped in PwnageTool's FirmwareBundles'
+Info.plists. For example, for the 2.0.1 kernel, you would use the following
+command:
+
+	sudo ./patch_kernel.sh 285df0aa00b76e8c0b9870a4dd7bd5f6 \
+		444f19d072e725f8a27d88ce50ce73de
+
+Change the underscore to a dash. This prevents people who don't actually pay
+attention from working it out.
+
+If the kernel is unencrypted (2.0.2, for example), the iv and key arguments
+should be omitted.
+
+The script attempts a generic patch, but there's no guarantee it won't screw
+up your kernel. A backup copy of your kernel will be made at /kernel.backup
+
+Please note that this patch creates a security vulnerability in which
+malicious code (which you must execute yourself) can use your UID key without
+your knowledge or authorization. This may lead to your personal information
+being compromised. Possibly not a big deal if you're already running a
+jailbroken system anyway.
+
+Afterwards, reboot your phone:
+
+	sudo reboot
+
+This script requires xpwntool (included), sources for which are available from
+http://www.github.com/planetbeing/xpwn. It easily builds on the iPhone (and
+with the Linux toolchain) if you compile a copy of libpng.a for the iPhone and
+cmake.
+
+The utility itself is easy to use:
+
+	./aes <enc|dec> <UID/GID/custom key> [data] [iv]
+
+For example, if you wanted to generate the 0x837 key:
+
+	./aes enc GID 345A2D6C5050D058780DA431F0710E15
+
+Or if you wanted to encrypt with your own key/IV:
+
+	./aes enc 850AFC271132D15AE6989565567E65BF \
+		e92d4090e59f0038e59f1038e5810000 \
+		29681F625D1F61271EC3116601B8BCDE
+
+If stdin is a file, then the third argument will be taken as the
+initialization vector, and the data to encrypt or decrypt will be taken from
+stdin in binary format. If stdout is a file, then instead of printing out the
+results in hex format, the results will be written to the file in binary
+format. So say, you wanted to decrypt an old 8900 ramdisk:
+
+	./aes dec 188458a6d15034dfe386f23b61d43774 < ramdisk.img2 > x.dec
+
+Sources for the tools are included. The Makefile is designed to be used on a
+2.0 iPhone that has Saurik's toolchain installed.
+
+CREDITS
+-------
+
+The direct ancestor of this utility is a piece of code wizdaz wrote to do
+something similar. In this version, the code was stripped down, adapted and
+ported to 2.0.
+
+Probably a bunch of people had reverse engineered poor hwaes_crypt in the
+Security framework. I know pumpkin has certainly looked at it. The calling
+conventions for IOAESAccelerator is pretty clear from the disassembly of that.
+=P
+
