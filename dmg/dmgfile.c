@@ -118,7 +118,7 @@ static int dmgFileRead(io_func* io, off_t location, size_t size, void *buffer) {
 	buffer = (void*)((uint8_t*)buffer + toRead);
 	
 	if(size > 0) {
-		return dmgFileRead(io, location, size, buffer);
+		return dmgFileRead(io, location - dmg->offset, size, buffer);
 	} else {
 		return TRUE;
 	}
