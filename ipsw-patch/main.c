@@ -343,14 +343,14 @@ int main(int argc, char* argv[]) {
 
 	size_t defaultRootSize = ((IntegerValue*) getValueByKey(info, "RootFilesystemSize"))->value;
 	minimumRootSize = defaultRootSize * 1000 * 1000;
-	minimumRootSize -= minimumRootSize % 512;
+	minimumRootSize -= minimumRootSize % 4096;
 
 	if(preferredRootSize == 0) {	
 		preferredRootSize = defaultRootSize;
 	}
 
 	rootSize =  preferredRootSize * 1000 * 1000;
-	rootSize -= rootSize % 512;
+	rootSize -= rootSize % 4096;
 
 	if(useMemory) {
 		buffer = malloc(rootSize);
@@ -369,10 +369,10 @@ int main(int argc, char* argv[]) {
 	
 	rootFS = IOFuncFromAbstractFile(openRoot((void**)&buffer, &rootSize));
 	rootVolume = openVolume(rootFS);
-	XLOG(0, "Growing root to minimum: %ld\n", (long) defaultRootSize); fflush(stdout);
+	XLOG(0, "Growing root to minimum: %lu\n", (unsigned long int) minimumRootSize); fflush(stdout);
 	grow_hfs(rootVolume, minimumRootSize);
 	if(rootSize > minimumRootSize) {
-		XLOG(0, "Growing root: %ld\n", (long) preferredRootSize); fflush(stdout);
+		XLOG(0, "Growing root: %lu\n", (unsigned long int) rootSize); fflush(stdout);
 		grow_hfs(rootVolume, rootSize);
 	}
 	
