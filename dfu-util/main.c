@@ -420,6 +420,7 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 		exit(1);
 	}
 
+	dif->configuration = 1;
 	printf("Setting Configuration %u...\n", dif->configuration);
 	if (usb_set_configuration(dif->dev_handle, dif->configuration) < 0) {
 		fprintf(stderr, "Cannot set configuration: %s\n", usb_strerror());
@@ -548,7 +549,13 @@ int main(int argc, char* argv[]) {
 
 	if(argc < 3) {
 		printf("usage: %s <custom.ipsw> <n82ap|m68ap|n45ap>\n", argv[0]);
+		printf("advanced usage: %s -f <file>\n", argv[0]);
 		printf("n82ap = 3G iPhone, m68ap = First-generation iPhone, n45ap = iPod touch\n");
+		return 0;
+	}
+
+	if(strcmp(argv[1], "-f") == 0) {
+		download(createAbstractFileFromFile(fopen(argv[2], "rb")), 2048, 1);
 		return 0;
 	}
 
