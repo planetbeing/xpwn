@@ -15,7 +15,7 @@ void TestByteOrder()
 }
 
 void defaultCallback(const char* Message) {
-	printf(Message);
+	printf("%s", Message);
 }
 
 void init_libxpwn() {

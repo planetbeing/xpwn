@@ -334,6 +334,10 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 
 	memset(dif, 0, sizeof(*dif));
 
+	dif->flags = DFU_IFF_VENDOR | DFU_IFF_PRODUCT;
+	dif->vendor = 0x05ac;
+	dif->product = 0x1222;
+
 	usb_init();
 	//usb_set_debug(255);
 	usb_find_busses();
