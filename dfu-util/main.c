@@ -66,6 +66,7 @@ struct usb_vendprod {
 struct dfu_if {
 	uint16_t vendor;
 	uint16_t product;
+	uint16_t product_mask;
 	uint8_t configuration;
 	uint8_t interface;
 	uint8_t altsetting;
@@ -241,7 +242,7 @@ static int iterate_dfu_devices(struct dfu_if *dif,
 			if (dif && (dif->flags &
 			    (DFU_IFF_VENDOR|DFU_IFF_PRODUCT)) &&
 		    	    (dev->descriptor.idVendor != dif->vendor ||
-		     	    dev->descriptor.idProduct != dif->product))
+		     	    (dev->descriptor.idProduct & dif->product_mask) != (dif->product & dif->product_mask)))
 				continue;
 			if (dif && (dif->flags & DFU_IFF_DEVNUM) &&
 		    	    (atoi(usb_bus->dirname) != dif->bus ||
@@ -337,6 +338,7 @@ int download(AbstractFile* file, unsigned int transfer_size, int final_reset)
 	dif->flags = DFU_IFF_VENDOR | DFU_IFF_PRODUCT;
 	dif->vendor = 0x05ac;
 	dif->product = 0x1222;
+	dif->product_mask = 0xfff0;
 
 	usb_init();
 	//usb_set_debug(255);
