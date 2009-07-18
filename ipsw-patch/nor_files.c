@@ -67,7 +67,7 @@ AbstractFile* duplicateAbstractFile(AbstractFile* file, AbstractFile* backing) {
 	}
 }
 
-AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, const unsigned int* iv) {
+AbstractFile* openAbstractFile3(AbstractFile* file, const unsigned int* key, const unsigned int* iv, int layers) {
 	uint32_t signatureBE;
 	uint32_t signatureLE;
 
@@ -81,21 +81,38 @@ AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, con
 	FLIPENDIANLE(signatureLE);
 	file->seek(file, 0);
 
+	AbstractFile* cur;
 	if(signatureBE == SIGNATURE_8900) {
-		return openAbstractFile2(createAbstractFileFrom8900(file), key, iv);
+		cur = createAbstractFileFrom8900(file);
 	} else if(signatureLE == IMG2_SIGNATURE) {
-		return openAbstractFile2(createAbstractFileFromImg2(file), key, iv);
+		cur = createAbstractFileFromImg2(file);
 	} else if(signatureLE == IMG3_SIGNATURE) {
 		AbstractFile2* img3 = (AbstractFile2*) createAbstractFileFromImg3(file);
-		img3->setKey(img3, key, iv);
-		return openAbstractFile((AbstractFile*) img3);
+		if(key && iv)
+			img3->setKey(img3, key, iv);
+		cur = (AbstractFile*) img3;
+		key = NULL;
+		iv = NULL;
 	} else if(signatureBE == COMP_SIGNATURE) {
-		return openAbstractFile(createAbstractFileFromComp(file));
+		cur = createAbstractFileFromComp(file);
+		key = NULL;
+		iv = NULL;
 	} else if(signatureBE == IBOOTIM_SIG_UINT) {
-		return openAbstractFile(createAbstractFileFromIBootIM(file));
+		cur = createAbstractFileFromIBootIM(file);
+		key = NULL;
+		iv = NULL;
 	} else {
 		return file;
 	}
+
+	if(layers < 0 || layers > 0)	
+		return openAbstractFile3(cur, key, iv, layers - 1);
+	else
+		return cur;
+}
+
+AbstractFile* openAbstractFile2(AbstractFile* file, const unsigned int* key, const unsigned int* iv) {
+	return openAbstractFile3(file, key, iv, -1);
 }
 
 AbstractFile* duplicateAbstractFile2(AbstractFile* file, AbstractFile* backing, const unsigned int* key, const unsigned int* iv, AbstractFile* certificate) {

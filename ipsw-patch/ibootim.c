@@ -194,6 +194,10 @@ void pngError(png_structp png_ptr, png_const_charp error_msg) {
 	exit(0);
 }
 
+void pngWarn(png_structp png_ptr, png_const_charp error_msg) {
+	XLOG(0, "warning: %s\n", error_msg);
+}
+
 int convertToPNG(AbstractFile* imageWrapper, const unsigned int* key, const unsigned int* iv, const char* png) {
 	AbstractFile* imageFile;
 
@@ -208,7 +212,7 @@ int convertToPNG(AbstractFile* imageWrapper, const unsigned int* key, const unsi
 	}
 	InfoIBootIM* info = (InfoIBootIM*) (imageFile->data);
 
-	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, pngError, pngError);
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, pngError, pngWarn);
 	if (!png_ptr) {
 		return -1;
 	}
@@ -226,11 +230,15 @@ int convertToPNG(AbstractFile* imageWrapper, const unsigned int* key, const unsi
 	int bytes_per_pixel;
 
 	if(info->header.format == IBOOTIM_ARGB) {
+		XLOG(3, "ARGB");
 		color_type = PNG_COLOR_TYPE_RGB_ALPHA;
 		bytes_per_pixel = 4;
 	} else if(info->header.format == IBOOTIM_GREY) {
+		XLOG(3, "Grayscale");
 		color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
 		bytes_per_pixel = 2;
+	} else {
+		XLOG(3, "Unknown color type!");
 	}
 
 	png_set_IHDR(png_ptr, info_ptr, info->header.width, info->header.height,
@@ -278,7 +286,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	}
 	png->seek(png, 0);
 
-	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, pngError, pngError);
+	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, pngError, pngWarn);
 	if (!png_ptr) {
 		return NULL;
 	}
@@ -324,7 +332,7 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	png_set_expand(png_ptr);
 	png_set_strip_16(png_ptr);
 	png_set_bgr(png_ptr);
-	png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
+	png_set_add_alpha(png_ptr, 0x0, PNG_FILLER_AFTER);
 	png_set_invert_alpha(png_ptr);
 	
 	png_read_update_info(png_ptr, info_ptr);

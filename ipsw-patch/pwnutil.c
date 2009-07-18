@@ -59,6 +59,7 @@ Dictionary* parseIPSW2(const char* inputIPSW, const char* bundleRoot, char** bun
 
 	dir = opendir(bundleRoot);
 	if(dir == NULL) {
+		XLOG(1, "Bundles directory not found\n");
 		return NULL;
 	}
 
@@ -249,6 +250,52 @@ void doPatchInPlace(Volume* volume, const char* filePath, const char* patchPath)
 	XLOG(0, "success\n"); fflush(stdout);
 }
 
+void doPatchInPlaceMemoryPatch(Volume* volume, const char* filePath, void** patchData, size_t* patchSize) {
+	void* buffer;
+	void* buffer2;
+	size_t bufferSize;
+	size_t bufferSize2;
+	AbstractFile* bufferFile;
+	AbstractFile* patchFile;
+	AbstractFile* out;
+	
+	buffer = malloc(1);
+	bufferSize = 0;
+	bufferFile = createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize);
+
+	XLOG(0, "retrieving..."); fflush(stdout);
+	get_hfs(volume, filePath, bufferFile);
+	bufferFile->close(bufferFile);
+	
+	XLOG(0, "patching..."); fflush(stdout);
+				
+	patchFile = createAbstractFileFromMemoryFile(patchData, patchSize);
+
+	buffer2 = malloc(1);
+	bufferSize2 = 0;
+	out = duplicateAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize), createAbstractFileFromMemoryFile((void**)&buffer2, &bufferSize2));
+
+	// reopen the inner package
+	bufferFile = openAbstractFile(createAbstractFileFromMemoryFile((void**)&buffer, &bufferSize));
+	
+	if(!patchFile || !bufferFile || !out) {
+		XLOG(0, "file error\n");
+		exit(0);
+	}
+
+	if(patch(bufferFile, out, patchFile) != 0) {
+		XLOG(0, "patch failed\n");
+		exit(0);
+	}
+	
+	XLOG(0, "writing... "); fflush(stdout);
+	add_hfs(volume, createAbstractFileFromMemoryFile((void**)&buffer2, &bufferSize2), filePath);
+	free(buffer2);
+	free(buffer);
+
+	XLOG(0, "success\n"); fflush(stdout);
+}
+
 void createRestoreOptions(Volume* volume, int SystemPartitionSize, int UpdateBaseband) {
 	const char optionsPlist[] = "/usr/local/share/restore/options.plist";
 	AbstractFile* plistFile;
@@ -325,11 +372,21 @@ void fixupBootNeuterArgs(Volume* volume, char unlockBaseband, char selfDestruct,
 
 int patchSigCheck(AbstractFile* file) {
 	const uint8_t patch[] = {0x01, 0xE0, 0x01, 0x20, 0x40, 0x42, 0x88, 0x23};
+
+	// for 3gs, signature check
+	const uint8_t patch2[] = {0x08, 0xB1, 0x4F, 0xF0, 0xFF, 0x30, 0xA7, 0xF1, 0x10, 0x0D};
 	
+	// for 3gs, prod check
+	const uint8_t patch3[] = {0x03, 0x94, 0xFF, 0xF7, 0x11, 0xFF, 0x04, 0x46};
+
+	// for 3gs, ecid check
+	const uint8_t patch4[] = {0x50, 0x46, 0xFF, 0xF7, 0xB1, 0xFE, 0x04, 0x46};
+
 	size_t length = file->getLength(file);
-	uint8_t* buffer = (uint8_t*)malloc(length);
+	uint8_t* buffer = (uint8_t*)malloc(length + sizeof(patch2));
 	file->seek(file, 0);
 	file->read(file, buffer, length);
+	memset(buffer + length, 0, sizeof(patch2));
 	
 	int retval = FALSE;
 	int i;
@@ -341,6 +398,40 @@ int patchSigCheck(AbstractFile* file) {
 			file->seek(file, i);
 			file->write(file, candidate, sizeof(patch));
 			retval = TRUE;
+			XLOG(3, "iBoot armv6 signature check patch success\n"); fflush(stdout);
+			continue;
+		}
+		if(memcmp(candidate, patch2, sizeof(patch2)) == 0) {
+			candidate[2] = 0x0;
+			candidate[3] = 0x20;
+			candidate[4] = 0x0;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch2));
+			retval = TRUE;
+			XLOG(3, "iBoot armv7 signature check patch success\n"); fflush(stdout);
+			continue;
+		}
+		if(memcmp(candidate, patch3, sizeof(patch3)) == 0) {
+			candidate[2] = 0x0;
+			candidate[3] = 0x20;
+			candidate[4] = 0x0;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch3));
+			retval = TRUE;
+			XLOG(3, "iBoot armv7 PROD check patch success\n"); fflush(stdout);
+			continue;
+		}
+		if(memcmp(candidate, patch4, sizeof(patch4)) == 0) {
+			candidate[2] = 0x0;
+			candidate[3] = 0x20;
+			candidate[4] = 0x0;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch4));
+			retval = TRUE;
+			XLOG(3, "iBoot armv7 ECID check patch success\n"); fflush(stdout);
 			continue;
 		}
 	}
@@ -349,37 +440,84 @@ int patchSigCheck(AbstractFile* file) {
 	return retval;
 }
 
+int Do30Patches = TRUE;
+
 int patchKernel(AbstractFile* file) {
+	// codesign
 	const char patch[] = {0x00, 0x00, 0x00, 0x0A, 0x00, 0x40, 0xA0, 0xE3, 0x04, 0x00, 0xA0, 0xE1, 0x90, 0x80, 0xBD, 0xE8};
 
-	const char patch2[] = {0xFF, 0x50, 0xA0, 0xE3, 0x04, 0x00, 0xA0, 0xE1, 0x0A, 0x10, 0xA0, 0xE1};
+	const char patch_old[] = {0xFF, 0x50, 0xA0, 0xE3, 0x04, 0x00, 0xA0, 0xE1, 0x0A, 0x10, 0xA0, 0xE1};
 
+	// 2.0 vm_map max_prot
 	const char patch3[] = {0x99, 0x91, 0x43, 0x2B, 0x91, 0xCD, 0xE7, 0x04, 0x24, 0x1D, 0xB0};
 	
+	// 3.0 vm_map max_prot
+	const char patch2[] = {0x2E, 0xD1, 0x35, 0x98, 0x80, 0x07, 0x33, 0xD4, 0x6B, 0x08, 0x1E, 0x1C};
+
+	// 3.0 illb img3 patch 1
+	const char patch4[] = {0x98, 0x47, 0x00, 0x28, 0x00, 0xD0, 0xAE, 0xE0, 0x06, 0x98};
+
+	// 3.0 illb img3 patch 2
+	const char patch5[] = {0x05, 0x1E, 0x00, 0xD0, 0xA8, 0xE0, 0x03, 0x9B};
+
+	// 3.0 CS enforcement patch
+	const char patch6[] = {0x9C, 0x22, 0x03, 0x59, 0x99, 0x58};
+
+	// 3.0 armv7 vm_map_enter max_prot
+	const char n88patch1[] = {0x93, 0xBB, 0x16, 0xF0, 0x02, 0x0F, 0x40, 0xF0, 0x36, 0x80, 0x63, 0x08};
+
+	// 3.0 armv7 cs patch
+	const char n88patch2[] = {0x05, 0x4B, 0x98, 0x47, 0x00, 0xB1, 0x00, 0x24, 0x20, 0x46, 0x90, 0xBD};
+
+	// 3.0 armv7 cs_enforcement_disable patch
+	const char n88patch3[] = {0xD3, 0xF8, 0x9C, 0x20, 0xDF, 0xF8};
+
+	// 3.0 arm7 img3 prod patch
+	const char n88patch4[] = {0x03, 0x94, 0xFF, 0xF7, 0x29, 0xFF, 0xF8, 0xB1};
+
+	// 3.0 arm7 img3 ecid patch
+	const char n88patch5[] = {0x0C, 0xCA, 0xFF, 0xF7, 0x10, 0xFF, 0x00, 0x38};
+
+	// 3.0 arm7 img3 signature patch
+	const char n88patch6[] = {0x30, 0xE0, 0x4F, 0xF0, 0xFF, 0x30, 0x2D, 0xE0};
+
+	// 3.0 arm7 img3 signature patch
+	const char n88patch_test1[] = {0x67, 0x4B, 0x98, 0x47, 0x00, 0x28};
+
+	// 3.0 arm7 img3 signature patch
+	const char n88patch_test2[] = {0x04, 0x98, 0xFF, 0xF7, 0xD9, 0xFD, 0x04, 0x46};
+
+	// 3.0 arm7 img3 signature patch
+	const char n88patch_test3[] = {0x01, 0x99, 0xFF, 0xF7, 0xBE, 0xFC, 0x00, 0xB3};
+
 	size_t length = file->getLength(file);
-	uint8_t* buffer = (uint8_t*)malloc(length);
+	uint8_t* buffer = (uint8_t*)malloc(length + sizeof(patch));
 	file->seek(file, 0);
 	file->read(file, buffer, length);
+	memset(buffer + length, 0, sizeof(patch));
 	
 	int retval = 0;
 	int i;
 	for(i = 0; i < length; i++) {
 		uint8_t* candidate = &buffer[i];
 		if(memcmp(candidate, patch, sizeof(patch)) == 0) {
+			XLOG(3, "kernel patch1 success\n"); fflush(stdout);
 			candidate[4] = 0x01;
 			file->seek(file, i);
 			file->write(file, candidate, sizeof(patch));
 			retval = TRUE;
 			continue;
 		}
-		if(memcmp(candidate, patch2, sizeof(patch2)) == 0) {
-			candidate[0] = 0x00;
+		if(memcmp(candidate, patch_old, sizeof(patch_old)) == 0) {
+			XLOG(3, "kernel patch_old success\n"); fflush(stdout);
+			candidate[0] = 0x0;
 			file->seek(file, i);
-			file->write(file, candidate, sizeof(patch2));
+			file->write(file, candidate, sizeof(patch_old));
 			retval = TRUE;
 			continue;
 		}
 		if(memcmp(candidate, patch3, sizeof(patch3)) == 0) {
+			XLOG(3, "kernel patch3 success\n"); fflush(stdout);
 			candidate[0] = 0x2B;
 			candidate[1] = 0x99;
 			candidate[2] = 0x00;
@@ -387,6 +525,155 @@ int patchKernel(AbstractFile* file) {
 			file->seek(file, i);
 			file->write(file, candidate, sizeof(patch3));
 			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, patch2, sizeof(patch2)) == 0) {
+			XLOG(3, "kernel patch2 success\n"); fflush(stdout);
+			// NOP out the BMI
+			candidate[6] = 0x00;
+			candidate[7] = 0x28;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch2));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, patch4, sizeof(patch4)) == 0) {
+			XLOG(3, "kernel patch4 success\n"); fflush(stdout);
+			candidate[3] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch4));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, patch5, sizeof(patch5)) == 0) {
+			XLOG(3, "kernel patch5 success\n"); fflush(stdout);
+			candidate[0] = 0x00;
+			candidate[1] = 0x25;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(patch5));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch1, sizeof(n88patch1)) == 0) {
+			XLOG(3, "kernel armv7 vm_map_enter patch success\n"); fflush(stdout);
+			candidate[6] = 0x8B;
+			candidate[7] = 0x46;
+			candidate[8] = 0x8B;
+			candidate[9] = 0x46;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch1));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch2, sizeof(n88patch2)) == 0) {
+			XLOG(3, "kernel armv7 cs patch success\n"); fflush(stdout);
+			candidate[6] = 0x1;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch2));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch4, sizeof(n88patch4)) == 0) {
+			XLOG(3, "kernel armv7 img3 prod patch success\n"); fflush(stdout);
+			candidate[2] = 0x00;
+			candidate[3] = 0x20;
+			candidate[4] = 0x00;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch4));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch5, sizeof(n88patch5)) == 0) {
+			XLOG(3, "kernel armv7 img3 ecid patch success\n"); fflush(stdout);
+			candidate[2] = 0x00;
+			candidate[3] = 0x20;
+			candidate[4] = 0x00;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch5));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch6, sizeof(n88patch6)) == 0) {
+			XLOG(3, "kernel armv7 img3 signature patch success\n"); fflush(stdout);
+			candidate[2] = 0x00;
+			candidate[3] = 0x20;
+			candidate[4] = 0x00;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch6));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch_test1, sizeof(n88patch_test1)) == 0) {
+			XLOG(3, "kernel armv7 img3 ParseFirmwareFooter patch success\n"); fflush(stdout);
+			candidate[2] = 0x00;
+			candidate[3] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch_test1));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch_test2, sizeof(n88patch_test2)) == 0) {
+			XLOG(3, "kernel armv7 img3 CheckMetaTags patch success\n"); fflush(stdout);
+			candidate[2] = 0x00;
+			candidate[3] = 0x20;
+			candidate[4] = 0x00;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch_test2));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch_test3, sizeof(n88patch_test3)) == 0) {
+			XLOG(3, "kernel armv7 img3 encrypt SHSH with 89A patch success\n"); fflush(stdout);
+			candidate[2] = 0x01;
+			candidate[3] = 0x20;
+			candidate[4] = 0x01;
+			candidate[5] = 0x20;
+			file->seek(file, i);
+			file->write(file, candidate, sizeof(n88patch_test3));
+			retval = TRUE;
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, patch6, sizeof(patch6)) == 0) {
+			if(candidate[7] != 0x4B)
+				continue;
+
+			uint32_t cs_enforcement_disable = *((uint32_t*)(((intptr_t)(&candidate[6] + 0x4) & ~0x3) + (0x4 * candidate[6])));
+			FLIPENDIANLE(cs_enforcement_disable);
+
+			uint32_t offset = cs_enforcement_disable - 0xC0008000;
+
+			XLOG(3, "kernel cs_enforcement_disable at: 0x%X, 0x%X\n", cs_enforcement_disable, offset); fflush(stdout);
+
+			uint32_t value = 1;
+
+			FLIPENDIANLE(value);
+
+			*((uint32_t*)(buffer + offset)) = value;
+
+			file->seek(file, offset);
+			file->write(file, &value, sizeof(value));
+			continue;
+		}
+		if(Do30Patches && memcmp(candidate, n88patch3, sizeof(n88patch3)) == 0) {
+			uint32_t cs_enforcement_disable = *((uint32_t*)(((intptr_t)(&candidate[4] + 0x4) & ~0x3) + (((candidate[7] & 0xF) << 8) + candidate[6])));
+			FLIPENDIANLE(cs_enforcement_disable);
+
+			uint32_t offset = cs_enforcement_disable - 0xC0008000;
+
+			XLOG(3, "kernel cs_enforcement_disable at: 0x%X, 0x%X\n", cs_enforcement_disable, offset); fflush(stdout);
+
+			uint32_t value = 1;
+
+			FLIPENDIANLE(value);
+
+			*((uint32_t*)(buffer + offset)) = value;
+
+			file->seek(file, offset);
+			file->write(file, &value, sizeof(value));
 			continue;
 		}
 	}
@@ -400,9 +687,10 @@ int patchDeviceTree(AbstractFile* file) {
 	const char patch2[] = "function-disable_keys";
 	
 	size_t length = file->getLength(file);
-	uint8_t* buffer = (uint8_t*)malloc(length);
+	uint8_t* buffer = (uint8_t*)malloc(length + sizeof(patch2));
 	file->seek(file, 0);
 	file->read(file, buffer, length);
+	memset(buffer + length, 0, sizeof(patch2));
 	
 	int retval = 0;
 	int i;

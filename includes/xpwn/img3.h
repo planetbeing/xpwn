@@ -16,12 +16,14 @@
 #define IMG3_SHSH_MAGIC 0x53485348
 #define IMG3_CERT_MAGIC 0x43455254
 #define IMG3_KBAG_MAGIC 0x4B424147
+#define IMG3_TYPE_MAGIC 0x54595045
 
 #define IMG3_SIGNATURE IMG3_MAGIC
 
 typedef struct Img3Element Img3Element;
+typedef struct Img3Info Img3Info;
 
-typedef void (*WriteImg3)(AbstractFile* file, Img3Element* element);
+typedef void (*WriteImg3)(AbstractFile* file, Img3Element* element, Img3Info* info);
 typedef void (*FreeImg3)(Img3Element* element);
 
 typedef struct AppleImg3Header {
@@ -55,19 +57,23 @@ struct Img3Element
 	struct Img3Element* next;
 };
 
-typedef struct Img3Info {
+struct Img3Info {
 	AbstractFile* file;
 	Img3Element* root;
 	Img3Element* data;
 	Img3Element* cert;
 	Img3Element* kbag;
+	Img3Element* type;
 	int encrypted;
 	AES_KEY encryptKey;
 	AES_KEY decryptKey;
 	uint8_t iv[16];
 	size_t offset;
+	uint32_t replaceDWord;
 	char dirty;
-} Img3Info;
+	char exploit24k;
+	char exploitN8824k;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +81,8 @@ extern "C" {
 	AbstractFile* createAbstractFileFromImg3(AbstractFile* file);
 	AbstractFile* duplicateImg3File(AbstractFile* file, AbstractFile* backing);
 	void replaceCertificateImg3(AbstractFile* file, AbstractFile* certificate);
+	void exploit24kpwn(AbstractFile* file);
+	void exploitN8824kpwn(AbstractFile* file);
 #ifdef __cplusplus
 }
 #endif

@@ -344,76 +344,93 @@ HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume) {
 }
 
 CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume) {
-  BTree* tree;
-  HFSPlusCatalogThread* record; 
-  HFSPlusCatalogKey key;
-  uint32_t nodeNumber;
-  int recordNumber;
-  
-  BTNodeDescriptor* descriptor;
-  off_t recordOffset;
-  off_t recordDataOffset;
-  HFSPlusCatalogKey* currentKey;
-  
-  CatalogRecordList* list;
-  CatalogRecordList* lastItem;
-  CatalogRecordList* item;
-  
-  tree = volume->catalogTree;
-  
-  key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
-  key.parentID = CNID;
-  key.nodeName.length = 0;
-  
-  list = NULL;
-  
-  record = (HFSPlusCatalogThread*) search(tree, (BTKey*)(&key), NULL, &nodeNumber, &recordNumber);
-  
-  if(record == NULL)
-    return NULL;
-  
-  free(record);
-  
-  ++recordNumber;
-  
-  while(nodeNumber != 0) {    
-    descriptor = readBTNodeDescriptor(nodeNumber, tree);
-       
-    while(recordNumber < descriptor->numRecords) {
-      recordOffset = getRecordOffset(recordNumber, nodeNumber, tree);
-      currentKey = (HFSPlusCatalogKey*) READ_KEY(tree, recordOffset, tree->io);
-      recordDataOffset = recordOffset + currentKey->keyLength + sizeof(currentKey->keyLength);
-      
-      if(currentKey->parentID == CNID) {
-        item = (CatalogRecordList*) malloc(sizeof(CatalogRecordList));
-        item->name = currentKey->nodeName;
-        item->record = (HFSPlusCatalogRecord*) READ_DATA(tree, recordDataOffset, tree->io);
-        item->next = NULL;
+	BTree* tree;
+	HFSPlusCatalogThread* record; 
+	HFSPlusCatalogKey key;
+	uint32_t nodeNumber;
+	int recordNumber;
 
-        if(list == NULL) {
-          list = item;
-        } else {
-          lastItem->next = item;
-        }
-        
-        lastItem = item;
-        free(currentKey);
-      } else {
-        free(currentKey);
-        free(descriptor);
-        return list;
-      }
-      
-      recordNumber++;
-    }
-    
-    nodeNumber = descriptor->fLink;
-    recordNumber = 0;
-	
-	free(descriptor);
-  }
-  
-  return list;
+	BTNodeDescriptor* descriptor;
+	off_t recordOffset;
+	off_t recordDataOffset;
+	HFSPlusCatalogKey* currentKey;
+
+	CatalogRecordList* list;
+	CatalogRecordList* lastItem;
+	CatalogRecordList* item;
+
+	char pathBuffer[1024];
+	HFSPlusCatalogRecord* toReturn;
+	HFSPlusCatalogKey nkey;
+	int exact;
+
+	tree = volume->catalogTree;
+
+	key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
+	key.parentID = CNID;
+	key.nodeName.length = 0;
+
+	list = NULL;
+
+	record = (HFSPlusCatalogThread*) search(tree, (BTKey*)(&key), NULL, &nodeNumber, &recordNumber);
+
+	if(record == NULL)
+		return NULL;
+
+	free(record);
+
+	++recordNumber;
+
+	while(nodeNumber != 0) {    
+		descriptor = readBTNodeDescriptor(nodeNumber, tree);
+
+		while(recordNumber < descriptor->numRecords) {
+			recordOffset = getRecordOffset(recordNumber, nodeNumber, tree);
+			currentKey = (HFSPlusCatalogKey*) READ_KEY(tree, recordOffset, tree->io);
+			recordDataOffset = recordOffset + currentKey->keyLength + sizeof(currentKey->keyLength);
+
+			if(currentKey->parentID == CNID) {
+				item = (CatalogRecordList*) malloc(sizeof(CatalogRecordList));
+				item->name = currentKey->nodeName;
+				item->record = (HFSPlusCatalogRecord*) READ_DATA(tree, recordDataOffset, tree->io);
+
+				if(item->record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)item->record)->userInfo.fileType) == kHardLinkFileType) {
+					sprintf(pathBuffer, "iNode%d", ((HFSPlusCatalogFile*)item->record)->permissions.special.iNodeNum);
+					nkey.parentID = volume->metadataDir;
+					ASCIIToUnicode(pathBuffer, &nkey.nodeName); 
+					nkey.keyLength = sizeof(nkey.parentID) + sizeof(nkey.nodeName.length) + (sizeof(uint16_t) * nkey.nodeName.length);
+
+					toReturn = (HFSPlusCatalogRecord*) search(volume->catalogTree, (BTKey*)(&nkey), &exact, NULL, NULL);
+
+					free(item->record);
+					item->record = toReturn;
+				}
+				item->next = NULL;
+
+				if(list == NULL) {
+					list = item;
+				} else {
+					lastItem->next = item;
+				}
+
+				lastItem = item;
+				free(currentKey);
+			} else {
+				free(currentKey);
+				free(descriptor);
+				return list;
+			}
+
+			recordNumber++;
+		}
+
+		nodeNumber = descriptor->fLink;
+		recordNumber = 0;
+
+		free(descriptor);
+	}
+
+	return list;
 }
 
 void releaseCatalogRecordList(CatalogRecordList* list) {
@@ -430,6 +447,8 @@ HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSCatalogNode
 	io_func* io;
 	char pathBuffer[1024];
 	HFSPlusCatalogRecord* toReturn;
+	HFSPlusCatalogKey nkey;
+	int exact;
 
 	if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->permissions.fileMode & S_IFLNK) == S_IFLNK) {
 		io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &(((HFSPlusCatalogFile*)record)->dataFork), record, volume);
@@ -439,9 +458,41 @@ HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSCatalogNode
 		toReturn = getRecordFromPath3(pathBuffer, volume, NULL, key, TRUE, TRUE, parentID);
 		free(record);
 		return toReturn;
+	} else if(record->recordType == kHFSPlusFileRecord && (((HFSPlusCatalogFile*)record)->userInfo.fileType) == kHardLinkFileType) {
+		sprintf(pathBuffer, "iNode%d", ((HFSPlusCatalogFile*)record)->permissions.special.iNodeNum);
+		nkey.parentID = volume->metadataDir;
+    		ASCIIToUnicode(pathBuffer, &nkey.nodeName); 
+		nkey.keyLength = sizeof(nkey.parentID) + sizeof(nkey.nodeName.length) + (sizeof(uint16_t) * nkey.nodeName.length);
+
+		toReturn = (HFSPlusCatalogRecord*) search(volume->catalogTree, (BTKey*)(&nkey), &exact, NULL, NULL);
+
+		free(record);
+
+		return toReturn;
 	} else {
 		return record;
 	}
+}
+
+static const uint16_t METADATA_DIR[] = {0, 0, 0, 0, 'H', 'F', 'S', '+', ' ', 'P', 'r', 'i', 'v', 'a', 't', 'e', ' ', 'D', 'a', 't', 'a'};
+
+HFSCatalogNodeID getMetadataDirectoryID(Volume* volume) {
+	HFSPlusCatalogKey key;
+	HFSPlusCatalogFolder* record;
+	int exact;
+	HFSCatalogNodeID id;
+
+	key.nodeName.length = sizeof(METADATA_DIR) / sizeof(uint16_t);
+	key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length) + sizeof(METADATA_DIR);
+	key.parentID = kHFSRootFolderID;
+	memcpy(key.nodeName.unicode, METADATA_DIR, sizeof(METADATA_DIR));
+
+	record = (HFSPlusCatalogFolder*) search(volume->catalogTree, (BTKey*)(&key), &exact, NULL, NULL);
+	id = record->folderID;
+
+	free(record);
+
+	return id;
 }
 
 HFSPlusCatalogRecord* getRecordFromPath(const char* path, Volume* volume, char **name, HFSPlusCatalogKey* retKey) {
@@ -741,69 +792,92 @@ int move(const char* source, const char* dest, Volume* volume) {
 }
 
 int removeFile(const char* fileName, Volume* volume) {
-  HFSPlusCatalogRecord* record;
-  HFSPlusCatalogKey key;
-  io_func* io;
-  HFSPlusCatalogFolder* parentFolder;
+	HFSPlusCatalogRecord* record;
+	HFSPlusCatalogKey key;
+	io_func* io;
+	HFSPlusCatalogFolder* parentFolder;
 
-  record = getRecordFromPath3(fileName, volume, NULL, &key, TRUE, FALSE, kHFSRootFolderID);
-  if(record != NULL) {
-    parentFolder = (HFSPlusCatalogFolder*) getRecordByCNID(key.parentID, volume);
-    if(parentFolder != NULL) {
-	if(parentFolder->recordType != kHFSPlusFolderRecord) {
-		ASSERT(FALSE, "parent not folder");
-		free(parentFolder);
-		return FALSE;
-	}
-    } else {
-	ASSERT(FALSE, "can't find parent");
-	return FALSE;
-    }
+	record = getRecordFromPath3(fileName, volume, NULL, &key, TRUE, FALSE, kHFSRootFolderID);
+	if(record != NULL) {
+		parentFolder = (HFSPlusCatalogFolder*) getRecordByCNID(key.parentID, volume);
+		if(parentFolder != NULL) {
+			if(parentFolder->recordType != kHFSPlusFolderRecord) {
+				ASSERT(FALSE, "parent not folder");
+				free(parentFolder);
+				return FALSE;
+			}
+		} else {
+			ASSERT(FALSE, "can't find parent");
+			return FALSE;
+		}
 
-    if(record->recordType == kHFSPlusFileRecord) {
-      io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &((HFSPlusCatalogFile*)record)->dataFork, record, volume);
-      allocate((RawFile*)io->data, 0);
-      CLOSE(io);
+		if(record->recordType == kHFSPlusFileRecord) {
+			io = openRawFile(((HFSPlusCatalogFile*)record)->fileID, &((HFSPlusCatalogFile*)record)->dataFork, record, volume);
+			allocate((RawFile*)io->data, 0);
+			CLOSE(io);
 
-      removeFromBTree(volume->catalogTree, (BTKey*)(&key));
-      
-      key.nodeName.length = 0;
-      key.parentID = ((HFSPlusCatalogFile*)record)->fileID;
-      key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
-      removeFromBTree(volume->catalogTree, (BTKey*)(&key));
-      
-      volume->volumeHeader->fileCount--;
-    } else {
-      if(((HFSPlusCatalogFolder*)record)->valence > 0) {
+			removeFromBTree(volume->catalogTree, (BTKey*)(&key));
+			XAttrList* next;
+			XAttrList* attrs = getAllExtendedAttributes(((HFSPlusCatalogFile*)record)->fileID, volume);
+			if(attrs != NULL) {
+				while(attrs != NULL) {
+					next = attrs->next;
+					unsetAttribute(volume, ((HFSPlusCatalogFile*)record)->fileID, attrs->name);
+					free(attrs->name);
+					free(attrs);
+					attrs = next;
+				}	
+			}	
+
+
+			key.nodeName.length = 0;
+			key.parentID = ((HFSPlusCatalogFile*)record)->fileID;
+			key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
+			removeFromBTree(volume->catalogTree, (BTKey*)(&key));
+
+			volume->volumeHeader->fileCount--;
+		} else {
+			if(((HFSPlusCatalogFolder*)record)->valence > 0) {
+				free(record);
+				free(parentFolder);
+				ASSERT(FALSE, "folder not empty");
+				return FALSE;
+			} else {
+				removeFromBTree(volume->catalogTree, (BTKey*)(&key));
+				XAttrList* next;
+				XAttrList* attrs = getAllExtendedAttributes(((HFSPlusCatalogFolder*)record)->folderID, volume);
+				if(attrs != NULL) {
+					while(attrs != NULL) {
+						next = attrs->next;
+						unsetAttribute(volume, ((HFSPlusCatalogFolder*)record)->folderID, attrs->name);
+						free(attrs->name);
+						free(attrs);
+						attrs = next;
+					}	
+				}	
+
+				key.nodeName.length = 0;
+				key.parentID = ((HFSPlusCatalogFolder*)record)->folderID;
+				key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
+				removeFromBTree(volume->catalogTree, (BTKey*)(&key));
+			}
+
+			parentFolder->folderCount--;
+			volume->volumeHeader->folderCount--;
+		}
+		parentFolder->valence--;
+		updateCatalog(volume, (HFSPlusCatalogRecord*) parentFolder);
+		updateVolume(volume);
+
 		free(record);
 		free(parentFolder);
-		ASSERT(FALSE, "folder not empty");
-        return FALSE;
-      } else {
-        removeFromBTree(volume->catalogTree, (BTKey*)(&key));
-        
-        key.nodeName.length = 0;
-        key.parentID = ((HFSPlusCatalogFolder*)record)->folderID;
-        key.keyLength = sizeof(key.parentID) + sizeof(key.nodeName.length);
-        removeFromBTree(volume->catalogTree, (BTKey*)(&key));
-      }
-      
-	  parentFolder->folderCount--;
-      volume->volumeHeader->folderCount--;
-    }
-    parentFolder->valence--;
-    updateCatalog(volume, (HFSPlusCatalogRecord*) parentFolder);
-    updateVolume(volume);
 
-	free(record);
-	free(parentFolder);
-	
-    return TRUE;
-  } else {
-	free(parentFolder);
-	ASSERT(FALSE, "cannot find record");
-    return FALSE;
-  }
+		return TRUE;
+	} else {
+		free(parentFolder);
+		ASSERT(FALSE, "cannot find record");
+		return FALSE;
+	}
 }
 
 int makeSymlink(const char* pathName, const char* target, Volume* volume) {

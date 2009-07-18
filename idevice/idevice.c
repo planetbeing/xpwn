@@ -271,7 +271,6 @@ int main(int argc, char* argv[])
 
 	extractedIPSWPath = tmpFilePath;
 	bootImagePath = "restore.img3";
-	
 
 	fprintf(stdout, "\nGetting iPhone/iPod status...\n");
 	fflush(stdout);

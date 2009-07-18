@@ -28,6 +28,10 @@ typedef void (*keyPrintFunc)(BTKey* toPrint);
 typedef int (*keyWriteFunc)(off_t offset, BTKey* toWrite, struct io_func_struct* io);
 typedef int (*compareFunc)(BTKey* left, BTKey* right);
 
+#define STR_SIZE(str) (sizeof(uint16_t) + (sizeof(uint16_t) * (str).length))
+
+#ifndef __HFS_FORMAT__
+
 typedef uint32_t HFSCatalogNodeID;
 
 enum {
@@ -43,8 +47,6 @@ enum {
     kHFSBogusExtentFileID       = 15,
     kHFSFirstUserCatalogNodeID  = 16
 };
-
-#define STR_SIZE(str) (sizeof(uint16_t) + (sizeof(uint16_t) * (str).length))
 
 struct HFSUniStr255 {
     uint16_t  length;
@@ -261,6 +263,8 @@ struct ExtendedFolderInfo {
 } __attribute__((__packed__));
 typedef struct ExtendedFolderInfo   ExtendedFolderInfo;
 
+#ifndef _STAT_H_
+#ifndef _SYS_STAT_H
 #define S_ISUID 0004000     /* set user id on execution */
 #define S_ISGID 0002000     /* set group id on execution */
 #define S_ISTXT 0001000     /* sticky bit */
@@ -289,6 +293,10 @@ typedef struct ExtendedFolderInfo   ExtendedFolderInfo;
 #define S_IFLNK  0120000    /* symbolic link */
 #define S_IFSOCK 0140000    /* socket */
 #define S_IFWHT  0160000    /* whiteout */
+#endif
+#endif
+
+#define UF_COMPRESSED 040
 
 struct HFSPlusBSDInfo {
     uint32_t  ownerID;
@@ -381,6 +389,58 @@ struct HFSPlusCatalogThread {
 } __attribute__((__packed__));
 typedef struct HFSPlusCatalogThread HFSPlusCatalogThread;
 
+enum {
+	kHFSPlusAttrInlineData	= 0x10,
+	kHFSPlusAttrForkData	= 0x20,
+	kHFSPlusAttrExtents	= 0x30
+};
+
+struct HFSPlusAttrForkData {
+	uint32_t 	recordType;
+	uint32_t 	reserved;
+	HFSPlusForkData theFork;
+} __attribute__((__packed__));
+typedef struct HFSPlusAttrForkData HFSPlusAttrForkData;
+
+struct HFSPlusAttrExtents {
+	uint32_t 		recordType;
+	uint32_t 		reserved;
+	HFSPlusExtentRecord	extents;
+};
+typedef struct HFSPlusAttrExtents HFSPlusAttrExtents;
+
+struct HFSPlusAttrData {
+	uint32_t    recordType;
+	uint32_t    reserved[2];
+	uint32_t    size;
+	uint8_t     data[0];
+} __attribute__((__packed__));
+typedef struct HFSPlusAttrData HFSPlusAttrData;
+
+union HFSPlusAttrRecord {
+	uint32_t 		recordType;
+	HFSPlusAttrData 	attrData;
+	HFSPlusAttrForkData 	forkData;
+	HFSPlusAttrExtents 	overflowExtents;
+};
+typedef union HFSPlusAttrRecord HFSPlusAttrRecord;
+
+struct HFSPlusAttrKey {
+	uint16_t     keyLength;
+	uint16_t     pad;
+	uint32_t     fileID;
+	uint32_t     startBlock;
+	HFSUniStr255 name;
+} __attribute__((__packed__));
+typedef struct HFSPlusAttrKey HFSPlusAttrKey;
+
+enum {
+	kHardLinkFileType = 0x686C6E6B,  /* 'hlnk' */
+	kHFSPlusCreator   = 0x6866732B   /* 'hfs+' */
+};
+
+#endif
+
 struct HFSPlusCatalogRecord {
   int16_t recordType;
   unsigned char data[0];
@@ -393,6 +453,12 @@ struct CatalogRecordList {
   struct CatalogRecordList* next;
 };
 typedef struct CatalogRecordList CatalogRecordList;
+
+struct XAttrList {
+  char* name;
+  struct XAttrList* next;
+};
+typedef struct XAttrList XAttrList;
 
 struct Extent {
   uint32_t startBlock;
@@ -418,7 +484,9 @@ typedef struct {
 
   BTree* extentsTree;
   BTree* catalogTree;
+  BTree* attrTree;
   io_func* allocationFile;
+  HFSCatalogNodeID metadataDir;
 } Volume;
 
 
@@ -457,6 +525,12 @@ extern "C" {
 
 	io_func* openRawFile(HFSCatalogNodeID id, HFSPlusForkData* forkData, HFSPlusCatalogRecord* catalogRecord, Volume* volume);
 
+	BTree* openAttributesTree(io_func* file);
+	size_t getAttribute(Volume* volume, uint32_t fileID, const char* name, uint8_t** data);
+	int setAttribute(Volume* volume, uint32_t fileID, const char* name, uint8_t* data, size_t size);
+	int unsetAttribute(Volume* volume, uint32_t fileID, const char* name);
+	XAttrList* getAllExtendedAttributes(HFSCatalogNodeID CNID, Volume* volume);
+
 	void flipExtentRecord(HFSPlusExtentRecord* extentRecord);
 
 	BTree* openExtentsTree(io_func* file);
@@ -477,6 +551,7 @@ extern "C" {
 	int chownFile(const char* pathName, uint32_t owner, uint32_t group, Volume* volume);
 	int makeSymlink(const char* pathName, const char* target, Volume* volume);
 
+	HFSCatalogNodeID getMetadataDirectoryID(Volume* volume);
 	HFSPlusCatalogRecord* getRecordByCNID(HFSCatalogNodeID CNID, Volume* volume);
 	HFSPlusCatalogRecord* getLinkTarget(HFSPlusCatalogRecord* record, HFSCatalogNodeID parentID, HFSPlusCatalogKey *key, Volume* volume);
 	CatalogRecordList* getFolderContents(HFSCatalogNodeID CNID, Volume* volume);

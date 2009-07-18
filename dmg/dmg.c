@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 	TestByteOrder();
 	
 	if(argc < 4) {
-		printf("usage: %s [extract|build|iso|dmg] <in> <out> (-k <key>) (partition)\n", argv[0]);
+		printf("usage: %s [extract|build|build2048|res|iso|dmg] <in> <out> (-k <key>) (partition)\n", argv[0]);
 		return 0;
 	}
 
@@ -72,7 +72,11 @@ int main(int argc, char* argv[]) {
 		}
 		extractDmg(in, out, partNum);
 	} else if(strcmp(argv[1], "build") == 0) {
-		buildDmg(in, out);
+		buildDmg(in, out, SECTOR_SIZE);
+	} else if(strcmp(argv[1], "build2048") == 0) {
+		buildDmg(in, out, 2048);
+	} else if(strcmp(argv[1], "res") == 0) {
+		outResources(in, out);
 	} else if(strcmp(argv[1], "iso") == 0) {
 		convertToISO(in, out);
 	} else if(strcmp(argv[1], "dmg") == 0) {

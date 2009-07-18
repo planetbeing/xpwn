@@ -4,6 +4,7 @@
 #include "abstractfile.h"
 #include <xpwn/lzssfile.h>
 #include <xpwn/lzss.h>
+#include <xpwn/libxpwn.h>
 
 void flipCompHeader(CompHeader* header) {
 	FLIPENDIAN(header->signature);
@@ -108,13 +109,13 @@ AbstractFile* createAbstractFileFromComp(AbstractFile* file) {
 
 	uint32_t real_uncompressed = decompress_lzss(info->buffer, compressed, info->header.length_compressed);
 	if(real_uncompressed != info->header.length_uncompressed) {
-		printf("mismatch: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
+		XLOG(5, "mismatch: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
 		free(compressed);
 		free(info);
 		return NULL;
 	}
 
-	printf("match: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
+	XLOG(5, "match: %d %d %d %x %x\n", info->header.length_compressed, real_uncompressed, info->header.length_uncompressed, compressed[info->header.length_compressed - 2], compressed[info->header.length_compressed - 1]);
 	
 	free(compressed);
 

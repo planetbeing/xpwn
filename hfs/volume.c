@@ -98,62 +98,76 @@ int updateVolume(Volume* volume) {
 }
 
 Volume* openVolume(io_func* io) {
-  Volume* volume;
-  io_func* file;
-  
-  volume = (Volume*) malloc(sizeof(Volume));
-  volume->image = io;
-  volume->extentsTree = NULL;
-  
-  volume->volumeHeader = readVolumeHeader(io, 1024);
-  if(volume->volumeHeader == NULL) {
-    free(volume);
-    return NULL;
-  }
-  
-  file = openRawFile(kHFSExtentsFileID, &volume->volumeHeader->extentsFile, NULL, volume);
-  if(file == NULL) {
-    free(volume->volumeHeader);
-    free(volume);
-    return NULL;
-  }
-  
-  volume->extentsTree = openExtentsTree(file);
-  if(volume->extentsTree == NULL) {
-    free(volume->volumeHeader);
-    free(volume);
-    return NULL;
-  }
-  
-  file = openRawFile(kHFSCatalogFileID, &volume->volumeHeader->catalogFile, NULL, volume);
-  if(file == NULL) {
-    closeBTree(volume->extentsTree);
-    free(volume->volumeHeader);
-    free(volume);
-    return NULL;
-  }
-  
-  volume->catalogTree = openCatalogTree(file);
-  if(volume->catalogTree == NULL) {
-    closeBTree(volume->extentsTree);
-    free(volume->volumeHeader);
-    free(volume);
-    return NULL;
-  }
-  
-  volume->allocationFile = openRawFile(kHFSAllocationFileID, &volume->volumeHeader->allocationFile, NULL, volume);
-  if(volume->catalogTree == NULL) {
-    closeBTree(volume->catalogTree);
-    closeBTree(volume->extentsTree);
-    free(volume->volumeHeader);
-    free(volume);
-    return NULL;
-  }
-  
-  return volume;
+	Volume* volume;
+	io_func* file;
+
+	volume = (Volume*) malloc(sizeof(Volume));
+	volume->image = io;
+	volume->extentsTree = NULL;
+
+	volume->volumeHeader = readVolumeHeader(io, 1024);
+	if(volume->volumeHeader == NULL) {
+		free(volume);
+		return NULL;
+	}
+
+	file = openRawFile(kHFSExtentsFileID, &volume->volumeHeader->extentsFile, NULL, volume);
+	if(file == NULL) {
+		free(volume->volumeHeader);
+		free(volume);
+		return NULL;
+	}
+
+	volume->extentsTree = openExtentsTree(file);
+	if(volume->extentsTree == NULL) {
+		free(volume->volumeHeader);
+		free(volume);
+		return NULL;
+	}
+
+	file = openRawFile(kHFSCatalogFileID, &volume->volumeHeader->catalogFile, NULL, volume);
+	if(file == NULL) {
+		closeBTree(volume->extentsTree);
+		free(volume->volumeHeader);
+		free(volume);
+		return NULL;
+	}
+
+	volume->catalogTree = openCatalogTree(file);
+	if(volume->catalogTree == NULL) {
+		closeBTree(volume->extentsTree);
+		free(volume->volumeHeader);
+		free(volume);
+		return NULL;
+	}
+
+	volume->allocationFile = openRawFile(kHFSAllocationFileID, &volume->volumeHeader->allocationFile, NULL, volume);
+	if(volume->allocationFile == NULL) {
+		closeBTree(volume->catalogTree);
+		closeBTree(volume->extentsTree);
+		free(volume->volumeHeader);
+		free(volume);
+		return NULL;
+	}
+
+	volume->attrTree = NULL;
+	file = openRawFile(kHFSAttributesFileID, &volume->volumeHeader->attributesFile, NULL, volume);
+	if(file != NULL) {
+		volume->attrTree = openAttributesTree(file);
+		if(!volume->attrTree) {
+			CLOSE(file);
+		}
+	}
+
+	volume->metadataDir = getMetadataDirectoryID(volume);
+
+	return volume;
 }
 
 void closeVolume(Volume *volume) {
+  if(volume->attrTree)
+    closeBTree(volume->attrTree);
+
   CLOSE(volume->allocationFile);
   closeBTree(volume->catalogTree);
   closeBTree(volume->extentsTree);

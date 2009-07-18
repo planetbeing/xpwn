@@ -68,7 +68,7 @@ IF(APPLE)
 		DEPENDS xpwn dmg hfs common minizip)
 ELSE(APPLE)
 	ADD_CUSTOM_TARGET(libXPwn.a
-		COMMAND ${CMAKE_C_COMPILER}
+		COMMAND ${CMAKE_C_COMPILER} ${CMAKE_C_FLAGS}
 			-L${PROJECT_BINARY_DIR}/ipsw-patch -L${PROJECT_BINARY_DIR}/dmg -L${PROJECT_BINARY_DIR}/hfs
 			-L${PROJECT_BINARY_DIR}/hfs -L${PROJECT_BINARY_DIR}/minizip -L${PROJECT_BINARY_DIR}/common
 			-Xlinker --whole-archive -lxpwn -ldmg -lhfs -lcommon -lminizip

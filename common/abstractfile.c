@@ -232,6 +232,7 @@ size_t memFileWrite(AbstractFile* file, const void* data, size_t len) {
   }
   
   if((info->offset + (size_t)len) > (*(info->bufferSize))) {
+		memset(((uint8_t*)(*(info->buffer))) + *(info->bufferSize), 0, (info->offset + (size_t)len) - *(info->bufferSize));
 		*(info->bufferSize) = info->offset + (size_t)len;
 	}
       

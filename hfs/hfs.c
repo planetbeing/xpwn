@@ -222,6 +222,40 @@ void cmd_grow(Volume* volume, int argc, const char *argv[]) {
 	printf("grew volume: %" PRId64 "\n", newSize);
 }
 
+void cmd_getattr(Volume* volume, int argc, const char *argv[]) {
+	HFSPlusCatalogRecord* record;
+
+	if(argc < 3) {
+		printf("Not enough arguments");
+		return;
+	}
+
+	record = getRecordFromPath(argv[1], volume, NULL, NULL);
+
+	if(record != NULL) {
+		HFSCatalogNodeID id;
+		uint8_t* data;
+		size_t size;
+		if(record->recordType == kHFSPlusFileRecord)
+			id = ((HFSPlusCatalogFile*)record)->fileID;
+		else
+			id = ((HFSPlusCatalogFolder*)record)->folderID;
+
+		size = getAttribute(volume, id, argv[2], &data);
+
+		if(size > 0) {
+			fwrite(data, size, 1, stdout);
+			free(data);
+		} else {
+			printf("No such attribute\n");
+		}
+	} else {
+		printf("No such file or directory\n");
+	}
+	
+	free(record);
+}
+
 void TestByteOrder()
 {
 	short int word = 0x0001;
@@ -281,6 +315,8 @@ int main(int argc, const char *argv[]) {
 			cmd_addall(volume, argc - 2, argv + 2);
 		} else if(strcmp(argv[2], "grow") == 0) {
 			cmd_grow(volume, argc - 2, argv + 2);
+		} else if(strcmp(argv[2], "getattr") == 0) {
+			cmd_getattr(volume, argc - 2, argv + 2);
 		} else if(strcmp(argv[2], "debug") == 0) {
 			if(argc > 3 && strcmp(argv[3], "verbose") == 0) {
 				debugBTree(volume->catalogTree, TRUE);
