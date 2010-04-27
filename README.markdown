@@ -58,6 +58,8 @@ Turbo.
 XPwn on Linux would not have been possible without libibooter, which was
 written by cmw, based on the Linux iPhone recovery driver written by geohot.
 
+Dripwn was created by Munnerz, specifically for installing iDroid.
+
 A special shout-out to cmw, who I have been helping with winpwn. He's put a
 lot of hard work into winpwn, and should also be credited with doing some of
 the initial exploratory work with the undocumented DMG format.
