@@ -16,7 +16,7 @@ link_directories(${ZLIB_LIBRARIES})
 
 link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs)
 
-add_library(dmg base64.c checksum.c dmgfile.c dmglib.c filevault.c io.c partition.c resources.c udif.c)
+add_library(dmg checksum.c dmgfile.c dmglib.c filevault.c io.c partition.c resources.c udif.c)
 
 IF(OPENSSL_FOUND)
 	add_definitions(-DHAVE_CRYPT)

@@ -150,6 +150,12 @@ void createArray(ArrayValue* myself, char* xml) {
 			curValue = (DictValue*) realloc(curValue, sizeof(StringValue));
 			((StringValue*)curValue)->value = (char*) malloc(sizeof(char) * (strlen(valueTag->xml) + 1));
 			strcpy(((StringValue*)curValue)->value, valueTag->xml);
+		} else if(strcmp(valueTag->name, "data") == 0) {
+			size_t len;
+			curValue->type = StringType;
+			curValue = (DictValue*) realloc(curValue, sizeof(DataValue));
+			((DataValue*)curValue)->value = decodeBase64(valueTag->xml, &len);
+			((DataValue*)curValue)->len = len;
 		} else if(strcmp(valueTag->name, "integer") == 0) {
 			curValue->type = IntegerType;
 			curValue = (DictValue*) realloc(curValue, sizeof(IntegerValue));
@@ -198,6 +204,14 @@ void removeKey(Dictionary* dict, char* key) {
 					break;
 				case StringType:
 					free(((StringValue*)(toRelease))->value);
+					free(toRelease->key);
+					free(toRelease);
+					break;
+				case DataType:
+					free(((DataValue*)(toRelease))->value);
+					free(toRelease->key);
+					free(toRelease);
+					break;	
 				case IntegerType:
 				case BoolType:
 					free(toRelease->key);
@@ -253,6 +267,12 @@ void createDictionary(Dictionary* myself, char* xml) {
 			curValue = (DictValue*) realloc(curValue, sizeof(StringValue));
 			((StringValue*)curValue)->value = (char*) malloc(sizeof(char) * (strlen(valueTag->xml) + 1));
 			strcpy(((StringValue*)curValue)->value, valueTag->xml);
+		} else if(strcmp(valueTag->name, "data") == 0) {
+			size_t len;
+			curValue->type = StringType;
+			curValue = (DictValue*) realloc(curValue, sizeof(DataValue));
+			((DataValue*)curValue)->value = decodeBase64(valueTag->xml, &len);
+			((DataValue*)curValue)->len = len;
 		} else if(strcmp(valueTag->name, "integer") == 0) {
 			curValue->type = IntegerType;
 			curValue = (DictValue*) realloc(curValue, sizeof(IntegerValue));
@@ -318,6 +338,18 @@ char* getXmlFromArrayValue(ArrayValue* myself, int tabsCount) {
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
+		} else if(curValue->type == DataType) {
+			char* base64 = convertBase64(((DataValue*)curValue)->value, ((DataValue*)curValue)->len, 0, -1);
+			sprintf(buffer, "%s\t<data>", tabs);
+			toReturnSize += sizeof(char) * (strlen(buffer) + strlen(base64) + 1);
+			toReturn = realloc(toReturn, toReturnSize);
+			toReturn = strcat(toReturn, buffer);
+			toReturn = strcat(toReturn, base64);
+			sprintf(buffer, "</data>\n", tabs);
+			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
+			toReturn = realloc(toReturn, toReturnSize);
+			toReturn = strcat(toReturn, buffer);
+			free(base64);
 		} else if(curValue->type == IntegerType) {
 			sprintf(buffer, "%s\t<integer>%d</integer>\n", tabs, ((IntegerValue*)curValue)->value);
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
@@ -387,6 +419,18 @@ char* getXmlFromDictionary(Dictionary* myself, int tabsCount) {
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
 			toReturn = realloc(toReturn, toReturnSize);
 			toReturn = strcat(toReturn, buffer);
+		} else if(curValue->type == DataType) {
+			char* base64 = convertBase64(((DataValue*)curValue)->value, ((DataValue*)curValue)->len, 0, -1);
+			sprintf(buffer, "%s\t<data>", tabs);
+			toReturnSize += sizeof(char) * (strlen(buffer) + strlen(base64) + 1);
+			toReturn = realloc(toReturn, toReturnSize);
+			toReturn = strcat(toReturn, buffer);
+			toReturn = strcat(toReturn, base64);
+			sprintf(buffer, "</data>\n", tabs);
+			toReturnSize += sizeof(char) * (strlen(buffer) + 1);
+			toReturn = realloc(toReturn, toReturnSize);
+			toReturn = strcat(toReturn, buffer);
+			free(base64);
 		} else if(curValue->type == IntegerType) {
 			sprintf(buffer, "%s\t<integer>%d</integer>\n", tabs, ((IntegerValue*)curValue)->value);
 			toReturnSize += sizeof(char) * (strlen(buffer) + 1);

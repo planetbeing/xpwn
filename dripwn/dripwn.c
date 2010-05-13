@@ -5,6 +5,7 @@
 #include <string.h>
 #include <dmg/dmgfile.h>
 #include <dmg/filevault.h>
+#include <xpwn/plist.h>
 
 #define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
 char endianness;
@@ -25,7 +26,9 @@ char *createTempFile() {
 	return strdup(tmpFileBuffer);
 }
 
-char *loadZip(const char* ipsw, const char* toExtract) {
+// This gets any file over 100 MB from the IPSW and writes it to a temporary file and returns the name of the temporary file.
+// It is meant to get the rootfs image and is a bit hacky but is unlikely to break.
+char *loadZipLarge(const char* ipsw) {
 	char *fileName;
 	void* buffer;
 	unzFile zip;
@@ -39,7 +42,7 @@ char *loadZip(const char* ipsw, const char* toExtract) {
 		ASSERT(unzGetCurrentFileInfo(zip, &pfile_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file info from ipsw");
 		fileName = (char*) malloc(pfile_info.size_filename + 1);
 		ASSERT(unzGetCurrentFileInfo(zip, NULL, fileName, pfile_info.size_filename + 1, NULL, 0, NULL, 0) == UNZ_OK, "cannot get current file name from ipsw");
-		if(strcmp(toExtract, fileName) == 0) {
+		if(pfile_info.uncompressed_size > (100UL * 1024UL * 1024UL)) {
 			ASSERT(unzOpenCurrentFile(zip) == UNZ_OK, "cannot open compressed file in IPSW");
 			uLong fileSize = pfile_info.uncompressed_size;
 			
@@ -99,76 +102,6 @@ char *extractPlist(Volume* volume) {
 	return outFileName;
 }
 
-int is_base64(const char c) {
-	if ( (c >= 'A' && c <= 'Z') || 
-		(c >= 'a' && c <= 'z') || 
-          (c >= '0' && c <= '9') ||
-	      c == '+' || 
-	      c == '/' || 
-	      c == '=') return 1;
-	return 0;
-}
-
-void cleanup_base64(char *inp, const unsigned int size) {
-	unsigned int i;
-    char *tinp1,*tinp2;
-	tinp1 = inp;
-     tinp2 = inp;
-     for (i = 0; i < size; i++) {
-     	if (is_base64(*tinp2)) {
-          	*tinp1++ = *tinp2++;
-          }
-          else {
-          	*tinp1 = *tinp2++;
-          }
-     }
-     *(tinp1) = 0;
-}
-
-unsigned char decode_base64_char(const char c) {
-	if (c >= 'A' && c <= 'Z') return c - 'A';
-	if (c >= 'a' && c <= 'z') return c - 'a' + 26;
-	if (c >= '0' && c <= '9') return c - '0' + 52;
-	if (c == '+') return 62;
-     if (c == '=') return 0;
-	return 63;   
-}
-
-void decode_base64(const char *inp, unsigned int isize, 
-			char *out, unsigned int *osize) {
-    unsigned int i;
-     char *tinp = (char*)inp; 
-     char *tout;
-     *osize = isize / 4 * 3;
-    tout = tinp;
-     for(i = 0; i < isize >> 2; i++) {
-		*tout++ = (decode_base64_char(*tinp++) << 2) | (decode_base64_char(*tinp) >> 4);
-          *tout++ = (decode_base64_char(*tinp++) << 4) | (decode_base64_char(*tinp) >> 2);
-          *tout++ = (decode_base64_char(*tinp++) << 6) | decode_base64_char(*tinp++);
-	}
-     if (*(tinp-1) == '=') (*osize)--;
-     if (*(tinp-2) == '=') (*osize)--;
-}
-
-
-char * find_string(char * string, char * sub_string)
-{
-    size_t sub_s_len;
-
-    sub_s_len = strlen(sub_string);
-
-    while (*string)
-    {
-        if (strncmp(string, sub_string, sub_s_len) == 0)
-        {
-            return string;
-        }
-        string++;
-    }
-
-    return NULL;
-}
-
 int main(int argc, const char *argv[]) {
 	io_func* io;
 	Volume* volume;
@@ -185,11 +118,11 @@ int main(int argc, const char *argv[]) {
     size_t final_fw_len;
     FILE * output;
 	
-	if(argc < 4) {
-		printf("usage: %s <ipsw> <key> <root-fs-name>\n", argv[0]);
+	if(argc < 3) {
+		printf("usage: %s <ipsw> <key>\n", argv[0]);
 		return 0;
 	}
-	char *filename = loadZip(argv[1], argv[3]);	
+	char *filename = loadZipLarge(argv[1]);
 	
 	TestByteOrder();
 	image = createAbstractFileFromFile(fopen(filename, "rb"));
@@ -216,76 +149,49 @@ int main(int argc, const char *argv[]) {
     fseek(iphone_mtprops, 0, SEEK_END);
     file_len = ftell(iphone_mtprops);
 
-    buffer = (char *)malloc(sizeof(char) * file_len);
+    buffer = (char *)malloc(sizeof(char) * (file_len + 1));
     fseek(iphone_mtprops, 0, SEEK_SET);
     fread(buffer, file_len, 1, iphone_mtprops);
 
     fclose(iphone_mtprops);
 
-    p = find_string(buffer, "<key>A-Speed Firmware</key>");
-    assert(p != NULL);
+	buffer[file_len] = '\0';
 
-    while (*p)
-    {
-        if (*p == '\n')
-            break;
-        p++;
-    }
-    while (*p)
-    {
-        if (*p == '>')
-            break;
-        p++;
-    }
+	Dictionary* info = createRoot(buffer);
+	assert(info != NULL);
+	free(buffer);
 
-    p++;
+	Dictionary* zephyr1FW = (Dictionary*) getValueByKey(info, "Z1F50,1");
+	if(zephyr1FW)
+	{
+		DataValue* aspeedData = (DataValue*) getValueByKey(zephyr1FW, "A-Speed Firmware");
+		assert(aspeedData != NULL);
 
-    a_speed_firmware = p;
+		DataValue* fwData = (DataValue*) getValueByKey(zephyr1FW, "Firmware");
+		assert(fwData != NULL);
 
-    while (*p)
-    {
-        if (*p == '<')
-            break;
-        p++;
-    }
-    a_speed_fw_len = p - a_speed_firmware;
+		output = fopen("zephyr_aspeed.bin", "wb");
+		assert(output != NULL);
+		fwrite(aspeedData->value, aspeedData->len, 1, output);
+		fclose(output);
 
-    p = find_string(p, "<key>Firmware</key>");
-    assert(p != NULL);
+		output = fopen("zephyr_main.bin", "wb");
+		assert(output != NULL);
+		fwrite(fwData->value, fwData->len, 1, output);
+		fclose(output);
+	}
 
-    while (*p)
-    {
-        if (*p == '\n')
-            break;
-        p++;
-    }
-    while (*p)
-    {
-        if (*p == '>')
-            break;
-        p++;
-    }
-    p++;
-	firmware = p;
-    while (*p)
-    {
-        if (*p == '<')
-            break;
-        p++;
-    }
-    fw_len = p - firmware;
-    cleanup_base64(firmware, fw_len);
-    decode_base64(firmware, fw_len, firmware, (unsigned int *)&final_fw_len);
-    output = fopen("zephyr_main.bin", "a+");
-    fwrite(firmware, final_fw_len, 1, output);
-    fclose(output);
-    cleanup_base64(a_speed_firmware, a_speed_fw_len);
-    decode_base64(a_speed_firmware, a_speed_fw_len, a_speed_firmware, (unsigned int *)&final_a_speed_fw_len);
-    output = fopen("zephyr_aspeed.bin", "a+");
-    fwrite(a_speed_firmware, final_a_speed_fw_len, 1, output);
-    fclose(output);
-    free(buffer);
+	Dictionary* zephyr2FW = (Dictionary*) getValueByKey(info, "Z2F52,1");
+	if(zephyr2FW)
+	{
+		DataValue* fwData = (DataValue*) getValueByKey(zephyr2FW, "Constructed Firmware");
+		assert(fwData != NULL);
 
+		output = fopen("zephyr2.bin", "wb");
+		assert(output != NULL);
+		fwrite(fwData->value, fwData->len, 1, output);
+		fclose(output);
+	}
 
 	ASSERT(remove(plistName) == 0, "Error deleting iPhone.mtprops");
 	printf("Zephyr files extracted succesfully.\n");

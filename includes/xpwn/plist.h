@@ -6,7 +6,8 @@ enum DictTypes {
 	ArrayType,
 	StringType,
 	IntegerType,
-	BoolType
+	BoolType,
+	DataType
 };
 
 typedef struct DictValue {
@@ -20,6 +21,12 @@ typedef struct StringValue {
 	DictValue dValue;
 	char* value;
 } StringValue;
+
+typedef struct DataValue {
+	DictValue dValue;
+	int len;
+	char* value;
+} DataValue;
 
 typedef struct IntegerValue {
 	DictValue dValue;

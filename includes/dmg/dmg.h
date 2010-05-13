@@ -276,10 +276,6 @@ extern "C" {
 #endif
 	void outResources(AbstractFile* file, AbstractFile* out);
 
-	unsigned char* decodeBase64(char* toDecode, size_t* dataLength);
-	void writeBase64(AbstractFile* file, unsigned char* data, size_t dataLength, int tabLength, int width);
-	char* convertBase64(unsigned char* data, size_t dataLength, int tabLength, int width);
-
 	uint32_t CRC32Checksum(uint32_t* crc, const unsigned char *buf, size_t len);
 	uint32_t MKBlockChecksum(uint32_t* ckSum, const unsigned char* data, size_t len);
 

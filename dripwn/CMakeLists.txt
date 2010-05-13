@@ -2,7 +2,7 @@ link_directories(${PROJECT_BINARY_DIR}/common ${PROJECT_BINARY_DIR}/hfs ${PROJEC
 
 add_executable(dripwn dripwn.c)
 
-target_link_libraries (dripwn dmg hfs common minizip)
+target_link_libraries (dripwn xpwn)
 include_directories(${PROJECT_SOURCE_DIR}/minizip)
 link_directories(${PROJECT_BINARY_DIR}/minizip)
 
