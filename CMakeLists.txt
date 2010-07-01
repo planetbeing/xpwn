@@ -24,6 +24,7 @@ add_subdirectory (ipsw-patch)
 add_subdirectory (dfu-util)
 add_subdirectory (xpwn)
 add_subdirectory (idevice)
+add_subdirectory (pwnmetheus2)
 add_subdirectory (dripwn)
 
 install(FILES README.markdown DESTINATION . RENAME README.txt)
