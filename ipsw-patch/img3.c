@@ -194,7 +194,7 @@ size_t writeImg3(AbstractFile* file, const void* data, size_t len) {
 
 	while((info->offset + (size_t)len) > info->data->header->dataSize) {
 		info->data->header->dataSize = info->offset + (size_t)len;
-		info->data->header->size = info->data->header->dataSize + sizeof(AppleImg3Header);
+		info->data->header->size = (((info->data->header->dataSize + 16) / 16) * 16) + sizeof(AppleImg3Header);
 		if(info->data->header->size % 0x4 != 0) {
 			info->data->header->size += 0x4 - (info->data->header->size % 0x4);
 		}
@@ -282,7 +282,7 @@ void setKeyImg3(AbstractFile2* file, const unsigned int* key, const unsigned int
 	if(!info->encrypted) {
 		uint8_t ivec[16];
 		memcpy(ivec, info->iv, 16);
-		AES_cbc_encrypt(info->data->data, info->data->data, (info->data->header->dataSize / 16) * 16, &(info->decryptKey), ivec, AES_DECRYPT);
+                AES_cbc_encrypt(info->data->data, info->data->data, ((info->data->header->size - sizeof(AppleImg3Header)) / 16) * 16, &(info->decryptKey), ivec, AES_DECRYPT);
 	}
 
 	info->encrypted = TRUE;
@@ -386,7 +386,7 @@ void writeImg3Root(AbstractFile* file, Img3Element* element, Img3Info* info) {
 }
 
 void writeImg3Default(AbstractFile* file, Img3Element* element, Img3Info* info) {
-	const char zeros[0x10] = {0};
+        const char zeros[0x10] = {0};
 	file->write(file, element->data, element->header->dataSize);
 	if((element->header->size - sizeof(AppleImg3Header)) > element->header->dataSize) {
 		file->write(file, zeros, (element->header->size - sizeof(AppleImg3Header)) - element->header->dataSize);
