@@ -256,7 +256,7 @@ int convertToPNG(AbstractFile* imageWrapper, const unsigned int* key, const unsi
 
 	png_bytepp row_pointers = (png_bytepp) malloc(sizeof(png_bytep) * info->header.height);
 	int i;
-	for(i = 0; i < info_ptr->height; i++) {
+	for(i = 0; i < png_get_image_height(png_ptr, info_ptr); i++) {
 		row_pointers[i] = imageBuffer + (info->header.width * bytes_per_pixel * i);
 	}
 
@@ -317,15 +317,15 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 
 	png_read_info(png_ptr, info_ptr);
 	
-	if(info_ptr->bit_depth > 8) {
-		XLOG(0, "warning: bit depth per channel is greater than 8 (%d). Attempting to strip, but image quality will be degraded.\n", info_ptr->bit_depth);
+	if(png_get_bit_depth(png_ptr, info_ptr) > 8) {
+		XLOG(0, "warning: bit depth per channel is greater than 8 (%d). Attempting to strip, but image quality will be degraded.\n", png_get_bit_depth(png_ptr, info_ptr));
 	}
 	
-	if(info_ptr->color_type == PNG_COLOR_TYPE_GRAY || info_ptr->color_type == PNG_COLOR_TYPE_RGB) {
+	if(png_get_color_type(png_ptr,info_ptr) == PNG_COLOR_TYPE_GRAY || png_get_color_type(png_ptr,info_ptr) == PNG_COLOR_TYPE_RGB) {
 		XLOG(0, "notice: attempting to add dummy transparency channel\n");
 	}
 	
-	if(info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
+	if(png_get_color_type(png_ptr,info_ptr) == PNG_COLOR_TYPE_PALETTE) {
 		XLOG(0, "notice: attempting to expand palette into full rgb\n");
 	}
 	
@@ -338,24 +338,24 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	png_read_update_info(png_ptr, info_ptr);
 	
 
-	if(info_ptr->width > 320 || info_ptr->height > 480) {
-		XLOG(0, "error: dimensions out of range, must be within 320x480, not %lux%lu\n", info_ptr->width, info_ptr->height);
+	if(png_get_image_width(png_ptr, info_ptr) > 320 || png_get_image_height(png_ptr, info_ptr) > 480) {
+		XLOG(0, "error: dimensions out of range, must be within 320x480, not %lux%lu\n", png_get_image_width(png_ptr, info_ptr), png_get_image_height(png_ptr, info_ptr));
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		return NULL;
 	}
 
-	if(info_ptr->bit_depth != 8) {
-		XLOG(0, "error: bit depth per channel must be 8 not %d!\n", info_ptr->bit_depth);
+	if(png_get_bit_depth(png_ptr, info_ptr) != 8) {
+		XLOG(0, "error: bit depth per channel must be 8 not %d!\n", png_get_bit_depth(png_ptr, info_ptr));
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		return NULL;
 	}
 
-	if(info_ptr->color_type != PNG_COLOR_TYPE_GRAY_ALPHA && info_ptr->color_type != PNG_COLOR_TYPE_RGB_ALPHA) {
+	if(png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_GRAY_ALPHA && png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGB_ALPHA) {
 		XLOG(0, "error: incorrect color type, must be greyscale with alpha, or rgb with alpha\n");
-		if(info_ptr->color_type == PNG_COLOR_TYPE_GRAY || info_ptr->color_type == PNG_COLOR_TYPE_RGB) {
+		if(png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_GRAY || png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB) {
 			XLOG(0, "It appears you're missing an alpha channel. Add transparency to your image\n");
 		}
-		if(info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) {
+		if(png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_PALETTE) {
 			XLOG(0, "This PNG is saved with the palette color type rather than ARGB.\n");
 		}
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
@@ -363,10 +363,10 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 		return NULL;
 	}
 
-	row_pointers = (png_bytepp) malloc(sizeof(png_bytep) * info_ptr->height);
-	imageBuffer = malloc(info_ptr->height * info_ptr->rowbytes);
-	for(i = 0; i < info_ptr->height; i++) {
-		row_pointers[i] = imageBuffer + (info_ptr->rowbytes * i);
+	row_pointers = (png_bytepp) malloc(sizeof(png_bytep) * png_get_image_height(png_ptr, info_ptr));
+	imageBuffer = malloc(png_get_image_height(png_ptr, info_ptr) * png_get_rowbytes(png_ptr, info_ptr));
+	for(i = 0; i < png_get_image_height(png_ptr, info_ptr); i++) {
+		row_pointers[i] = imageBuffer + (png_get_rowbytes(png_ptr, info_ptr) * i);
 	}
 
 	png_read_image(png_ptr, row_pointers);
@@ -382,15 +382,15 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 	}
 	info = (InfoIBootIM*) (imageFile->data);
 	
-	info->header.width = (uint16_t) info_ptr->width;
-	info->header.height = (uint16_t) info_ptr->height;
-	if(info_ptr->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+	info->header.width = (uint16_t) png_get_image_width(png_ptr, info_ptr);
+	info->header.height = (uint16_t) png_get_image_height(png_ptr, info_ptr);
+	if(png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_GRAY_ALPHA) {
 		info->header.format = IBOOTIM_GREY;
 	} else {
 		info->header.format = IBOOTIM_ARGB;
 	}
 	
-	imageFile->write(imageFile, imageBuffer, info_ptr->height * info_ptr->rowbytes);
+	imageFile->write(imageFile, imageBuffer, png_get_image_height(png_ptr, info_ptr) * png_get_rowbytes(png_ptr, info_ptr));
 	
 	imageFile->close(imageFile);
 
@@ -404,4 +404,3 @@ void* replaceBootImage(AbstractFile* imageWrapper, const unsigned int* key, cons
 
 	return buffer;
 }
-
