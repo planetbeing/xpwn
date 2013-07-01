@@ -53,7 +53,7 @@ private:
 	AppleMobileDevice* next;
 
 #ifdef __APPLE__
-	static void AppleMobileDevice::AddDevicesForPID(SInt32 usbPID);
+	static void AddDevicesForPID(SInt32 usbPID);
 #endif
 
 	static void initializeList();
