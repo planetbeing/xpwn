@@ -182,7 +182,7 @@ void AppleMobileDevice::AddDevicesForPID(SInt32 usbPID)
 		return;
 
 	io_object_t usbDevice;
-	while(usbDevice = IOIteratorNext(anIterator))
+	while((usbDevice = IOIteratorNext(anIterator)))
 	{
 		SInt32 score;
 		IOUSBDeviceInterface **dev = NULL;
@@ -479,7 +479,7 @@ BOOL AppleMobileDevice::Open(void)
 	{
 		int ret;
 
-		if(this->Mode() = kRecoveryMode())
+		if(this->Mode() == kRecoveryMode)
 		{
 			/*IOUSBFindInterfaceRequest interfaceRequest;
 			io_iterator_t iterator;
