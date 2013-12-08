@@ -194,7 +194,7 @@ size_t writeImg3(AbstractFile* file, const void* data, size_t len) {
 
 	while((info->offset + (size_t)len) > info->data->header->dataSize) {
 		info->data->header->dataSize = info->offset + (size_t)len;
-		info->data->header->size = (((info->data->header->dataSize + 16) / 16) * 16) + sizeof(AppleImg3Header);
+		info->data->header->size = info->data->header->dataSize + sizeof(AppleImg3Header);
 		if(info->data->header->size % 0x4 != 0) {
 			info->data->header->size += 0x4 - (info->data->header->size % 0x4);
 		}
@@ -386,11 +386,17 @@ void writeImg3Root(AbstractFile* file, Img3Element* element, Img3Info* info) {
 }
 
 void writeImg3Default(AbstractFile* file, Img3Element* element, Img3Info* info) {
-        const char zeros[0x10] = {0};
+    
+    size_t paddingSize = (element->header->size - sizeof(AppleImg3Header)) - element->header->dataSize;
+    char zeros[paddingSize];
+    
 	file->write(file, element->data, element->header->dataSize);
-	if((element->header->size - sizeof(AppleImg3Header)) > element->header->dataSize) {
-		file->write(file, zeros, (element->header->size - sizeof(AppleImg3Header)) - element->header->dataSize);
-	}
+    
+    if(paddingSize > 0)
+    {
+        memset(zeros, 0, paddingSize);
+		file->write(file, zeros, paddingSize);
+    }
 }
 
 void writeImg3KBAG(AbstractFile* file, Img3Element* element, Img3Info* info) {
