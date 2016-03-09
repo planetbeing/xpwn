@@ -3,6 +3,9 @@
 #include <stdarg.h>
 #include <string.h>
 
+//needed for openssl
+extern int OPENSSL_cleanse(void *ptr, size_t len);
+
 LogMessageCallback logCallback;
 char endianness;
 int GlobalLogLevel;
@@ -19,6 +22,8 @@ void defaultCallback(const char* Message) {
 }
 
 void init_libxpwn() {
+	//openssl bug
+	OPENSSL_cleanse(0, 0);
 	TestByteOrder();
 	GlobalLogLevel = 0xFF;
 	logCallback = defaultCallback;
