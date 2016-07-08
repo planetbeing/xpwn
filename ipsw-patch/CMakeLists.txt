@@ -1,6 +1,7 @@
 INCLUDE(FindZLIB)
 INCLUDE(FindBZip2)
 INCLUDE(FindPNG)
+INCLUDE(FindOpenSSL)
 
 FIND_LIBRARY(CRYPTO_LIBRARIES crypto
       PATHS
@@ -25,6 +26,14 @@ ENDIF(NOT BZIP2_FOUND)
 IF(NOT PNG_FOUND)
 	message(FATAL_ERROR "libpng is required for ipsw!")
 ENDIF(NOT PNG_FOUND)
+
+IF(OPENSSL_FOUND)
+        add_definitions(-DHAVE_CRYPT)
+        include_directories(${OPENSSL_INCLUDE_DIR})
+        IF(WIN32)
+                TARGET_LINK_LIBRARIES(dmg gdi32)
+        ENDIF(WIN32)
+ENDIF(OPENSSL_FOUND)
 
 include_directories(${ZLIB_INCLUDE_DIR})
 
