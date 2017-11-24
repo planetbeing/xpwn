@@ -51,9 +51,9 @@ static void writeChunk(FileVaultInfo* info) {
 	myChunk = info->curChunk;
 
 	FLIPENDIAN(myChunk);
-	HMAC_Init_ex(&(info->hmacCTX), NULL, 0, NULL, NULL);
-	HMAC_Update(&(info->hmacCTX), (unsigned char *) &myChunk, sizeof(uint32_t));
-	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
+	HMAC_Init_ex(info->hmacCTX, NULL, 0, NULL, NULL);
+	HMAC_Update(info->hmacCTX, (unsigned char *) &myChunk, sizeof(uint32_t));
+	HMAC_Final(info->hmacCTX, msgDigest, &msgDigestLen);
 
 	AES_cbc_encrypt(info->chunk, buffer, info->blockSize, &(info->aesEncKey), msgDigest, AES_ENCRYPT);
 
@@ -85,9 +85,9 @@ static void cacheChunk(FileVaultInfo* info, uint32_t chunk) {
 	info->curChunk = chunk;
 
 	FLIPENDIAN(chunk);
-	HMAC_Init_ex(&(info->hmacCTX), NULL, 0, NULL, NULL);
-	HMAC_Update(&(info->hmacCTX), (unsigned char *) &chunk, sizeof(uint32_t));
-	HMAC_Final(&(info->hmacCTX), msgDigest, &msgDigestLen);
+	HMAC_Init_ex(info->hmacCTX, NULL, 0, NULL, NULL);
+	HMAC_Update(info->hmacCTX, (unsigned char *) &chunk, sizeof(uint32_t));
+	HMAC_Final(info->hmacCTX, msgDigest, &msgDigestLen);
 
 	AES_cbc_encrypt(buffer, info->chunk, info->blockSize, &(info->aesKey), msgDigest, AES_DECRYPT);
 }
@@ -177,7 +177,12 @@ void fvClose(AbstractFile* file) {
 		cacheChunk(info, 0);
 	}
 
-	HMAC_CTX_cleanup(&(info->hmacCTX));
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	HMAC_CTX_free(info->hmacCTX);
+#else
+	HMAC_CTX_cleanup(info->hmacCTX);
+	free(info->hmacCTX);
+#endif
 
 	if(info->headerDirty) {
 		if(info->version == 2) {
@@ -234,8 +239,19 @@ AbstractFile* createAbstractFileFromFileVault(AbstractFile* file, const char* ke
 		hmacKey[i] = curByte;
 	}
 
-	HMAC_CTX_init(&(info->hmacCTX));
-	HMAC_Init_ex(&(info->hmacCTX), hmacKey, sizeof(hmacKey), EVP_sha1(), NULL);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	info->hmacCTX = HMAC_CTX_new();
+	HMAC_CTX_reset(info->hmacCTX);
+#else
+	info->hmacCTX = malloc(sizeof(*info->hmacCTX));
+	if (!info->hmacCTX) {
+		fprintf(stderr, "Out of memory: HMAC CTX!\n");
+		exit(1);
+	}
+	HMAC_CTX_init(info->hmacCTX);
+#endif
+	HMAC_Init_ex(info->hmacCTX, hmacKey, sizeof(hmacKey), EVP_sha1(), NULL);
 	AES_set_decrypt_key(aesKey, FILEVAULT_CIPHER_KEY_LENGTH * 8, &(info->aesKey));
 	AES_set_encrypt_key(aesKey, FILEVAULT_CIPHER_KEY_LENGTH * 8, &(info->aesEncKey));
 
