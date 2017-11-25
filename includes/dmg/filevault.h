@@ -79,7 +79,7 @@ typedef struct FileVaultInfo {
 
 	AbstractFile*	file;
 
-	HMAC_CTX	hmacCTX;
+	HMAC_CTX	*hmacCTX;
 	AES_KEY		aesKey;
 	AES_KEY		aesEncKey;
 
