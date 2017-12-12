@@ -29,15 +29,6 @@ ENDIF(NOT PNG_FOUND)
 
 include_directories(${ZLIB_INCLUDE_DIR})
 
-IF(NOT APPLE)
-link_directories(${ZLIB_LIBRARIES})
-ENDIF(NOT APPLE)
-
-include_directories(${BZIP2_INCLUDE_DIR})
-link_directories(${BZIP2_LIBRARIES})
-include_directories(${PNG_INCLUDE_DIR})
-link_directories(${PNG_LIBRARIES})
-
 include_directories(${PROJECT_SOURCE_DIR}/minizip)
 link_directories(${PROJECT_BINARY_DIR}/minizip)
 
@@ -48,6 +39,15 @@ IF(HAVE_HW_CRYPTO)
 ENDIF(HAVE_HW_CRYPTO)
 
 add_library(xpwn 8900.c bspatch.c ibootim.c img2.c img3.c libxpwn.c lzss.c lzssfile.c nor_files.c outputstate.c plist.c pwnutil.c)
+
+IF(NOT APPLE)
+target_link_libraries(xpwn ${ZLIB_LIBRARIES})
+ENDIF(NOT APPLE)
+
+include_directories(${BZIP2_INCLUDE_DIR})
+target_link_libraries(xpwn ${BZIP2_LIBRARIES})
+include_directories(${PNG_INCLUDE_DIR})
+target_link_libraries(xpwn ${PNG_LIBRARIES})
 
 IF(OPENSSL_FOUND)
 	add_definitions(-DHAVE_CRYPT)
