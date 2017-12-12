@@ -1,3 +1,4 @@
+INCLUDE(FindOpenSSL)
 INCLUDE(FindZLIB)
 INCLUDE(FindBZip2)
 INCLUDE(FindPNG)
@@ -47,6 +48,15 @@ IF(HAVE_HW_CRYPTO)
 ENDIF(HAVE_HW_CRYPTO)
 
 add_library(xpwn 8900.c bspatch.c ibootim.c img2.c img3.c libxpwn.c lzss.c lzssfile.c nor_files.c outputstate.c plist.c pwnutil.c)
+
+IF(OPENSSL_FOUND)
+	add_definitions(-DHAVE_CRYPT)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+	target_link_libraries(xpwn ${CRYPTO_LIBRARIES})
+	IF(WIN32)
+		TARGET_LINK_LIBRARIES(xpwn gdi32)
+	ENDIF(WIN32)
+ENDIF(OPENSSL_FOUND)
 
 IF(HAVE_HW_CRYPTO)
 	target_link_libraries(xpwn IOKit)
