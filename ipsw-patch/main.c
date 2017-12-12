@@ -13,6 +13,7 @@
 #include <dmg/dmglib.h>
 #include <xpwn/pwnutil.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #include <windows.h>
