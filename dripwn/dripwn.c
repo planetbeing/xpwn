@@ -6,6 +6,7 @@
 #include <dmg/dmgfile.h>
 #include <dmg/filevault.h>
 #include <xpwn/plist.h>
+#include <hfs/hfslib.h>
 
 #define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
 char endianness;
