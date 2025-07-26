@@ -177,7 +177,7 @@ void flipAppleImg3RootExtra(AppleImg3RootExtra* extra) {
 	FLIPENDIANLE(extra->name);
 }
 
-flipAppleImg3KBAGHeader(AppleImg3KBAGHeader* data) {
+void flipAppleImg3KBAGHeader(AppleImg3KBAGHeader* data) {
 	FLIPENDIANLE(data->key_modifier);
 	FLIPENDIANLE(data->key_bits);
 }
