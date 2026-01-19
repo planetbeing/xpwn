@@ -19,7 +19,7 @@
 #include <windows.h>
 #endif
 
-char endianness;
+extern char endianness;
 
 static char* tmpFile = NULL;
 

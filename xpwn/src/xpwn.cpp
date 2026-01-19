@@ -11,7 +11,7 @@
 using namespace ibooter;
 using namespace std;
 
-char endianness;
+extern char endianness;
 
 void TestByteOrder()
 {

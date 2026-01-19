@@ -20,6 +20,8 @@
 #define O_BINARY 0
 #endif
 
+extern int debug;
+
 /*
  *  * CRC32 code ripped off (and adapted) from the zlib-1.1.3 distribution by Jean-loup Gailly and Mark Adler.
  *   *
